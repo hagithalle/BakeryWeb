@@ -18,6 +18,8 @@ builder.Services.AddControllers();
 // Register application services
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IPackagingService, PackagingService>();
+builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();
+builder.Services.AddScoped<ILaborSettingsService, LaborSettingsService>();
 
 var app = builder.Build();
 
