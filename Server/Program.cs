@@ -1,6 +1,7 @@
 using Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
+using Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,9 @@ builder.Services.AddDbContext<BakeryDbContext>(options =>
 
 // Add Controllers
 builder.Services.AddControllers();
+// Register application services
+builder.Services.AddScoped<IIngredientService, IngredientService>();
+builder.Services.AddScoped<IPackagingService, PackagingService>();
 
 var app = builder.Build();
 
