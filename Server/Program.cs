@@ -20,6 +20,7 @@ builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IPackagingService, PackagingService>();
 builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();
 builder.Services.AddScoped<ILaborSettingsService, LaborSettingsService>();
+builder.Services.AddScoped<IRecipeService, RecipeService>();
 
 var app = builder.Build();
 
