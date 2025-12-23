@@ -10,6 +10,7 @@ namespace Server.Data
         }
 
         public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<Packaging> Packagings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
