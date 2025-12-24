@@ -16,6 +16,7 @@ namespace Server.Data
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<RecipeStep> RecipeSteps { get; set; }
         public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
+        public DbSet<Product> Products { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +66,21 @@ namespace Server.Data
                 .HasOne(ri => ri.Ingredient)
                 .WithMany()
                 .HasForeignKey(ri => ri.IngredientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Product configuration
+            modelBuilder.Entity<Product>()
+                .HasKey(p => p.Id);
+
+            modelBuilder.Entity<Product>()
+                .Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Recipe)
+                .WithMany()
+                .HasForeignKey(p => p.RecipeId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

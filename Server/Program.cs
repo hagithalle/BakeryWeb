@@ -21,6 +21,7 @@ builder.Services.AddScoped<IPackagingService, PackagingService>();
 builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();
 builder.Services.AddScoped<ILaborSettingsService, LaborSettingsService>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
 
