@@ -4,8 +4,8 @@ const theme = createTheme({
   direction: "rtl",
   palette: {
     primary: {
-      main: "#CD2C58", // בורדו כהה
-      light: "#e97b7b", // ורוד בהיר (למצבים של hover/active)
+      main: "rgba(117, 11, 19, 1)", // בורדו כהה
+      light: "rgba(158, 51, 69, 1)", // ורוד בהיר (למצבים של hover/active)
       contrastText: "#fff", // טקסט לבן על כפתור כהה
     },
     secondary: {
