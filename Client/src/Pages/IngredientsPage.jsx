@@ -6,6 +6,12 @@ import IngredientDialog from "../Components/IngredientDialog";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchIngredients, addIngredient, deleteIngredient, editIngredient, fetchCategories, addCategory } from '../Services/ingredientsServices';
+
+
+
+
 const mockCategories = [
   { value: "dairy", label: "מוצרי חלב" },
   { value: "grain", label: "דגנים" },
@@ -13,66 +19,126 @@ const mockCategories = [
   { value: "other", label: "אחר" }
 ];
 
-const mockColumns = [
-  { field: "name", headerName: "שם" },
-  { field: "category", headerName: "קטגוריה" },
-  { field: "unit", headerName: "יחידה" }
-];
-
-const mockRows = [
-  { id: 1, name: "קמח", category: "דגנים", unit: "ק\"ג" },
-  { id: 2, name: "סוכר", category: "ממתיקים", unit: "ק\"ג" },
-  { id: 3, name: "חמאה", category: "מוצרי חלב", unit: "גרם" },
-  { id: 4, name: "מלח", category: "אחר", unit: "גרם" },
-];
 
 export default function IngredientsPage() {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
+  const columns = [
+    { field: "name", headerName: strings.sidebar?.ingredients || "שם" },
+    { field: "category", headerName: strings.filter?.category || "קטגוריה" },
+    { field: "unit", headerName: strings.product?.unit || "יחידה" },
+    { field: "pricePerKg", headerName: strings.ingredient?.pricePerKg || "מחיר לק\"ג" },
+    { field: "stockQuantity", headerName: strings.ingredient?.stockQuantity || "כמות במלאי" }
+  ];
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [rows, setRows] = useState(mockRows);
+  const [selectedIngredient, setSelectedIngredient] = useState(null);
+    // קבלת קטגוריות מהשרת
+    const { data: rawCategories = [], isLoading: catLoading, error: catError } = useQuery({
+      queryKey: ['categories'],
+      queryFn: fetchCategories
+    });
+    // הפוך את הקטגוריות לפורמט value/label
+    const categories = rawCategories.map(cat => ({ value: cat.value, label: cat.name }));
+    console.log("Categories:", categories);
+  const queryClient = useQueryClient();
+  const editMutation = useMutation({
+    mutationFn: editIngredient,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ingredients']);
+    }
+  });
+
+  const { data: rows = [], isLoading, error } = useQuery({
+    queryKey: ['ingredients'],
+    queryFn: fetchIngredients
+  });
+  console.log("Ingredients:", rows);
+  const mutation = useMutation({
+    mutationFn: addIngredient,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ingredients']);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteIngredient,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['ingredients']);
+    }
+  });
 
   const handleAddIngredient = (ingredient) => {
-    setRows(prev => [...prev, { id: prev.length + 1, ...ingredient }]);
+    // התאמה למבנה Ingredient.cs
+    const categoryObj = categories.find(c => c.label === ingredient.category || c.value === ingredient.category);
+    const categoryValue = categoryObj ? categoryObj.value : ingredient.category;
+    const ingredientToSave = {
+      name: ingredient.name,
+      unit: ingredient.unit,
+      category: categoryValue,
+      pricePerKg: ingredient.pricePerKg || 0,
+      stockQuantity: ingredient.stockQuantity || 0
+    };
+    if (selectedIngredient) {
+      editMutation.mutate({ ...selectedIngredient, ...ingredientToSave });
+    } else {
+      mutation.mutate(ingredientToSave);
+    }
     setDialogOpen(false);
+    setSelectedIngredient(null);
   };
 
+  const categoryLabels = strings.ingredient?.categoryValues || {};
   const filteredRows = useMemo(() => {
-    return rows.filter(row => {
-      const matchesName = row.name.includes(search);
-      const matchesCategory = !category || row.category === mockCategories.find(c => c.value === category)?.label;
-      return matchesName && matchesCategory;
-    });
-  }, [search, category, rows]);
+    return rows
+      .map(row => ({
+        ...row,
+        category: categoryLabels[row.category] || row.category
+      }))
+      .filter(row => {
+        const matchesName = row.name.includes(search);
+        const matchesCategory = !category || row.category === categoryLabels[category] || row.category === category;
+        return matchesName && matchesCategory;
+      });
+  }, [search, category, rows, strings]);
+
+  if (isLoading || catLoading) return <div>טוען...</div>;
+  if (error || catError) return <div>שגיאה בטעינת נתונים</div>;
+
+  
 
   return (
     <Box>
+      {filteredRows.length === 0 && (
+        <Typography variant="body1" sx={{ color: '#751B13', mb: 2 }}>
+          אין חומרים להצגה. ניתן להוסיף חומרים חדשים.
+        </Typography>
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
         <GenericFilter
           searchValue={search}
           onSearchChange={setSearch}
           categoryValue={category}
           onCategoryChange={setCategory}
-          categories={mockCategories}
+          categories={categories.map(cat => ({ ...cat, label: strings.ingredient?.categoryValues?.[cat.label] || cat.label }))}
           searchLabel={strings.filter.search}
           categoryLabel={strings.filter.category}
           strings={strings}
         />
       </Box>
       <GenericTable
-        columns={mockColumns}
+        columns={columns}
         rows={filteredRows}
         direction={strings.direction}
         actions={["edit", "delete"]}
         onEdit={(row) => {
-          // TODO: Implement edit logic (open dialog pre-filled, etc)
-          alert(strings.ingredient.edit + ': ' + row.name);
+          setSelectedIngredient(row);
+          setDialogOpen(true);
         }}
         onDelete={(row) => {
           if (window.confirm(strings.ingredient.deleteConfirm + ' ' + row.name + '?')) {
-            setRows(rows.filter(r => r.id !== row.id));
+            deleteMutation.mutate(row.id);
           }
         }}
       />
@@ -99,10 +165,14 @@ export default function IngredientsPage() {
       </Box>
       <IngredientDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={() => {
+          setDialogOpen(false);
+          setSelectedIngredient(null);
+        }}
         onSave={handleAddIngredient}
-        categories={mockCategories}
+        categories={categories}
         strings={strings}
+        initialValues={selectedIngredient}
       />
     </Box>
   );

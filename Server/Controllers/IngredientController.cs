@@ -5,7 +5,7 @@ using Server.Services;
 namespace Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/ingredients")]
     public class IngredientController : ControllerBase
     {
         private readonly IIngredientService _service;

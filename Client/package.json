@@ -15,6 +15,7 @@
     "@fontsource/suez-one": "^5.2.8",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@tanstack/react-query": "^5.90.14",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.11.0"

@@ -25,7 +25,18 @@ const STRINGS = {
       all: "הכל"
     },
     ingredient: {
-      add: "הוסף חומר גלם"
+      add: "הוסף חומר גלם",
+      pricePerKg: "מחיר לק",
+      stockQuantity: "כמות במלאי",
+      categoryValues: {
+        Dry: "יבש",
+        Wet: "רטוב",
+        Dairy: "מוצרי חלב",
+        Frozen: "קפוא",
+        Perishable: "מתקלקל",
+        NonPerishable: "לא מתקלקל",
+        Other: "אחר"
+      }
     },
     // ...נושאים נוספים
   },
@@ -51,7 +62,18 @@ const STRINGS = {
       all: "All"
     },
     ingredient: {
-      add: "Add Ingredient"
+      add: "Add Ingredient",
+      pricePerKg: "Price per Kg",
+      stockQuantity: "Stock Quantity",
+      categoryValues: {
+        Dry: "Dry",
+        Wet: "Wet",
+        Dairy: "Dairy",
+        Frozen: "Frozen",
+        Perishable: "Perishable",
+        NonPerishable: "Non-Perishable",
+        Other: "Other"
+      }
     },
     // ...more sections
   }
