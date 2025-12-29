@@ -9,6 +9,7 @@ const STRINGS = {
       ingredients: "חומרי גלם",
       recipes: "מתכונים",
       products: "מוצרים",
+      packaging: "מוצרי אריזה"
     },
     titles: {
       home: "דף הבית",
@@ -38,6 +39,10 @@ const STRINGS = {
         Other: "אחר"
       }
     },
+    packaging: {
+      cost: "עלות",
+      stockUnits: "יחידות במלאי"
+    },
     // ...נושאים נוספים
   },
   en: {
@@ -46,6 +51,7 @@ const STRINGS = {
       ingredients: "Ingredients",
       recipes: "Recipes",
       products: "Products",
+      packaging: "Packaging"
     },
     titles: {
       home: "Home",
@@ -74,6 +80,10 @@ const STRINGS = {
         NonPerishable: "Non-Perishable",
         Other: "Other"
       }
+    },
+    packaging: {
+      cost: "Cost",
+      stockUnits: "Stock Units"
     },
     // ...more sections
   }
