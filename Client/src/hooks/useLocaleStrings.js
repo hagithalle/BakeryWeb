@@ -19,6 +19,14 @@ const STRINGS = {
       edit: "ערוך מוצר",
       delete: "מחק מוצר",
     },
+    filter: {
+      search: "חפש לפי שם",
+      category: "קטגוריה",
+      all: "הכל"
+    },
+    ingredient: {
+      add: "הוסף חומר גלם"
+    },
     // ...נושאים נוספים
   },
   en: {
@@ -36,6 +44,14 @@ const STRINGS = {
       add: "Add Product",
       edit: "Edit Product",
       delete: "Delete Product",
+    },
+    filter: {
+      search: "Search by name",
+      category: "Category",
+      all: "All"
+    },
+    ingredient: {
+      add: "Add Ingredient"
     },
     // ...more sections
   }
