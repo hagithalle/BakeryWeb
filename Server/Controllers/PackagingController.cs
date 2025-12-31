@@ -5,7 +5,7 @@ using Server.Services;
 namespace Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/packaging")]
     public class PackagingController : ControllerBase
     {
         private readonly IPackagingService _service;
