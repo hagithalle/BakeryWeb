@@ -43,6 +43,11 @@ const STRINGS = {
       cost: "עלות",
       stockUnits: "יחידות במלאי"
     },
+    recipeTabs: {
+      ingredients: "חומרים",
+      steps: "שלבים",
+      costs: "עלויות"
+    },
     // ...נושאים נוספים
   },
   en: {
@@ -84,6 +89,11 @@ const STRINGS = {
     packaging: {
       cost: "Cost",
       stockUnits: "Stock Units"
+    },
+    recipeTabs: {
+      ingredients: "Ingredients",
+      steps: "Steps",
+      costs: "Costs"
     },
     // ...more sections
   }
