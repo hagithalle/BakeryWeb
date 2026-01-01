@@ -19,5 +19,8 @@ namespace Server.Models
 
         // 🆕 רשימת שלבי הכנה
         public ICollection<RecipeStep> Steps { get; set; } = new List<RecipeStep>();
+
+        // סוג מתכון: חלבי/בשרי/פרווה
+        public RecipeType RecipeType { get; set; } = RecipeType.Parve;
     }
 }

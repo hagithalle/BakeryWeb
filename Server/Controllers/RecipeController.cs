@@ -31,8 +31,21 @@ namespace Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Recipe recipe)
+        public async Task<IActionResult> Create([FromForm] Recipe recipe, [FromForm] IFormFile? imageFile)
         {
+            if (imageFile != null && imageFile.Length > 0)
+            {
+                var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "recipes");
+                if (!Directory.Exists(imagesPath))
+                    Directory.CreateDirectory(imagesPath);
+                var fileName = $"recipe_{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+                var filePath = Path.Combine(imagesPath, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(stream);
+                }
+                recipe.ImageUrl = $"/images/recipes/{fileName}";
+            }
             var created = await _service.CreateAsync(recipe);
             return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
         }
