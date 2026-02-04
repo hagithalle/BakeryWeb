@@ -5,7 +5,7 @@ import PackagingDialog from "../Components/PackagingDialog";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchPackaging, addPackaging, deletePackaging, editPackaging } from '../Services/packagingServices';
+import { fetchPackaging, addPackaging, deletePackaging, editPackaging } from '../Services/packagingService';
 
 export default function PackagingPage() {
   const { lang } = useLanguage();
