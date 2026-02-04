@@ -7,7 +7,7 @@ import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchIngredients, addIngredient, deleteIngredient, editIngredient, fetchCategories, addCategory } from '../Services/ingredientsServices';
+import { fetchIngredients, addIngredient, deleteIngredient, editIngredient, fetchCategories, addCategory } from '../Services/ingredientsService';
 
 
 

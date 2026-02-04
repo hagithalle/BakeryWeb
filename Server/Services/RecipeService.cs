@@ -19,6 +19,27 @@ namespace Server.Services
         {
             _db.Recipes.Add(recipe);
             await _db.SaveChangesAsync();
+
+            // שמור את החומרים
+            if (recipe.Ingredients != null && recipe.Ingredients.Count > 0)
+            {
+                foreach (var ri in recipe.Ingredients)
+                {
+                    ri.Id = 0; // Ensure new PK
+                    ri.RecipeId = recipe.Id;
+                    _db.RecipeIngredients.Add(ri);
+                }
+            }
+            // שמור את השלבים
+            if (recipe.Steps != null && recipe.Steps.Count > 0)
+            {
+                foreach (var rs in recipe.Steps)
+                {
+                    rs.RecipeId = recipe.Id;
+                    _db.RecipeSteps.Add(rs);
+                }
+            }
+            await _db.SaveChangesAsync();
             return recipe;
         }
 

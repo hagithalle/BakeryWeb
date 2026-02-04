@@ -18,6 +18,8 @@ export default function TopBar() {
     pageTitle = strings.sidebar.ingredients;
   } else if (location.pathname.startsWith("/recipes")) {
     pageTitle = strings.sidebar.recipes;
+    } else if (location.pathname.startsWith("/packaging")) {
+    pageTitle = strings.sidebar.packaging
   } else if (location.pathname.startsWith("/products")) {
     pageTitle = strings.sidebar.products;
   } else {
