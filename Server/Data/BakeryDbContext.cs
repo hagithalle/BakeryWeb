@@ -33,7 +33,11 @@ namespace Server.Data
 
             modelBuilder.Entity<Ingredient>()
                 .Property(i => i.Unit)
-                .HasMaxLength(50);
+                .HasConversion<int>();
+
+            modelBuilder.Entity<Ingredient>()
+                .Property(i => i.StockUnit)
+                .HasConversion<int>();
 
             // Recipe configuration
             modelBuilder.Entity<Recipe>()

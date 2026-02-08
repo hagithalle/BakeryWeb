@@ -3,7 +3,8 @@ namespace Server.Models
     {
         public decimal PricePerKg { get; set; }
         public int StockQuantity { get; set; }
-        public required string Unit { get; set; } // e.g., "kg", "pieces", "liters"
+        public UnitOfMeasure Unit { get; set; }
+        public UnitOfMeasure StockUnit { get; set; }
         public IngredientCategory Category { get; set; }
     }
 }

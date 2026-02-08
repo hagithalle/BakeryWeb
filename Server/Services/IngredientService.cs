@@ -41,9 +41,20 @@ namespace Server.Services
         /// </summary>
         public async Task<Ingredient> CreateAsync(Ingredient ingredient)
         {
-            _context.Ingredients.Add(ingredient);
-            await _context.SaveChangesAsync();
-            return ingredient;
+            // Log the ingredient object before saving
+            Console.WriteLine($"[CreateAsync] קיבלתי אובייקט: {System.Text.Json.JsonSerializer.Serialize(ingredient)}");
+            try
+            {
+                _context.Ingredients.Add(ingredient);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("[CreateAsync] נשמר בהצלחה");
+                return ingredient;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CreateAsync] שגיאה: {ex.Message}\n{ex.StackTrace}");
+                throw;
+            }
         }
 
         /// <summary>
@@ -58,6 +69,7 @@ namespace Server.Services
             existing.PricePerKg = ingredient.PricePerKg;
             existing.StockQuantity = ingredient.StockQuantity;
             existing.Unit = ingredient.Unit;
+            existing.StockUnit = ingredient.StockUnit;
             existing.Category = ingredient.Category;
 
             await _context.SaveChangesAsync();

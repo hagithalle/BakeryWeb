@@ -29,6 +29,8 @@ const STRINGS = {
       add: "הוסף חומר גלם",
       pricePerKg: "מחיר לק",
       stockQuantity: "כמות במלאי",
+      stockUnit: "יחידת מלאי",
+      duplicateError: "חומר גלם '{name}' כבר קיים במערכת!",
       categoryValues: {
         Dry: "יבש",
         Wet: "רטוב",
@@ -37,6 +39,18 @@ const STRINGS = {
         Perishable: "מתקלקל",
         NonPerishable: "לא מתקלקל",
         Other: "אחר"
+      },
+      unitValues: {
+        Kilogram: "קילוגרם",
+        Gram: "גרם",
+        Liter: "ליטר",
+        Milliliter: "מיליליטר",
+        Unit: "יחידה",
+        Dozen: "תריסר",
+        Package: "חבילה",
+        Teaspoon: "כפית",
+        Tablespoon: "כף",
+        Cup: "כוס"
       }
     },
     packaging: {
@@ -76,6 +90,8 @@ const STRINGS = {
       add: "Add Ingredient",
       pricePerKg: "Price per Kg",
       stockQuantity: "Stock Quantity",
+      stockUnit: "Stock Unit",
+      duplicateError: "Ingredient '{name}' already exists!",
       categoryValues: {
         Dry: "Dry",
         Wet: "Wet",
@@ -84,6 +100,18 @@ const STRINGS = {
         Perishable: "Perishable",
         NonPerishable: "Non-Perishable",
         Other: "Other"
+      },
+      unitValues: {
+        Kilogram: "Kilogram",
+        Gram: "Gram",
+        Liter: "Liter",
+        Milliliter: "Milliliter",
+        Unit: "Unit",
+        Dozen: "Dozen",
+        Package: "Package",
+        Teaspoon: "Teaspoon",
+        Tablespoon: "Tablespoon",
+        Cup: "Cup"
       }
     },
     packaging: {
