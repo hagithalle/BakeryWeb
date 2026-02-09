@@ -39,27 +39,68 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
       setCategories(mapped);
     });
   }, []);
+  
   // State for all fields
-  const [name, setName] = useState(initialValues?.name || "");
-  const [description, setDescription] = useState(initialValues?.description || "");
-  const [category, setCategory] = useState(initialValues?.category || "לחמים");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("לחמים");
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(initialValues?.imageUrl || null);
-  const [yieldAmount, setYieldAmount] = useState(initialValues?.yieldAmount || 1);
-  const [bakeTime, setBakeTime] = useState(initialValues?.bakeTime || 0);
-  const [prepTime, setPrepTime] = useState(initialValues?.prepTime || 0);
-  const [temp, setTemp] = useState(initialValues?.temp || 0);
-  const [unit, setUnit] = useState(initialValues?.unit || "יחידות");
-  const [ingredients, setIngredients] = useState(initialValues?.ingredients || []);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [yieldAmount, setYieldAmount] = useState(1);
+  const [bakeTime, setBakeTime] = useState(0);
+  const [prepTime, setPrepTime] = useState(0);
+  const [temperature, setTemperature] = useState(0);
+  const [unit, setUnit] = useState("יחידות");
+  const [ingredients, setIngredients] = useState([]);
   const [ingredientName, setIngredientName] = useState("");
   const [ingredientAmount, setIngredientAmount] = useState("");
   const [ingredientUnit, setIngredientUnit] = useState("");
-  const [steps, setSteps] = useState(initialValues?.steps || []);
-  const [newStep, setNewStep] = useState("");
+  const [steps, setSteps] = useState([]);
   const [showAddIngredientDialog, setShowAddIngredientDialog] = useState(false);
   const [pendingIngredient, setPendingIngredient] = useState(null);
   const [addIngredientError, setAddIngredientError] = useState("");
   const [addingIngredient, setAddingIngredient] = useState(false);
+
+  // Reset or populate form when dialog opens with new initialValues
+  useEffect(() => {
+    if (open) {
+      if (initialValues) {
+        // Editing mode - populate with existing values
+        console.log('AddRecipeDialog: initialValues received:', initialValues);
+        console.log('AddRecipeDialog: ingredients in initialValues:', initialValues.ingredients);
+        setName(initialValues.name || "");
+        setDescription(initialValues.description || "");
+        setCategory(initialValues.category || "לחמים");
+        setImagePreview(initialValues.imageUrl || null);
+        setYieldAmount(initialValues.yieldAmount || 1);
+        setBakeTime(initialValues.bakeTime || 0);
+        setPrepTime(initialValues.prepTime || 0);
+        setTemperature(initialValues.temperature || 0);
+        setUnit(initialValues.unit || "יחידות");
+        setIngredients(initialValues.ingredients || []);
+        setSteps(initialValues.steps || []);
+        console.log('AddRecipeDialog: set ingredients to:', initialValues.ingredients);
+      } else {
+        // New recipe mode - reset all fields
+        setName("");
+        setDescription("");
+        setCategory("לחמים");
+        setImageFile(null);
+        setImagePreview(null);
+        setYieldAmount(1);
+        setBakeTime(0);
+        setPrepTime(0);
+        setTemperature(0);
+        setUnit("יחידות");
+        setIngredients([]);
+        setSteps([]);
+      }
+      // Always reset these fields when opening
+      setIngredientName("");
+      setIngredientAmount("");
+      setIngredientUnit("");
+    }
+  }, [open, initialValues]);
 
   // Handlers
   const handleImageChange = (e) => {
@@ -90,19 +131,78 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
 
 
   const handleSave = () => {
-    onSave({
+    console.log('=============== handleSave START ===============');
+    
+    // 1. בדיקה בסיסית של שם מתכון
+    console.log('1️⃣ בדיקה שם מתכון:', { name, isEmpty: !name || name.trim() === '' });
+    if (!name || name.trim() === '') {
+      alert('חובה להזין שם למתכון!');
+      return;
+    }
+
+    // 2. הדפסת רכיבים - בדיוק כמו שהם בstate
+    console.log('2️⃣ רכיבים ב-state:', JSON.stringify(ingredients, null, 2));
+    console.log('   מספר רכיבים:', ingredients.length);
+    ingredients.forEach((ing, idx) => {
+      console.log(`   [${idx}]:`, {
+        ingredientId: ing.ingredientId,
+        name: ing.name,
+        amount: ing.amount,
+        unit: ing.unit,
+        types: {
+          id: typeof ing.ingredientId,
+          amount: typeof ing.amount,
+          unit: typeof ing.unit
+        }
+      });
+    });
+
+    // 3. הדפסת שלבים - בדיוק כמו שהם בstate
+    console.log('3️⃣ שלבים ב-state:', JSON.stringify(steps, null, 2));
+    console.log('   מספר שלבים:', steps.length);
+    steps.forEach((step, idx) => {
+      console.log(`   [${idx}]:`, {
+        value: step,
+        type: typeof step,
+        length: typeof step === 'string' ? step.length : 'N/A'
+      });
+    });
+
+    // 4. הדפסת כל הנתונים שנשלחים
+    const recipeData = {
       name,
       description,
       category,
-      imageFile,
+      imageFile: imageFile ? { name: imageFile.name, size: imageFile.size } : null,
       yieldAmount,
       bakeTime,
       prepTime,
-      temp,
+      temperature,
       unit,
       ingredients,
       steps
+    };
+    console.log('4️⃣ נתונים למטה לשלוח:', {
+      basicInfo: {
+        name,
+        description,
+        category,
+        unit,
+        yieldAmount: Number(yieldAmount),
+        prepTime: Number(prepTime),
+        bakeTime: Number(bakeTime),
+        temperature: Number(temperature)
+      },
+      image: imageFile ? `יש תמונה: ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)}KB)` : 'אין תמונה',
+      ingredientsCount: ingredients.length,
+      stepsCount: steps.length
     });
+
+    // 5. שליחת הנתונים ללא שינוי
+    console.log('5️⃣ שווק onSave...');
+    console.log('=============== handleSave END ===============');
+    
+    onSave(recipeData);
   };
 
   const handleSaveNewIngredient = async (ingredient) => {
@@ -130,13 +230,59 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
       <DialogContent sx={{ bgcolor: '#FFF7F2', borderRadius: 3, p: 4, minWidth: 600 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Main Info */}
-          <RecipeMainInfo name={name} description={description} imageUrl={imagePreview} />
+          <RecipeMainInfo
+            name={name}
+            description={description}
+            category={category}
+            categories={recipeCategories}
+            imageUrl={imagePreview}
+            onNameChange={setName}
+            onDescriptionChange={setDescription}
+            onCategoryChange={setCategory}
+            onImageChange={handleImageChange}
+          />
           {/* Baking Info */}
-          <RecipeBakingInfo bakingTime={bakeTime} temperature={temp} servings={unit} yieldAmount={yieldAmount} />
+          <RecipeBakingInfo
+            bakingTime={bakeTime}
+            temperature={temperature}
+            prepTime={prepTime}
+            servings={unit}
+            yieldAmount={yieldAmount}
+            onBakingTimeChange={setBakeTime}
+            onTemperatureChange={setTemperature}
+            onPrepTimeChange={setPrepTime}
+            onServingsChange={setUnit}
+            onYieldAmountChange={setYieldAmount}
+          />
           {/* Ingredients Section */}
-          <RecipeIngredientsSection ingredients={ingredients} />
+          <RecipeIngredientsSection
+            ingredients={ingredients}
+            ingredientsList={ingredientsList}
+            onAddIngredient={(item) => {
+              console.log('AddRecipeDialog: onAddIngredient received:', item);
+              setIngredients(prev => [...prev, { 
+                ingredientId: item.ingredientId,
+                name: item.name, 
+                amount: item.amount, 
+                unit: item.unit 
+              }]);
+              console.log('AddRecipeDialog: ingredients updated');
+            }}
+            onRemoveIngredient={(idx) => {
+              console.log('AddRecipeDialog: removing ingredient at index:', idx);
+              setIngredients(prev => prev.filter((_, i) => i !== idx));
+            }}
+            onUpdateIngredient={(idx, updatedIngredient) => {
+              console.log('AddRecipeDialog: updating ingredient at index:', idx, updatedIngredient);
+              setIngredients(prev => prev.map((ing, i) => i === idx ? updatedIngredient : ing));
+            }}
+            onIngredientAdded={onIngredientAdded}
+          />
           {/* Steps Section */}
-          <RecipeStepsSection steps={steps} />
+          <RecipeStepsSection
+            steps={steps}
+            onStepsChange={setSteps}
+          />
         </Box>
       </DialogContent>
       <DialogActions sx={{ bgcolor: '#F9E3D6', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, p: 2, justifyContent: 'space-between' }}>
@@ -155,6 +301,8 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         units={units}
         strings={strings}
         showPriceWarning={true}
+        disableEnforceFocus
+        disableRestoreFocus
       />
     </Dialog>
   );

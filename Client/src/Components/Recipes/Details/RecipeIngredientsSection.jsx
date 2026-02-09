@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useIngredientsList, useRefreshIngredients } from "../../../context/IngredientsContext";
-import { Box, Typography, Button, IconButton, TextField, MenuItem, Autocomplete, Paper } from "@mui/material";
+import { Box, Typography, Button, IconButton, TextField, MenuItem, Paper } from "@mui/material";
 import IngredientDialog from "../../IngredientDialog";
 import { fetchCategories } from "../../../Services/ingredientsService";
 import { useLanguage } from "../../../context/LanguageContext";
@@ -10,12 +9,13 @@ import AddIcon from '@mui/icons-material/Add';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
 export default function RecipeIngredientsSection({
-  ingredients,       // אם לא בשימוש – אפשר למחוק
-  onAddIngredient,   // פונקציה מההורה שמקבלת { name, amount, unit }
-  addIngredient      // אם לא בשימוש – אפשר למחוק
+  ingredients,
+  ingredientsList = [],
+  onAddIngredient,
+  onRemoveIngredient,
+  onUpdateIngredient,
+  onIngredientAdded
 }) {
-  const ingredientsList = useIngredientsList();
-  const refreshIngredients = useRefreshIngredients();
   // דיאלוג – אם לא משתמשים, אפשר למחוק הכל
   const [showAddIngredientDialog, setShowAddIngredientDialog] = useState(false);
   const [pendingIngredient, setPendingIngredient] = useState({});
@@ -38,6 +38,20 @@ export default function RecipeIngredientsSection({
     { value: 9, label: "Tablespoon" },
     { value: 10, label: "Cup" }
   ];
+  
+  // Hebrew labels for display
+  const unitLabels = {
+    1: "קילוגרם",
+    2: "גרם",
+    3: "ליטר",
+    4: 'מ"ל',
+    5: "יחידה",
+    6: "תריסר",
+    7: "חבילה",
+    8: "כפית",
+    9: "כפית שולחן",
+    10: "כוס"
+  };
 
   useEffect(() => {
     fetchCategories().then(data => {
@@ -48,6 +62,11 @@ export default function RecipeIngredientsSection({
 
   // שורות הוספה inline
   const [addRows, setAddRows] = useState([]);
+  
+  // מצב עריכה של רכיבים קיימים
+  const [editingIdx, setEditingIdx] = useState(null);
+  const [editingAmount, setEditingAmount] = useState('');
+  const [editingUnit, setEditingUnit] = useState('');
 
   // פתיחת דיאלוג "חומר גלם חדש"
   const handleOpenDialog = () => {
@@ -58,7 +77,7 @@ export default function RecipeIngredientsSection({
 
   // הוספת שורת מרכיב חדשה
   const handleOpenAddRow = () => {
-    setAddRows(rows => [...rows, { ingredientId: '', amount: '', unit: '' }]);
+    setAddRows(rows => [...rows, { ingredientId: '', amount: '', unit: 1 }]); // ברירת מחדל: 1 = קילוגרם
   };
 
   // ביטול שורה מסוימת
@@ -66,20 +85,49 @@ export default function RecipeIngredientsSection({
     setAddRows(rows => rows.filter((_, i) => i !== idx));
   };
 
+  // התחלת עריכה של רכיב קיים
+  const handleStartEdit = (idx) => {
+    setEditingIdx(idx);
+    setEditingAmount(ingredients[idx].amount.toString());
+    setEditingUnit(ingredients[idx].unit.toString());
+  };
+
+  // שמירה של עריכה
+  const handleSaveEdit = (idx) => {
+    if (onUpdateIngredient) {
+      onUpdateIngredient(idx, {
+        ...ingredients[idx],
+        amount: parseFloat(editingAmount) || 0,
+        unit: parseInt(editingUnit) || 1,
+      });
+    }
+    setEditingIdx(null);
+  };
+
+  // ביטול עריכה
+  const handleCancelEdit = () => {
+    setEditingIdx(null);
+    setEditingAmount('');
+    setEditingUnit('');
+  };
+
   // אישור שורה – שולח להורה ומוחק רק אותה
   const handleConfirmAddRow = idx => {
     const row = addRows[idx];
+    console.log('RecipeIngredientsSection: handleConfirmAddRow', { idx, row, ingredientsList });
     if (!row.ingredientId || !row.amount || !row.unit) return;
 
     if (onAddIngredient) {
       // שלח את כל המידע כולל שם החומר גלם
       const ingredient = ingredientsList.find(i => i.id === Number(row.ingredientId));
+      console.log('RecipeIngredientsSection: found ingredient:', ingredient);
       onAddIngredient({
         ingredientId: row.ingredientId,
         name: ingredient ? ingredient.name : '',
         amount: row.amount,
         unit: row.unit
       });
+      console.log('RecipeIngredientsSection: sent to parent');
     }
 
     setAddRows(rows => rows.filter((_, i) => i !== idx));
@@ -94,10 +142,12 @@ export default function RecipeIngredientsSection({
       await addIngredient(ingredient);
       setShowAddIngredientDialog(false);
       setPendingIngredient({});
-      refreshIngredients(); // רענון הרשימה הגלובלית
+      if (onIngredientAdded) {
+        onIngredientAdded();
+      }
     } catch (err) {
       setAddIngredientError("שגיאה בהוספה: " + (err?.message || ""));
-      throw err; // זורקים את השגיאה כדי שהדיאלוג יישאר פתוח
+      throw err;
     } finally {
       setAddingIngredient(false);
     }
@@ -106,7 +156,6 @@ export default function RecipeIngredientsSection({
   // אם תרצי באמת דיאלוג – צריך להוסיף JSX של <Dialog> כאן.
   // כרגע זה רק לוגיקה שלא מוצגת במסך, אז אפשר למחוק את כל מה שקשור לזה.
 
-  console.log('ingredientsList', ingredientsList);
   return (
     <Box sx={{ mb: 2 }}>
       {/* כותרת + כפתורים בשורה אחת */}
@@ -155,6 +204,8 @@ export default function RecipeIngredientsSection({
             units={units}
             strings={strings}
             showPriceWarning={true}
+            disableEnforceFocus
+            disableRestoreFocus
           />
         </Box>
       </Box>
@@ -212,7 +263,7 @@ export default function RecipeIngredientsSection({
           {/* יחידה */}
           <TextField
             select
-            value={addRow.unit}
+            value={addRow.unit || ''}
             onChange={e => {
               setAddRows(rows =>
                 rows.map((row, i) => (i === idx ? { ...row, unit: e.target.value } : row))
@@ -220,9 +271,9 @@ export default function RecipeIngredientsSection({
             }}
             sx={{ minWidth: 80, bgcolor: "#FFF7F2", borderRadius: 2 }}
           >
-            {["גרם", "קילו", "ליטר", 'מ"ל', "יחידה", "אחר"].map(unit => (
-              <MenuItem key={unit} value={unit}>
-                {unit}
+            {units.map(u => (
+              <MenuItem key={u.value} value={u.value}>
+                {unitLabels[u.value]}
               </MenuItem>
             ))}
           </TextField>
@@ -236,6 +287,91 @@ export default function RecipeIngredientsSection({
           </IconButton>
         </Paper>
       ))}
+
+      {/* הצגת הרכיבים שנוספו */}
+      {ingredients && ingredients.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography sx={{ fontWeight: 700, color: "#7B5B4B", mb: 1.5 }}>
+            הרכיבים שנוספו:
+          </Typography>
+          {(() => {
+            console.log('RecipeIngredientsSection: rendering ingredients:', ingredients);
+            return ingredients.map((ing, idx) => {
+              console.log(`RecipeIngredientsSection: ingredient[${idx}]:`, ing);
+              return (
+              <Paper
+                key={idx}
+                sx={{
+                  p: 1.5,
+                  mb: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  bgcolor: "#E8D4C4",
+                  borderRadius: 3
+                }}
+              >
+                {editingIdx === idx ? (
+                // מצב עריכה
+                <Box sx={{ display: "flex", gap: 1, flex: 1, alignItems: "center" }}>
+                  <Typography sx={{ minWidth: 120 }}>{ing.name}</Typography>
+                  <TextField
+                    type="number"
+                    value={editingAmount}
+                    onChange={(e) => setEditingAmount(e.target.value)}
+                    size="small"
+                    sx={{ width: 80 }}
+                  />
+                  <TextField
+                    select
+                    value={editingUnit}
+                    onChange={(e) => setEditingUnit(e.target.value)}
+                    size="small"
+                    sx={{ width: 100 }}
+                  >
+                    {units.map(u => (
+                      <MenuItem key={u.value} value={u.value}>
+                        {unitLabels[u.value]}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <IconButton onClick={() => handleSaveEdit(idx)} sx={{ color: "green" }}>
+                    <AddIcon />
+                  </IconButton>
+                  <IconButton onClick={handleCancelEdit} sx={{ color: "#D32F2F" }}>
+                    <CloseIcon />
+                  </IconButton>
+                </Box>
+              ) : (
+                // מצב צפייה
+                <>
+                  <Typography sx={{ flex: 1 }}>
+                    {ing.name} - {ing.amount} {unitLabels[ing.unit] || ing.unit}
+                  </Typography>
+                  <IconButton
+                    onClick={() => handleStartEdit(idx)}
+                    sx={{ color: "#5D4037" }}
+                  >
+                    ✎
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      if (onRemoveIngredient) {
+                        onRemoveIngredient(idx);
+                      }
+                    }}
+                    sx={{ color: "#D32F2F" }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </>
+              )}
+            </Paper>
+            );
+          });
+          })()}
+        </Box>
+      )}
     </Box>
   );
 }

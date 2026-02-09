@@ -2,7 +2,7 @@ import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box, Typography } from "@mui/material";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-export default function IngredientDialog({ open, onClose, onSave, categories, units, strings, initialValues, showPriceWarning = false }) {
+export default function IngredientDialog({ open, onClose, onSave, categories, units, strings, initialValues, showPriceWarning = false, disableEnforceFocus, disableRestoreFocus }) {
   const [name, setName] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [unit, setUnit] = React.useState("");
@@ -69,7 +69,15 @@ export default function IngredientDialog({ open, onClose, onSave, categories, un
   const title = isEdit ? (strings.ingredient?.edit || "ערוך חומר גלם") : (strings.ingredient?.add || "הוסף חומר גלם חדש");
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth dir={strings.direction || "rtl"}>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="xs" 
+      fullWidth 
+      dir={strings.direction || "rtl"}
+      disableEnforceFocus={disableEnforceFocus}
+      disableRestoreFocus={disableRestoreFocus}
+    >
       <DialogTitle sx={{ color: '#7B5B4B', fontWeight: 700, fontSize: 26, textAlign: 'center', pb: 0, pt: 2 }}>
         {title}
       </DialogTitle>

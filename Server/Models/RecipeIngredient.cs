@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace Server.Models
 {
+    [Bind("IngredientId, Quantity")]
     public class RecipeIngredient
     {
         public int Id { get; set; }
