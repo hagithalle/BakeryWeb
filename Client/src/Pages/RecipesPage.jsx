@@ -37,23 +37,23 @@ export default function RecipesPage() {
         console.log('fullSelectedRecipe: ingredientsList:', ingredientsList);
         const result = {
             ...selectedRecipe,
+            // שמור את המבנה המקורי של ingredients עם האובייקט המלא
             ingredients: (selectedRecipe.ingredients || selectedRecipe.Ingredients || [])
                 .map(ri => {
                     const ingId = ri.ingredient?.id || ri.Ingredient?.id || ri.ingredientId || ri.IngredientId;
                     // חפש את המידע המלא מרשימת הרכיבים
                     const fullIngredient = ingredientsList.find(i => i.id === ingId);
-                    const mapped = {
-                        ingredientId: ingId,
-                        name: ri.ingredient?.name || ri.Ingredient?.name || fullIngredient?.name || '',
-                        amount: ri.quantity || ri.Quantity || '',
-                        unit: ri.ingredient?.unit || ri.Ingredient?.unit || fullIngredient?.unit || ''
+                    return {
+                        ingredient: fullIngredient || ri.ingredient || ri.Ingredient,
+                        quantity: ri.quantity || ri.Quantity || 0
                     };
-                    console.log('fullSelectedRecipe: mapping ingredient:', ri, '=>', mapped);
-                    return mapped;
                 }),
             steps: (selectedRecipe.steps || selectedRecipe.Steps || [])
                 .sort((a, b) => (a.order || a.Order || 0) - (b.order || b.Order || 0))
-                .map(s => s.description || s.Description || '')
+                .map((s, idx) => ({
+                    order: s.order || s.Order || idx,
+                    description: s.description || s.Description || ''
+                }))
         };
         console.log('fullSelectedRecipe: final result:', result);
         return result;
