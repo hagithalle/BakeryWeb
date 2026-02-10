@@ -44,6 +44,13 @@ namespace Server.Controllers
             return ok ? NoContent() : NotFound();
         }
 
+        [HttpPost("{id}/recalculate-price")]
+        public async Task<IActionResult> RecalculatePrice(int id)
+        {
+            var ok = await _service.RecalculateSellingPriceAsync(id);
+            return ok ? NoContent() : NotFound();
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

@@ -31,6 +31,22 @@ namespace Server.Services
             return monthlyHours == 0 ? 0 : monthlyTotal / monthlyHours;
         }
 
+            public decimal GetHourlyOverheadCost()
+            {
+                var s = _context.LaborSettings.SingleOrDefault(x => x.Id == 1);
+            
+                // אם אין הגדרות עבודה, החזר 0
+                if (s == null)
+                    return 0;
+
+                var totalMonthlyCost = _context.OverheadItems
+                    .Where(x => x.IsActive)
+                    .Sum(x => x.MonthlyCost);
+
+                var monthlyHours = s.WorkingDaysPerMonth * s.WorkingHoursPerDay;
+
+                return monthlyHours == 0 ? 0 : totalMonthlyCost / monthlyHours;
+            }
         // המרת כל יחידה לקילו (או ליטר עבור נוזלים)
         private decimal ConvertToKilogram(decimal quantity, UnitOfMeasure unit)
         {
@@ -127,8 +143,12 @@ namespace Server.Services
             var hourlyLabor = GetHourlyLaborCost();
             var packagingLaborCost = (packagingTime / 60m) * hourlyLabor;
 
+                // עלות תקורה על זמן אריזה
+                var hourlyOverhead = GetHourlyOverheadCost();
+                var packagingOverheadCost = (packagingTime / 60m) * hourlyOverhead;
+
             // סה"כ עלות המוצר
-            var totalCost = recipeTotalCost + packagingCost + packagingLaborCost;
+                var totalCost = recipeTotalCost + packagingCost + packagingLaborCost + packagingOverheadCost;
 
             return new ProductCostBreakdown
             {
@@ -140,6 +160,7 @@ namespace Server.Services
                 // עלויות נוספות למוצר
                 PackagingCost = packagingCost,
                 PackagingLaborCost = packagingLaborCost,
+                     PackagingOverheadCost = packagingOverheadCost,
                 
                 // סיכום
                 RecipeUnitsQuantity = recipeUnitsQuantity,
@@ -171,6 +192,7 @@ namespace Server.Services
         // עלויות ספציפיות למוצר
         public decimal PackagingCost { get; set; }
         public decimal PackagingLaborCost { get; set; }
+        public decimal PackagingOverheadCost { get; set; }
         
         // פרטים נוספים
         public int RecipeUnitsQuantity { get; set; }

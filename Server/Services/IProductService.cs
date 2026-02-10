@@ -10,6 +10,7 @@ namespace Server.Services
         Task<Product?> GetByIdAsync(int id);
         Task<Product> CreateAsync(Product product);
         Task<bool> UpdateAsync(int id, Product product);
+        Task<bool> RecalculateSellingPriceAsync(int id);
         Task<bool> DeleteAsync(int id);
     }
 }

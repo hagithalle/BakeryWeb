@@ -22,6 +22,18 @@ namespace Server.Models
         // זמן אריזה בדקות (זמן עבודה נוסף מעבר לזמן המתכון)
         public int? PackagingTimeMinutes { get; set; }
 
+        // תמונה
+        public string? ImageUrl { get; set; }
+
+        // תיאור
+        public string? Description { get; set; }
+
+        // אחוז רווח רצוי (0.15 = 15%)
+        public decimal ProfitMarginPercent { get; set; } = 0;
+
+        // מחיר מכירה ידני (אופציונלי - אם מוגדר, לא מחשבים אוטומטית)
+        public decimal? ManualSellingPrice { get; set; }
+
         // שדות עלויות - לא נשמרים בDB, מחושבים בזמן קריאה
         [NotMapped]
         public decimal RecipeIngredientsCost { get; set; }
@@ -39,6 +51,18 @@ namespace Server.Models
         public decimal PackagingLaborCost { get; set; }
 
         [NotMapped]
+        public decimal PackagingOverheadCost { get; set; }
+
+        [NotMapped]
         public decimal TotalCost { get; set; }
+
+        [NotMapped]
+        public decimal ProfitAmount { get; set; }
+
+        [NotMapped]
+        public decimal SellingPriceBeforeVAT { get; set; }
+
+        [NotMapped]
+        public decimal SellingPriceWithVAT { get; set; }
     }
 }
