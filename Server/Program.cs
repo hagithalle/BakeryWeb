@@ -36,6 +36,7 @@ builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IPackagingService, PackagingService>();
 builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();
 builder.Services.AddScoped<ILaborSettingsService, LaborSettingsService>();
+builder.Services.AddScoped<CostCalculatorService>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 
@@ -127,6 +128,19 @@ try
         catch (Exception migrationEx)
         {
             Console.WriteLine($"Migration error (continuing): {migrationEx.Message}");
+        }
+        
+        // תיקון רשומות קיימות: עדכון Unit=0 ל-Unit=2 (גרם)
+        try
+        {
+            var updatedCount = await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE \"RecipeIngredients\" SET \"Unit\" = 2 WHERE \"Unit\" = 0"
+            );
+            Console.WriteLine($"Fixed {updatedCount} RecipeIngredients with invalid Unit (0 -> 2 Gram)");
+        }
+        catch (Exception fixEx)
+        {
+            Console.WriteLine($"Error fixing RecipeIngredients Unit: {fixEx.Message}");
         }
     }
 }

@@ -96,7 +96,7 @@ namespace Server.Controllers
             if (recipe.Ingredients?.Count > 0)
             {
                 foreach (var ing in recipe.Ingredients)
-                    Console.WriteLine($"   • ID={ing.IngredientId}, Qty={ing.Quantity}");
+                    Console.WriteLine($"   • ID={ing.IngredientId}, Qty={ing.Quantity}, Unit={ing.Unit}");
             }
             else
                 Console.WriteLine("   ℹ️  No ingredients");

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Server.Models
 {
@@ -29,10 +30,29 @@ namespace Server.Models
         // כתובת תמונה
         public string? ImageUrl { get; set; }
 
-      public List<RecipeStep> Steps { get; set; } = new();
-    public List<RecipeIngredient> Ingredients { get; set; } = new();
+        public List<RecipeStep> Steps { get; set; } = new();
+        public List<RecipeIngredient> Ingredients { get; set; } = new();
 
         // סוג מתכון: חלבי/בשרי/פרווה
         public RecipeType RecipeType { get; set; } = RecipeType.Parve;
+
+        // שדות עלויות - לא נשמרים בDB, מחושבים בזמן קריאה
+        [NotMapped]
+        public decimal IngredientsCost { get; set; }
+
+        [NotMapped]
+        public decimal LaborCost { get; set; }
+
+        [NotMapped]
+        public decimal OverheadCost { get; set; }
+
+        [NotMapped]
+        public decimal PackagingCost { get; set; }
+
+        [NotMapped]
+        public decimal TotalCost { get; set; }
+
+        [NotMapped]
+        public decimal CostPerUnit { get; set; }
     }
 }

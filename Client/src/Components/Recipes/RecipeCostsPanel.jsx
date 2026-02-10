@@ -11,6 +11,7 @@ import {
   Paper,
   Divider
 } from "@mui/material";
+import { getUnitDisplayName } from "../../utils/unitUtils";
 
 export default function RecipeCostsPanel({ costBreakdown }) {
   if (!costBreakdown) {
@@ -30,6 +31,11 @@ export default function RecipeCostsPanel({ costBreakdown }) {
     costPerUnit = 0,
     yield: recipeYield = 1
   } = costBreakdown;
+
+  console.log('📊 RecipeCostsPanel - ingredients:', ingredients);
+  ingredients.forEach((item, idx) => {
+    console.log(`  [${idx}] name="${item.name}" amount=${item.amount} unit="${item.unit}" (type: ${typeof item.unit}) cost=${item.cost}`);
+  });
 
   return (
     <Box sx={{ mt: 2 }}>
@@ -53,7 +59,9 @@ export default function RecipeCostsPanel({ costBreakdown }) {
                 <TableRow key={index} hover>
                   <TableCell align="right">{item.name}</TableCell>
                   <TableCell align="right">{item.amount}</TableCell>
-                  <TableCell align="right">{item.unit}</TableCell>
+                  <TableCell align="right">
+                    {typeof item.unit === 'string' ? item.unit : getUnitDisplayName(item.unit)}
+                  </TableCell>
                   <TableCell align="right">{item.cost.toFixed(2)}</TableCell>
                 </TableRow>
               ))}

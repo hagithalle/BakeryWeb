@@ -9,10 +9,12 @@ namespace Server.Services
     public class ProductService : IProductService
     {
         private readonly BakeryDbContext _db;
+        private readonly CostCalculatorService _costCalculator;
 
-        public ProductService(BakeryDbContext db)
+        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator)
         {
             _db = db;
+            _costCalculator = costCalculator;
         }
 
         public async Task<Product> CreateAsync(Product product)
@@ -33,16 +35,56 @@ namespace Server.Services
 
         public async Task<IEnumerable<Product>> GetAllAsync()
         {
-            return await _db.Products
+            var products = await _db.Products
                 .Include(p => p.Recipe)
+                    .ThenInclude(r => r.Ingredients)
+                        .ThenInclude(ri => ri.Ingredient)
+                .Include(p => p.Packaging)
                 .ToListAsync();
+
+            // חישוב עלויות לכל מוצר
+            foreach (var product in products)
+            {
+                var costs = _costCalculator.CalculateProductCost(product);
+                if (costs != null)
+                {
+                    product.RecipeIngredientsCost = costs.RecipeIngredientsCost;
+                    product.RecipeLaborCost = costs.RecipeLaborCost;
+                    product.RecipeOverheadCost = costs.RecipeOverheadCost;
+                    product.PackagingCost = costs.PackagingCost;
+                    product.PackagingLaborCost = costs.PackagingLaborCost;
+                    product.TotalCost = costs.TotalCost;
+                }
+            }
+
+            return products;
         }
 
         public async Task<Product?> GetByIdAsync(int id)
         {
-            return await _db.Products
+            var product = await _db.Products
                 .Include(p => p.Recipe)
+                    .ThenInclude(r => r.Ingredients)
+                        .ThenInclude(ri => ri.Ingredient)
+                .Include(p => p.Packaging)
                 .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product != null)
+            {
+                // חישוב עלויות
+                var costs = _costCalculator.CalculateProductCost(product);
+                if (costs != null)
+                {
+                    product.RecipeIngredientsCost = costs.RecipeIngredientsCost;
+                    product.RecipeLaborCost = costs.RecipeLaborCost;
+                    product.RecipeOverheadCost = costs.RecipeOverheadCost;
+                    product.PackagingCost = costs.PackagingCost;
+                    product.PackagingLaborCost = costs.PackagingLaborCost;
+                    product.TotalCost = costs.TotalCost;
+                }
+            }
+
+            return product;
         }
 
         public async Task<bool> UpdateAsync(int id, Product product)
@@ -52,6 +94,9 @@ namespace Server.Services
 
             existing.Name = product.Name;
             existing.RecipeId = product.RecipeId;
+            existing.RecipeUnitsQuantity = product.RecipeUnitsQuantity;
+            existing.PackagingId = product.PackagingId;
+            existing.PackagingTimeMinutes = product.PackagingTimeMinutes;
 
             await _db.SaveChangesAsync();
             return true;

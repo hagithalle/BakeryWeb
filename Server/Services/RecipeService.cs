@@ -9,10 +9,12 @@ namespace Server.Services
     public class RecipeService : IRecipeService
     {
         private readonly BakeryDbContext _db;
+        private readonly CostCalculatorService _costCalculator;
 
-        public RecipeService(BakeryDbContext db)
+        public RecipeService(BakeryDbContext db, CostCalculatorService costCalculator)
         {
             _db = db;
+            _costCalculator = costCalculator;
         }
 
         public async Task<Recipe> CreateAsync(Recipe recipe)
@@ -94,10 +96,28 @@ namespace Server.Services
                 {
                     foreach (var ri in r.Ingredients)
                     {
-                        Console.WriteLine($"         - IngredientId={ri.IngredientId}, Qty={ri.Quantity}, Ingredient.Name={ri.Ingredient?.Name ?? "null"}");
+                        Console.WriteLine($"         - IngredientId={ri.IngredientId}, Qty={ri.Quantity}, Unit={ri.Unit}, Ingredient.Name={ri.Ingredient?.Name ?? "null"}");
+                        // חישוב עלות הרכיב
+                        if (ri.Ingredient != null)
+                        {
+                            ri.Cost = _costCalculator.CalculateIngredientCost(ri);
+                            Console.WriteLine($"         ✅ Calculated Cost: {ri.Cost}");
+                        }
                     }
                 }
                 Console.WriteLine($"      Steps: {r.Steps?.Count ?? 0}");
+
+                // חישוב עלויות
+                var costs = _costCalculator.CalculateRecipeCost(r);
+                if (costs != null)
+                {
+                    r.IngredientsCost = costs.IngredientsCost;
+                    r.LaborCost = costs.LaborCost;
+                    r.OverheadCost = costs.OverheadCost;
+                    r.PackagingCost = costs.PackagingCost;
+                    r.TotalCost = costs.TotalCost;
+                    r.CostPerUnit = costs.CostPerUnit;
+                }
             }
             Console.WriteLine(">>> RecipeService.GetAllAsync END\n");
             return recipes;
@@ -105,11 +125,41 @@ namespace Server.Services
 
         public async Task<Recipe?> GetByIdAsync(int id)
         {
-            return await _db.Recipes
+            var recipe = await _db.Recipes
                 .Include(r => r.Ingredients)
                 .ThenInclude(ri => ri.Ingredient)
                 .Include(r => r.Steps)
                 .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (recipe != null)
+            {
+                // חישוב עלות כל רכיב
+                if (recipe.Ingredients != null)
+                {
+                    foreach (var ri in recipe.Ingredients)
+                    {
+                        if (ri.Ingredient != null)
+                        {
+                            ri.Cost = _costCalculator.CalculateIngredientCost(ri);
+                            Console.WriteLine($"   GetByIdAsync - Ingredient: {ri.Ingredient.Name}, Cost: {ri.Cost}");
+                        }
+                    }
+                }
+
+                // חישוב עלויות
+                var costs = _costCalculator.CalculateRecipeCost(recipe);
+                if (costs != null)
+                {
+                    recipe.IngredientsCost = costs.IngredientsCost;
+                    recipe.LaborCost = costs.LaborCost;
+                    recipe.OverheadCost = costs.OverheadCost;
+                    recipe.PackagingCost = costs.PackagingCost;
+                    recipe.TotalCost = costs.TotalCost;
+                    recipe.CostPerUnit = costs.CostPerUnit;
+                }
+            }
+
+            return recipe;
         }
 
         public async Task<bool> UpdateAsync(int id, Recipe recipe)
@@ -142,7 +192,8 @@ namespace Server.Services
                 existing.Ingredients.Add(new RecipeIngredient
                 {
                     IngredientId = ri.IngredientId,
-                    Quantity = ri.Quantity
+                    Quantity = ri.Quantity,
+                    Unit = ri.Unit // הוסף את Unit
                 });
             }
 

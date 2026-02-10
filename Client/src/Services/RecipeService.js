@@ -43,6 +43,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
     recipe.ingredients.forEach((ing, idx) => {
       const ingredientId = ing.IngredientId ?? ing.ingredientId;
       const quantity = ing.Quantity ?? ing.quantity;
+      const unit = ing.Unit ?? ing.unit ?? 2; // ברירת מחדל: 2 = גרם
 
       if (ingredientId !== undefined && ingredientId !== null) {
         const fieldName = `Ingredients[${idx}].IngredientId`;
@@ -54,6 +55,12 @@ export async function createRecipeWithImage(recipe, imageFile) {
         const fieldName = `Ingredients[${idx}].Quantity`;
         formData.append(fieldName, quantity);
         console.log(`    ✓ ${fieldName} = ${quantity}`);
+        fieldCount++;
+      }
+      if (unit !== undefined && unit !== null) {
+        const fieldName = `Ingredients[${idx}].Unit`;
+        formData.append(fieldName, unit);
+        console.log(`    ✓ ${fieldName} = ${unit}`);
         fieldCount++;
       }
     });
@@ -200,6 +207,7 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
     recipe.ingredients.forEach((ing, idx) => {
       const ingredientId = ing.IngredientId ?? ing.ingredientId;
       const quantity = ing.Quantity ?? ing.quantity;
+      const unit = ing.Unit ?? ing.unit ?? 2; // ברירת מחדל: 2 = גרם
       
       if (ingredientId !== undefined && ingredientId !== null) {
         const fieldName = `Ingredients[${idx}].IngredientId`;
@@ -211,6 +219,12 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
         const fieldName = `Ingredients[${idx}].Quantity`;
         formData.append(fieldName, quantity);
         console.log(`    ✓ ${fieldName} = ${quantity}`);
+        fieldCount++;
+      }
+      if (unit !== undefined && unit !== null) {
+        const fieldName = `Ingredients[${idx}].Unit`;
+        formData.append(fieldName, unit);
+        console.log(`    ✓ ${fieldName} = ${unit}`);
         fieldCount++;
       }
     });

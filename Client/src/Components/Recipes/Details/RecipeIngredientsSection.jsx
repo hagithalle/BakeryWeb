@@ -6,6 +6,7 @@ import { useLanguage } from "../../../context/LanguageContext";
 import useLocaleStrings from "../../../hooks/useLocaleStrings";
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 
 export default function RecipeIngredientsSection({
@@ -77,7 +78,7 @@ export default function RecipeIngredientsSection({
 
   // הוספת שורת מרכיב חדשה
   const handleOpenAddRow = () => {
-    setAddRows(rows => [...rows, { ingredientId: '', amount: '', unit: 1 }]); // ברירת מחדל: 1 = קילוגרם
+    setAddRows(rows => [...rows, { ingredientId: '', amount: '', unit: 2 }]); // ברירת מחדל: 2 = גרם (יותר נפוץ במתכונים)
   };
 
   // ביטול שורה מסוימת
@@ -336,7 +337,7 @@ export default function RecipeIngredientsSection({
                     ))}
                   </TextField>
                   <IconButton onClick={() => handleSaveEdit(idx)} sx={{ color: "green" }}>
-                    <AddIcon />
+                    <CheckIcon />
                   </IconButton>
                   <IconButton onClick={handleCancelEdit} sx={{ color: "#D32F2F" }}>
                     <CloseIcon />

@@ -9,7 +9,7 @@ import RecipeTabs from "./RecipeTabs";
 import RecipeIngredientsTable from "./RecipeIngredientsTable";
 import RecipeStepsPanel from "./RecipeStepsPanel";
 import RecipeCostsPanel from "./RecipeCostsPanel";
-import { getUnitDisplayName } from "../../utils/unitUtils";
+import { getUnitDisplayName, calculateIngredientCost } from "../../utils/unitUtils";
 
 
 export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTabChange }) {
@@ -38,7 +38,7 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
       const ing = ri.ingredient || ri.Ingredient;
       return {
         name: ing?.name || ing?.Name || "לא ידוע",
-        unit: getUnitDisplayName(ing?.unit || ing?.Unit),
+        unit: getUnitDisplayName(ri?.unit ?? ri?.Unit ?? 2), // היחידה לקוחה מה-RecipeIngredient, לא מה-Ingredient
         amount: ri.quantity || ri.Quantity,
         sum: ing?.cost || ing?.Cost || 0
       };
@@ -56,43 +56,46 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
       }));
   }, [recipe?.steps]);
 
-  // חישוב עלויות
+  // חישוב עלויות - משתמשים בערכים שחוזרים מהשרת
   const costBreakdown = useMemo(() => {
-    if (!recipe?.ingredients) return null;
+    if (!recipe) return null;
     
-    const ingredientCosts = recipe.ingredients.map(ri => {
-      const ing = ri.ingredient || ri.Ingredient;
-      const qty = ri.quantity || ri.Quantity;
-      return {
-        name: ing?.name || ing?.Name || "לא ידוע",
-        amount: qty,
-        unit: getUnitDisplayName(ing?.unit || ing?.Unit),
-        cost: ((ing?.cost || ing?.Cost || 0) * qty)
-      };
-    });
-    
-    const totalIngredientCost = ingredientCosts.reduce((sum, item) => sum + item.cost, 0);
-    
-    const prepTime = recipe.prepTime || recipe.PrepTime || 0;
-    const bakeTime = recipe.bakeTime || recipe.BakeTime || 0;
-    const outputUnits = recipe.outputUnits || recipe.OutputUnits || 1;
-    
-    // זמניים - בעתיד יחושב לפי נתונים אמיתיים
-    const laborCost = (prepTime + bakeTime) * 0.5; // לדוגמה: 0.5 ש"ח לדקה
-    const overheadCost = totalIngredientCost * 0.15; // 15% תקורה
-    const packagingCost = 2.50; // קבוע זמני
-    
-    const totalCost = totalIngredientCost + laborCost + overheadCost + packagingCost;
-    const costPerUnit = totalCost / outputUnits;
+    console.log('🔍 costBreakdown - recipe.ingredients:', recipe.ingredients);
     
     return {
-      ingredients: ingredientCosts,
-      laborCost,
-      overheadCost,
-      packagingCost,
-      totalCost,
-      yield: outputUnits,
-      costPerUnit
+      ingredients: (recipe.ingredients || recipe.Ingredients || []).map((ri, idx) => {
+        const ing = ri.ingredient || ri.Ingredient;
+        const qty = ri.quantity || ri.Quantity;
+        const unit = ri.unit ?? ri.Unit ?? 2; // יחידת המידה מה-RecipeIngredient, עם ברירת מחדל
+        
+        // חישוב עלות בקליינט - משתמשים ביחידה של RecipeIngredient
+        const calculatedCost = calculateIngredientCost({ ...ing, unit: unit }, qty);
+        
+        console.log(`🔍 Ingredient[${idx}]:`, {
+          name: ing?.name,
+          quantity: qty,
+          unit: unit,
+          unitType: typeof unit,
+          pricePerKg: ing?.pricePerKg,
+          calculatedCost: calculatedCost
+        });
+        
+        const displayUnit = getUnitDisplayName(unit);
+        console.log(`   📍 displayUnit after getUnitDisplayName:`, displayUnit);
+        
+        return {
+          name: ing?.name || ing?.Name || "לא ידוע",
+          amount: qty,
+          unit: displayUnit, // משתמשים ביחידה של RecipeIngredient
+          cost: calculatedCost
+        };
+      }),
+      laborCost: recipe.laborCost || recipe.LaborCost || 0,
+      overheadCost: recipe.overheadCost || recipe.OverheadCost || 0,
+      packagingCost: recipe.packagingCost || recipe.PackagingCost || 0,
+      totalCost: recipe.totalCost || recipe.TotalCost || 0,
+      yield: recipe.outputUnits || recipe.OutputUnits || 1,
+      costPerUnit: recipe.costPerUnit || recipe.CostPerUnit || 0
     };
   }, [recipe]);
 
@@ -121,6 +124,35 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
         </IconButton>
       </Box>
 
+      {/* תמונת המתכון */}
+      {(recipe.imageUrl || recipe.ImageUrl) && (
+        <Box
+          sx={{
+            width: '100%',
+            height: 250,
+            mb: 3,
+            bgcolor: 'white',
+            borderRadius: 2,
+            boxShadow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            border: '2px dashed #D7CCC8'
+          }}
+        >
+          <img
+            src={recipe.imageUrl || recipe.ImageUrl}
+            alt={recipe.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          />
+        </Box>
+      )}
+
       {/* תיאור */}
       <Typography variant="body1" sx={{ mb: 3, color: '#5D4037', lineHeight: 1.7 }}>
         {recipeData.description}
@@ -128,6 +160,28 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
 
       {/* מידע מהיר */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
+        {recipeData.difficulty && (
+          <Grid item xs={6} sm={3}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              p: 1.5,
+              bgcolor: 'white',
+              borderRadius: 2,
+              boxShadow: 1
+            }}>
+              <SignalCellularAltIcon sx={{ color: '#D84315' }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary">קטגוריה</Typography>
+                <Typography variant="body2" fontWeight="bold">
+                  {recipeData.difficulty}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+        )}
+        
         {recipeData.temperature > 0 && (
           <Grid item xs={6} sm={3}>
             <Box sx={{ 
@@ -179,37 +233,21 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
               p: 1.5,
               bgcolor: 'white',
               borderRadius: 2,
-              boxShadow: 1
+              boxShadow: 1,
+              flexDirection: 'column',
+              alignItems: 'flex-start'
             }}>
-              <TimerIcon sx={{ color: '#D84315' }} />
-              <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                <TimerIcon sx={{ color: '#D84315' }} />
                 <Typography variant="caption" color="text.secondary">זמן הכנה</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {recipeData.totalTime} דקות
-                </Typography>
               </Box>
-            </Box>
-          </Grid>
-        )}
-        
-        {recipeData.difficulty && (
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              p: 1.5,
-              bgcolor: 'white',
-              borderRadius: 2,
-              boxShadow: 1
-            }}>
-              <SignalCellularAltIcon sx={{ color: '#D84315' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary">קטגוריה</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {recipeData.difficulty}
-                </Typography>
-              </Box>
+              <Typography variant="body2" fontWeight="bold" sx={{ ml: 4 }}>
+                {recipeData.prepTime > 0 && `הכנה: ${recipeData.prepTime} דק׳${recipeData.bakeTime > 0 ? ' • ' : ''}`}
+                {recipeData.bakeTime > 0 && `אפייה: ${recipeData.bakeTime} דק׳`}
+              </Typography>
+              <Typography variant="caption" sx={{ ml: 4, color: '#D84315', fontWeight: 'bold' }}>
+                סה״כ: {recipeData.totalTime} דקות
+              </Typography>
             </Box>
           </Grid>
         )}

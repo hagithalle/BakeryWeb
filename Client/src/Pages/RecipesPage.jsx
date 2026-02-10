@@ -45,7 +45,8 @@ export default function RecipesPage() {
                     const fullIngredient = ingredientsList.find(i => i.id === ingId);
                     return {
                         ingredient: fullIngredient || ri.ingredient || ri.Ingredient,
-                        quantity: ri.quantity || ri.Quantity || 0
+                        quantity: ri.quantity || ri.Quantity || 0,
+                        unit: ri.unit ?? ri.Unit ?? 2 // העבר את Unit מ-RecipeIngredient
                     };
                 }),
             steps: (selectedRecipe.steps || selectedRecipe.Steps || [])
@@ -93,7 +94,7 @@ export default function RecipesPage() {
                                             ingredientId: ingId,
                                             name: ri.ingredient?.name || ri.Ingredient?.name || fullIngredient?.name || '',
                                             amount: ri.quantity || ri.Quantity || '',
-                                            unit: ri.ingredient?.unit || ri.Ingredient?.unit || fullIngredient?.unit || ''
+                                            unit: ri.unit || ri.Unit || 2 // יחידת המידה מ-RecipeIngredient, ברירת מחדל: גרם
                                         };
                                         console.log('RecipesPage: mapped ingredient:', result);
                                         return result;
@@ -198,10 +199,11 @@ export default function RecipesPage() {
                             // הוסף לarrayסופי
                             const finalIngredient = {
                                 IngredientId: found.id,
-                                Quantity: Number(ing.amount)
+                                Quantity: Number(ing.amount),
+                                Unit: Number(ing.unit) || 2 // ברירת מחדל: 2 = גרם
                             };
                             ensuredIngredients.push(finalIngredient);
-                            console.log(`     ➡️ שלח לשרת: {IngredientId: ${finalIngredient.IngredientId}, Quantity: ${finalIngredient.Quantity}}`);
+                            console.log(`     ➡️ שלח לשרת: {IngredientId: ${finalIngredient.IngredientId}, Quantity: ${finalIngredient.Quantity}, Unit: ${finalIngredient.Unit}}`);
                         }
                         
                         console.log(`\n   📦 סה"כ רכיבים שישלחו: ${ensuredIngredients.length}`);
