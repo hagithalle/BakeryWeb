@@ -9,12 +9,12 @@ export default function MainLayout({children}) {
     const { lang } = useLanguage();
     const strings = useLocaleStrings(lang);
     return (
-        <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", bgcolor: "#FFE6D4" }}>
+        <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", bgcolor: "#FFF8F3" }}>
             <Box sx={{ display: 'flex', flex: 1, flexDirection: strings.direction === 'rtl' ? 'row-reverse' : 'row' ,}}>
                 <Sidebar lang={lang} />
                 <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                     <TopBar />
-                    <Box sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
+                    <Box sx={{ flexGrow: 1, p: 3, overflow: "auto", bgcolor: "#FFF8F3" }}>
                         {children}
                     </Box>
                 </Box>

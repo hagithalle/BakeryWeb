@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Typography, Box } from "@mui/material";
+import { Typography, Box, Button, Chip } from "@mui/material";
 import GenericFilter from "../Components/GenericFilter";
 import GenericTable from "../Components/GenericTable";
 import IngredientDialog from "../Components/IngredientDialog";
@@ -23,11 +23,39 @@ const mockCategories = [
 export default function IngredientsPage() {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
+  
+  // צבעים לקטגוריות
+  const categoryColors = {
+    "מוצרי חלב": { bg: "#F5E6E0", text: "#971936" },
+    "דגנים": { bg: "#FFF8F3", text: "#9B5A25" },
+    "ממתיקים": { bg: "#FFF3E6", text: "#C98929" },
+    "אחר": { bg: "#F0E8E4", text: "#9B5A25" }
+  };
+  
   const columns = [
     { field: "name", headerName: strings.sidebar?.ingredients || "שם" },
-    { field: "category", headerName: strings.filter?.category || "קטגוריה" },
+    { 
+      field: "category", 
+      headerName: strings.filter?.category || "קטגוריה",
+      renderCell: (row) => {
+        const colors = categoryColors[row.category] || { bg: "#F5E6E0", text: "#971936" };
+        return (
+          <Chip 
+            label={row.category} 
+            size="small"
+            sx={{ 
+              backgroundColor: colors.bg,
+              color: colors.text,
+              fontWeight: 500,
+              borderRadius: 2
+            }}
+          />
+        );
+      }
+    },
     { field: "unit", headerName: strings.product?.unit || "יחידה" },
-    { field: "pricePerKg", headerName: strings.ingredient?.pricePerKg || "מחיר לק\"ג" },
+    { field: "pricePerKg", headerName: strings.ingredient?.pricePerKg || "מחיר ליחידה" },
+    { field: "supplier", headerName: "ספק" },
     { field: "stockQuantity", headerName: strings.ingredient?.stockQuantity || "כמות במלאי" }
   ];
   const [search, setSearch] = useState("");
@@ -139,7 +167,8 @@ export default function IngredientsPage() {
           originalStockUnit: stockUnitValue,
           category: categoryLabel,
           unit: unitLabel,
-          stockQuantity: stockDisplay
+          stockQuantity: stockDisplay,
+          supplier: "-" // ספק - לא ממומש כרגע
         };
       })
       .filter(row => {
@@ -156,12 +185,35 @@ export default function IngredientsPage() {
 
   return (
     <Box>
+      {/* Header with Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<span style={{ fontSize: '20px', marginLeft: '8px' }}>+</span>}
+          onClick={() => setDialogOpen(true)}
+          sx={{
+            backgroundColor: '#C98929',
+            color: 'white',
+            borderRadius: 2,
+            px: 3,
+            fontWeight: 600,
+            '&:hover': {
+              backgroundColor: '#9B5A25'
+            }
+          }}
+        >
+          {strings.ingredient?.add || "הוסף חומר גלם"}
+        </Button>
+      </Box>
+
       {filteredRows.length === 0 && (
-        <Typography variant="body1" sx={{ color: '#751B13', mb: 2 }}>
+        <Typography variant="body1" sx={{ color: '#971936', mb: 2 }}>
           אין חומרים להצגה. ניתן להוסיף חומרים חדשים.
         </Typography>
       )}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+      
+      {/* Filter Section */}
+      <Box sx={{ mb: 2 }}>
         <GenericFilter
           searchValue={search}
           onSearchChange={setSearch}
@@ -173,6 +225,8 @@ export default function IngredientsPage() {
           strings={strings}
         />
       </Box>
+      
+      {/* Table */}
       <GenericTable
         columns={columns}
         rows={filteredRows}
@@ -195,27 +249,6 @@ export default function IngredientsPage() {
           }
         }}
       />
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
-        <button
-          style={{
-            background: '#751B13',
-            color: 'white',
-            fontFamily: 'Suez One, serif',
-            fontSize: 18,
-            border: 'none',
-            borderRadius: 8,
-            padding: '10px 28px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px #0001',
-            transition: 'background 0.2s',
-            marginLeft: 0,
-            marginRight: 0
-          }}
-          onClick={() => setDialogOpen(true)}
-        >
-          {strings.ingredient.add}
-        </button>
-      </Box>
       <IngredientDialog
         open={dialogOpen}
         onClose={() => {

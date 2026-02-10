@@ -86,35 +86,20 @@ export default function ProductsPage() {
   if (error) return <Box sx={{ p: 3 }}>שגיאה בטעינת נתונים</Box>;
 
   return (
-    <Box sx={{ p: 3, backgroundColor: '#fafafa', minHeight: '100vh' }}>
+    <Box sx={{ backgroundColor: 'transparent', minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              color: '#751B13', 
-              fontFamily: 'Suez One, serif',
-              fontWeight: 700,
-              mb: 0.5
-            }}
-          >
-            מוצרים
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#8D6E63' }}>
-            תמחור ומכירה
-          </Typography>
-        </Box>
+        <Box />
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           sx={{
-            backgroundColor: '#A67C52',
+            backgroundColor: '#C98929',
             color: 'white',
             borderRadius: 2,
             px: 3,
             '&:hover': {
-              backgroundColor: '#8B6A42'
+              backgroundColor: '#9B5A25'
             }
           }}
         >
@@ -131,8 +116,11 @@ export default function ProductsPage() {
             displayEmpty
             size="small"
             sx={{ 
-              backgroundColor: 'white',
-              borderRadius: 2
+              backgroundColor: '#FEFEFE',
+              borderRadius: 2,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#D2A5A0'
+              }
             }}
           >
             <MenuItem value="all">כל הקטגוריות</MenuItem>
@@ -148,16 +136,19 @@ export default function ProductsPage() {
           onChange={(e) => setSearch(e.target.value)}
           sx={{ 
             flexGrow: 1,
-            backgroundColor: 'white',
+            backgroundColor: '#FEFEFE',
             borderRadius: 2,
             '& .MuiOutlinedInput-root': {
-              borderRadius: 2
+              borderRadius: 2,
+              '& fieldset': {
+                borderColor: '#D2A5A0'
+              }
             }
           }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <SearchIcon sx={{ color: '#A67C52' }} />
+                <SearchIcon sx={{ color: '#C98929' }} />
               </InputAdornment>
             ),
           }}
@@ -180,11 +171,13 @@ export default function ProductsPage() {
               <Card 
                 sx={{ 
                   borderRadius: 3, 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  boxShadow: '0 2px 8px rgba(151, 25, 54, 0.1)',
                   transition: 'transform 0.2s, box-shadow 0.2s',
+                  borderLeft: '4px solid #C98929',
+                  bgcolor: '#FEFEFE',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    boxShadow: '0 4px 12px rgba(151, 25, 54, 0.2)'
                   }
                 }}
               >
@@ -193,7 +186,7 @@ export default function ProductsPage() {
                   <Typography 
                     variant="h6" 
                     sx={{ 
-                      color: '#751B13',
+                      color: '#971936',
                       fontWeight: 700,
                       mb: 1,
                       textAlign: 'right'
@@ -208,8 +201,8 @@ export default function ProductsPage() {
                       label="עוגיות" 
                       size="small"
                       sx={{ 
-                        backgroundColor: '#f5e6e0',
-                        color: '#751B13',
+                        backgroundColor: '#D2A5A0',
+                        color: '#971936',
                         fontSize: '0.75rem'
                       }}
                     />
@@ -218,8 +211,8 @@ export default function ProductsPage() {
                       size="small"
                       variant="outlined"
                       sx={{ 
-                        borderColor: '#A67C52',
-                        color: '#A67C52',
+                        borderColor: '#C98929',
+                        color: '#9B5A25',
                         fontSize: '0.75rem'
                       }}
                     />
@@ -229,7 +222,7 @@ export default function ProductsPage() {
                   <Paper 
                     elevation={0}
                     sx={{ 
-                      backgroundColor: '#fafafa',
+                      backgroundColor: '#FFF8F3',
                       p: 2,
                       mb: 2,
                       borderRadius: 2
@@ -238,7 +231,7 @@ export default function ProductsPage() {
                     <Typography 
                       variant="subtitle2" 
                       sx={{ 
-                        color: '#751B13',
+                        color: '#971936',
                         fontWeight: 600,
                         mb: 1.5,
                         textAlign: 'right'
@@ -249,26 +242,26 @@ export default function ProductsPage() {
                     
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                        <Typography variant="body2" sx={{ color: '#971936' }}>
                           {formatCurrency(product.ingredientsCost)}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+                        <Typography variant="body2" sx={{ color: '#9B5A25' }}>
                           עלות בסיס
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                        <Typography variant="body2" sx={{ color: '#971936' }}>
                           {formatCurrency(product.packagingCost)}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+                        <Typography variant="body2" sx={{ color: '#9B5A25' }}>
                           אריזה
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                        <Typography variant="body2" sx={{ color: '#971936' }}>
                           {formatCurrency(product.laborCost)}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+                        <Typography variant="body2" sx={{ color: '#9B5A25' }}>
                           מדבקה
                         </Typography>
                       </Box>
@@ -278,13 +271,13 @@ export default function ProductsPage() {
                           justifyContent: 'space-between',
                           pt: 1,
                           mt: 1,
-                          borderTop: '1px solid #e0e0e0'
+                          borderTop: '1px solid #D2A5A0'
                         }}
                       >
-                        <Typography variant="body2" sx={{ color: '#751B13', fontWeight: 700 }}>
+                        <Typography variant="body2" sx={{ color: '#971936', fontWeight: 700 }}>
                           {formatCurrency(product.totalCost)}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#751B13', fontWeight: 700 }}>
+                        <Typography variant="body2" sx={{ color: '#971936', fontWeight: 700 }}>
                           סה"כ עלות
                         </Typography>
                       </Box>
@@ -303,7 +296,7 @@ export default function ProductsPage() {
                     <Typography 
                       variant="h5" 
                       sx={{ 
-                        color: '#751B13',
+                        color: '#971936',
                         fontWeight: 700
                       }}
                     >
@@ -312,7 +305,7 @@ export default function ProductsPage() {
                     <Typography 
                       variant="body2" 
                       sx={{ 
-                        color: '#8D6E63'
+                        color: '#9B5A25'
                       }}
                     >
                       מחיר מכירה

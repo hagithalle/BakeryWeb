@@ -9,7 +9,9 @@ const STRINGS = {
       ingredients: "חומרי גלם",
       recipes: "מתכונים",
       products: "מוצרים",
-      packaging: "מוצרי אריזה"
+      packaging: "מוצרי אריזה",
+      successMessage: "בהצלחה במאפייה!",
+      goodDay: "יום טוב"
     },
     titles: {
       home: "דף הבית",
@@ -70,7 +72,9 @@ const STRINGS = {
       ingredients: "Ingredients",
       recipes: "Recipes",
       products: "Products",
-      packaging: "Packaging"
+      packaging: "Packaging",
+      successMessage: "Good luck at the bakery!",
+      goodDay: "Have a great day"
     },
     titles: {
       home: "Home",

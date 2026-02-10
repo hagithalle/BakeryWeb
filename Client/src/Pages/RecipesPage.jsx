@@ -62,7 +62,6 @@ export default function RecipesPage() {
 
     return (
         <Box>
-          
             <Box sx={{ display: 'flex', gap: 3 }}>
                 <Box sx={{ flex: 1 }}>
                     <RecipeListSidebar

@@ -4,19 +4,25 @@ const theme = createTheme({
   direction: "rtl",
   palette: {
     primary: {
-      main: "rgba(117, 11, 19, 1)", // בורדו כהה
-      light: "rgba(158, 51, 69, 1)", // ורוד בהיר (למצבים של hover/active)
-      contrastText: "#fff", // טקסט לבן על כפתור כהה
+      main: "#971936", // בורדו כהה - הצבע הראשי של הלוגו
+      light: "#AE6063", // ורוד-עתיק
+      dark: "#6B1126", // בורדו כהה יותר
+      contrastText: "#fff",
     },
     secondary: {
-      main: "#9ECFD4", // תכלת עדין
-      light: "#eaf6fb", // תכלת בהיר
-      contrastText: "#333"
+      main: "#C98929", // זהב-קרמל
+      light: "#D2A5A0", // ורוד-בהיר חולי
+      dark: "#9B5A25", // חום-דבש
+      contrastText: "#fff"
     },
     background: {
-      default: "#FFE6D4", // רקע כללי
-      paper: "#fff" // רקע כרטיסים/טבלאות
+      default: "#FFF8F3", // רקע בז' בהיר מאוד
+      paper: "#FEFEFE" // לבן רקע
     },
+    text: {
+      primary: "#971936", // בורדו כהה לטקסט עיקרי
+      secondary: "#9B5A25" // חום-דבש לטקסט משני
+    }
   },
   typography: {
     fontFamily: '"Assistant", "Heebo", "Roboto", sans-serif',

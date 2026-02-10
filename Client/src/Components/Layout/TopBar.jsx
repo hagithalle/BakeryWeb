@@ -18,10 +18,12 @@ export default function TopBar() {
     pageTitle = strings.sidebar.ingredients;
   } else if (location.pathname.startsWith("/recipes")) {
     pageTitle = strings.sidebar.recipes;
-    } else if (location.pathname.startsWith("/packaging")) {
-    pageTitle = strings.sidebar.packaging
+  } else if (location.pathname.startsWith("/packaging")) {
+    pageTitle = strings.sidebar.packaging;
   } else if (location.pathname.startsWith("/products")) {
     pageTitle = strings.sidebar.products;
+  } else if (location.pathname.startsWith("/costs")) {
+    pageTitle = "ניהול עלויות";
   } else {
     pageTitle = "";
   }
@@ -35,24 +37,63 @@ export default function TopBar() {
     <>
       <AppBar
         position="static"
-        color="rgba(117, 11, 19, 1)"
         elevation={0}
-        sx={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}
+        sx={{ 
+          bgcolor: '#FFF8F3',
+          boxShadow: 'none',
+          pt: 2
+        }}
       >
-        <Toolbar sx={{ minHeight: 100, display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, textAlign: 'center', width: '100%', color: '#751B13', fontFamily: 'Suez One, serif', textShadow: '-1px 0 #222, 0 1px #222, 1px 0 #222, 0 -1px #222', letterSpacing: '0.08em', mb: 0 }}>
+        <Toolbar sx={{ 
+          minHeight: 70, 
+          display: 'flex', 
+          flexDirection: 'row', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          px: 3,
+          py: 1
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                color: '#971936',
+                fontWeight: 700
+              }}
+            >
               {pageTitle}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <Button onClick={() => setLang(nextLang)} variant="outlined" size="small" sx={{ mx: 2 }}>
-              {lang === "he" ? "En" : "he"}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button 
+              onClick={() => setLang(nextLang)} 
+              variant="outlined" 
+              size="small" 
+              sx={{ 
+                borderColor: '#C98929',
+                color: '#9B5A25',
+                '&:hover': {
+                  borderColor: '#971936',
+                  bgcolor: '#D2A5A0'
+                }
+              }}
+            >
+              {lang === "he" ? "En" : "עב"}
             </Button>
-            <Typography variant="body2">Hagit</Typography>
-            <IconButton size="small">
-              <AccountCircleIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body1" sx={{ color: '#971936', fontWeight: 500 }}>Hagit</Typography>
+              <IconButton 
+                size="medium"
+                sx={{ 
+                  color: '#C98929',
+                  '&:hover': {
+                    bgcolor: '#D2A5A0'
+                  }
+                }}
+              >
+                <AccountCircleIcon sx={{ fontSize: 32 }} />
+              </IconButton>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>

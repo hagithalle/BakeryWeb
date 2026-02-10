@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Box } from "@mui/material";
+import { Box, Button, TextField } from "@mui/material";
 import GenericTable from "../Components/GenericTable";
 import PackagingDialog from "../Components/PackagingDialog";
 import useLocaleStrings from "../hooks/useLocaleStrings";
@@ -19,63 +19,82 @@ export default function PackagingPage() {
     queryKey: ['packaging'],
     queryFn: fetchPackaging
   });
+  
   const columns = [
     { field: "name", headerName: strings.sidebar?.packaging || "שם" },
     { field: "cost", headerName: strings.packaging?.cost || "עלות" },
     { field: "stockUnits", headerName: strings.packaging?.stockUnits || "יחידות במלאי" }
   ];
+  
   const filteredRows = useMemo(() => {
     return rows.filter(row => row.name.includes(search));
   }, [search, rows]);
-console.log("Packaging:", rows);
+
   const mutation = useMutation({
     mutationFn: addPackaging,
     onSuccess: () => queryClient.invalidateQueries(['packaging'])
   });
+
+  const editMutation = useMutation({
+    mutationFn: editPackaging,
+    onSuccess: () => queryClient.invalidateQueries(['packaging'])
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deletePackaging,
+    onSuccess: () => queryClient.invalidateQueries(['packaging'])
+  });
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-        <input
-          type="text"
-          placeholder={strings.filter?.search || "חפש לפי שם"}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            fontSize: 18,
-            padding: '8px 16px',
-            borderRadius: 8,
-            border: '1px solid #751B13',
-            fontFamily: 'Suez One, serif',
-            marginLeft: 8,
-            minWidth: 220
-          }}
-        />
-      </Box>
-      {/* טבלה מוצגת פעם אחת בלבד */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
-        <button
-          style={{
-            background: '#751B13',
-            color: 'white',
-            fontFamily: 'Suez One, serif',
-            fontSize: 18,
-            border: 'none',
-            borderRadius: 8,
-            padding: '10px 28px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px #0001',
-            transition: 'background 0.2s',
-            marginLeft: 0,
-            marginRight: 0
-          }}
+      {/* Header with Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<span style={{ fontSize: '20px', marginLeft: '8px' }}>+</span>}
           onClick={() => {
             setSelectedPackaging(null);
             setDialogOpen(true);
           }}
+          sx={{
+            backgroundColor: '#C98929',
+            color: 'white',
+            borderRadius: 2,
+            px: 3,
+            fontWeight: 600,
+            '&:hover': {
+              backgroundColor: '#9B5A25'
+            }
+          }}
         >
           {strings.packaging?.add || "הוסף מוצר אריזה"}
-        </button>
+        </Button>
       </Box>
+
+      {/* Search Section */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          placeholder={strings.filter?.search || "חפש לפי שם..."}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          variant="outlined"
+          size="small"
+          sx={{ 
+            flexGrow: 1,
+            minWidth: 250,
+            backgroundColor: '#FEFEFE',
+            borderRadius: 2,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              '& fieldset': {
+                borderColor: '#D2A5A0'
+              }
+            }
+          }}
+        />
+      </Box>
+
+      {/* Table */}
       <GenericTable
         columns={columns}
         rows={filteredRows}

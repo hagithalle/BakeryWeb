@@ -13,28 +13,45 @@ export default function GenericFilter({
   strings
 }) {
   return (
-    <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
-      <TextField
-        label={searchLabel}
-        value={searchValue}
-        onChange={e => onSearchChange(e.target.value)}
-        variant="outlined"
-        size="small"
-        sx={{ minWidth: 180 }}
-      />
-      <FormControl size="small" sx={{ minWidth: 160 }}>
-        <InputLabel>{categoryLabel}</InputLabel>
+    <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+      <FormControl size="small" sx={{ minWidth: 180 }}>
         <Select
           value={categoryValue}
-          label={categoryLabel}
+          displayEmpty
           onChange={e => onCategoryChange(e.target.value)}
+          sx={{
+            backgroundColor: '#FEFEFE',
+            borderRadius: 2,
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#D2A5A0'
+            }
+          }}
         >
-          <MenuItem value="">{strings?.filter?.all || categoryLabel}</MenuItem>
+          <MenuItem value="">{strings?.filter?.all || "כל הקטגוריות"}</MenuItem>
           {categories.map(cat => (
             <MenuItem key={cat.value} value={cat.value}>{cat.label}</MenuItem>
           ))}
         </Select>
       </FormControl>
+      <TextField
+        placeholder={searchLabel || "חיפוש לפי שם..."}
+        value={searchValue}
+        onChange={e => onSearchChange(e.target.value)}
+        variant="outlined"
+        size="small"
+        sx={{ 
+          flexGrow: 1,
+          minWidth: 250,
+          backgroundColor: '#FEFEFE',
+          borderRadius: 2,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 2,
+            '& fieldset': {
+              borderColor: '#D2A5A0'
+            }
+          }
+        }}
+      />
     </Box>
   );
 }

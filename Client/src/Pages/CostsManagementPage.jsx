@@ -11,19 +11,7 @@ export default function CostsManagementPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* כותרת */}
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          mb: 3, 
-          fontFamily: 'Suez One, serif', 
-          color: '#751B13' 
-        }}
-      >
-        ניהול עלויות
-      </Typography>
-
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       {/* טאבים */}
       <Paper sx={{ mb: 3 }}>
         <Tabs 
@@ -32,7 +20,14 @@ export default function CostsManagementPage() {
           sx={{
             '& .MuiTab-root': {
               fontWeight: 600,
-              fontSize: '1rem'
+              fontSize: '1rem',
+              color: '#9B5A25',
+              '&.Mui-selected': {
+                color: '#971936'
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#C98929'
             }
           }}
         >
@@ -42,7 +37,7 @@ export default function CostsManagementPage() {
       </Paper>
 
       {/* תוכן */}
-      <Box sx={{ mt: 3 }}>
+      <Box sx={{ mt: 3, flexGrow: 1, overflow: 'auto' }}>
         {currentTab === 0 && <LaborSettingsPanel />}
         {currentTab === 1 && <OverheadItemsPanel />}
       </Box>
