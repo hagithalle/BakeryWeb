@@ -2,19 +2,21 @@ import React, { useMemo, useState } from "react";
 import {
   Box,
   Typography,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   Paper,
   Button,
   TextField,
-  Switch,
-  FormControlLabel,
-  Chip
+  MenuItem,
+  Select,
+  FormControl,
+  Chip,
+  Card,
+  CardContent,
+  Grid,
+  InputAdornment
 } from "@mui/material";
-import PriceCheckIcon from '@mui/icons-material/PriceCheck';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchProducts, recalculateProductPrice } from "../Services/productService";
 
@@ -27,7 +29,7 @@ const formatCurrency = (value) => `₪${toNumber(value).toFixed(2)}`;
 export default function ProductsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [isVatEnabled, setIsVatEnabled] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products'],
@@ -41,7 +43,7 @@ export default function ProductsPage() {
     }
   });
 
-  const rows = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     return (products || [])
       .filter(p => {
         const name = getField(p, "name", "Name") || "";
@@ -62,9 +64,6 @@ export default function ProductsPage() {
         const totalCost = toNumber(getField(p, "totalCost", "TotalCost"));
 
         const profitPercent = toNumber(getField(p, "profitMarginPercent", "ProfitMarginPercent")) * 100;
-        const profitAmount = toNumber(getField(p, "profitAmount", "ProfitAmount"));
-        const manualPrice = getField(p, "manualSellingPrice", "ManualSellingPrice");
-        const sellingBeforeVat = toNumber(getField(p, "sellingPriceBeforeVAT", "SellingPriceBeforeVAT"));
         const sellingWithVat = toNumber(getField(p, "sellingPriceWithVAT", "SellingPriceWithVAT"));
 
         return {
@@ -74,126 +73,291 @@ export default function ProductsPage() {
           recipeUnits,
           ingredientsCost,
           packagingCost,
-          laborTotal: recipeLabor + packagingLabor,
-          overheadTotal: recipeOverhead + packagingOverhead,
+          laborCost: recipeLabor + packagingLabor,
+          overheadCost: recipeOverhead + packagingOverhead,
           totalCost,
           profitPercent,
-          profitAmount,
-          manualPrice: manualPrice ?? null,
-          sellingBeforeVat,
-          sellingWithVat
+          sellingPrice: sellingWithVat
         };
       });
   }, [products, search]);
 
-  if (isLoading) return <div>טוען...</div>;
-  if (error) return <div>שגיאה בטעינת נתונים</div>;
+  if (isLoading) return <Box sx={{ p: 3 }}>טוען...</Box>;
+  if (error) return <Box sx={{ p: 3 }}>שגיאה בטעינת נתונים</Box>;
 
   return (
-    <Box>
-      <Typography variant="h5" sx={{ color: '#751B13', fontFamily: 'Suez One, serif', mb: 2 }}>
-        מוצרים ותמחור
-      </Typography>
-
-      <Typography variant="body2" sx={{ color: '#5D4037', mb: 2 }}>
-        המחיר נשמר במערכת עד שתבחרי לחשב מחדש. לחישוב חדש לחצי על "חשב מחיר מחדש".
-      </Typography>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <TextField
-          label="חיפוש לפי שם מוצר"
-          size="small"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          sx={{ minWidth: 220 }}
-        />
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FormControlLabel
-            control={(
-              <Switch
-                checked={isVatEnabled}
-                onChange={(event) => setIsVatEnabled(event.target.checked)}
-                color="primary"
-              />
-            )}
-            label={isVatEnabled ? 'תצוגה: כולל מע"מ' : 'תצוגה: לפני מע"מ'}
-          />
-          <Chip
-            label={isVatEnabled ? 'מחיר פעיל: כולל מע"מ' : 'מחיר פעיל: לפני מע"מ'}
-            icon={<PriceCheckIcon sx={{ color: '#751B13' }} />}
-            sx={{ bgcolor: '#f5e6e0', color: '#751B13', fontWeight: 700 }}
-          />
+    <Box sx={{ p: 3, backgroundColor: '#fafafa', minHeight: '100vh' }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              color: '#751B13', 
+              fontFamily: 'Suez One, serif',
+              fontWeight: 700,
+              mb: 0.5
+            }}
+          >
+            מוצרים
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+            תמחור ומכירה
+          </Typography>
         </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          sx={{
+            backgroundColor: '#A67C52',
+            color: 'white',
+            borderRadius: 2,
+            px: 3,
+            '&:hover': {
+              backgroundColor: '#8B6A42'
+            }
+          }}
+        >
+          מוצר חדש
+        </Button>
       </Box>
 
-      <Paper sx={{ boxShadow: 3, borderRadius: 3, overflowX: 'auto' }}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ background: '#f5e6e0' }}>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>מוצר</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>מתכון</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>כמות יחידות</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>עלות חו"ג</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>עלות אריזה</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>עלות עבודה</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>עלות תקורה</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>סה"כ עלות</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>רווח %</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>רווח רצוי</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>מחיר לפני מע"מ</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>מחיר כולל מע"מ</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>מחיר שמור</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#751B13', fontFamily: 'Suez One, serif' }}>פעולות</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={14} align="center" sx={{ color: '#751B13', fontFamily: 'Suez One, serif' }}>
-                  אין מוצרים להצגה
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row, idx) => (
-                <TableRow key={row.id || idx} hover sx={{ background: idx % 2 === 0 ? '#fff7f2' : '#fff' }}>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.recipeName}</TableCell>
-                  <TableCell>{row.recipeUnits}</TableCell>
-                  <TableCell>{formatCurrency(row.ingredientsCost)}</TableCell>
-                  <TableCell>{formatCurrency(row.packagingCost)}</TableCell>
-                  <TableCell>{formatCurrency(row.laborTotal)}</TableCell>
-                  <TableCell>{formatCurrency(row.overheadTotal)}</TableCell>
-                  <TableCell>{formatCurrency(row.totalCost)}</TableCell>
-                  <TableCell>{row.profitPercent.toFixed(1)}%</TableCell>
-                  <TableCell>{formatCurrency(row.profitAmount)}</TableCell>
-                  <TableCell
-                    sx={isVatEnabled ? undefined : { fontWeight: 700, color: '#751B13', backgroundColor: '#f5e6e0' }}
+      {/* Search and Filter Bar */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <FormControl sx={{ minWidth: 200 }}>
+          <Select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={{ 
+              backgroundColor: 'white',
+              borderRadius: 2
+            }}
+          >
+            <MenuItem value="all">כל הקטגוריות</MenuItem>
+            <MenuItem value="עוגיות">עוגיות</MenuItem>
+            <MenuItem value="עוגות">עוגות</MenuItem>
+            <MenuItem value="מאפים">מאפים</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          placeholder="חיפוש מוצר..."
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ 
+            flexGrow: 1,
+            backgroundColor: 'white',
+            borderRadius: 2,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2
+            }
+          }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <SearchIcon sx={{ color: '#A67C52' }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      {/* Products Grid */}
+      <Grid container spacing={3}>
+        {filteredProducts.length === 0 ? (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
+              <Typography sx={{ color: '#8D6E63' }}>
+                אין מוצרים להצגה
+              </Typography>
+            </Paper>
+          </Grid>
+        ) : (
+          filteredProducts.map((product) => (
+            <Grid item xs={12} sm={6} md={4} key={product.id}>
+              <Card 
+                sx={{ 
+                  borderRadius: 3, 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  {/* Product Name */}
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      color: '#751B13',
+                      fontWeight: 700,
+                      mb: 1,
+                      textAlign: 'right'
+                    }}
                   >
-                    {formatCurrency(row.sellingBeforeVat)}
-                  </TableCell>
-                  <TableCell
-                    sx={isVatEnabled ? { fontWeight: 700, color: '#751B13', backgroundColor: '#f5e6e0' } : undefined}
-                  >
-                    {formatCurrency(row.sellingWithVat)}
-                  </TableCell>
-                  <TableCell>{row.manualPrice ? formatCurrency(row.manualPrice) : "-"}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
+                    {product.name}
+                  </Typography>
+
+                  {/* Tags */}
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <Chip 
+                      label="עוגיות" 
                       size="small"
-                      sx={{ color: '#751B13', borderColor: '#751B13' }}
-                      disabled={recalcMutation.isPending}
-                      onClick={() => recalcMutation.mutate(row.id)}
+                      sx={{ 
+                        backgroundColor: '#f5e6e0',
+                        color: '#751B13',
+                        fontSize: '0.75rem'
+                      }}
+                    />
+                    <Chip 
+                      label="מוצר בודד" 
+                      size="small"
+                      variant="outlined"
+                      sx={{ 
+                        borderColor: '#A67C52',
+                        color: '#A67C52',
+                        fontSize: '0.75rem'
+                      }}
+                    />
+                  </Box>
+
+                  {/* Cost Breakdown */}
+                  <Paper 
+                    elevation={0}
+                    sx={{ 
+                      backgroundColor: '#fafafa',
+                      p: 2,
+                      mb: 2,
+                      borderRadius: 2
+                    }}
+                  >
+                    <Typography 
+                      variant="subtitle2" 
+                      sx={{ 
+                        color: '#751B13',
+                        fontWeight: 600,
+                        mb: 1.5,
+                        textAlign: 'right'
+                      }}
                     >
-                      חשב מחיר מחדש
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
+                      מאדרה עוגיות
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                          {formatCurrency(product.ingredientsCost)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+                          עלות בסיס
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                          {formatCurrency(product.packagingCost)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+                          אריזה
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                          {formatCurrency(product.laborCost)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#8D6E63' }}>
+                          מדבקה
+                        </Typography>
+                      </Box>
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          pt: 1,
+                          mt: 1,
+                          borderTop: '1px solid #e0e0e0'
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ color: '#751B13', fontWeight: 700 }}>
+                          {formatCurrency(product.totalCost)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#751B13', fontWeight: 700 }}>
+                          סה"כ עלות
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+
+                  {/* Selling Price */}
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 2
+                    }}
+                  >
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        color: '#751B13',
+                        fontWeight: 700
+                      }}
+                    >
+                      {formatCurrency(product.sellingPrice)}
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: '#8D6E63'
+                      }}
+                    >
+                      מחיר מכירה
+                    </Typography>
+                  </Box>
+
+                  {/* Profit */}
+                  <Box 
+                    sx={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 1
+                    }}
+                  >
+                    <TrendingUpIcon 
+                      sx={{ 
+                        color: '#4CAF50',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        color: '#4CAF50',
+                        fontWeight: 700
+                      }}
+                    >
+                      {product.profitPercent.toFixed(1)}%
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: '#4CAF50'
+                      }}
+                    >
+                      רווח
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))
+        )}
+      </Grid>
     </Box>
   );
 }
