@@ -30,6 +30,7 @@ import {
   updateOverheadItem,
   deleteOverheadItem
 } from "../../Services/overheadItemService";
+import { getLaborSettings } from "../../Services/laborSettingsService";
 
 export default function OverheadItemsPanel() {
   const queryClient = useQueryClient();
@@ -45,6 +46,12 @@ export default function OverheadItemsPanel() {
   const { data: overheadItems = [], isLoading } = useQuery({
     queryKey: ['overheadItems'],
     queryFn: getAllOverheadItems
+  });
+
+  // טעינת הגדרות עבודה לחישוב עלות לשעה
+  const { data: laborSettings } = useQuery({
+    queryKey: ['laborSettings'],
+    queryFn: getLaborSettings
   });
 
   // יצירת עלות חדשה
@@ -145,6 +152,17 @@ export default function OverheadItemsPanel() {
     .filter(item => item.isActive)
     .reduce((sum, item) => sum + item.monthlyCost, 0);
 
+  // חישוב עלות עקיפה לשעת עבודה
+  const calculateOverheadPerHour = () => {
+    if (!laborSettings) return 0;
+    
+    const monthlyHours = 
+      (laborSettings.workingDaysPerMonth || 0) * 
+      (laborSettings.workingHoursPerDay || 0);
+    
+    return monthlyHours === 0 ? 0 : totalMonthlyCost / monthlyHours;
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -179,6 +197,11 @@ export default function OverheadItemsPanel() {
         <Typography variant="h6">
           סה"כ עלויות עקיפות חודשיות: ₪{totalMonthlyCost.toFixed(2)}
         </Typography>
+        {laborSettings && (
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            עלות עקיפה לשעת עבודה: ₪{calculateOverheadPerHour().toFixed(2)}
+          </Typography>
+        )}
       </Alert>
 
       {/* טבלת עלויות */}

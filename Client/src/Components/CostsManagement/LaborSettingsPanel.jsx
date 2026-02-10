@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Paper, Typography, TextField, Button, Grid, Alert, CircularProgress } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getLaborSettings, saveLaborSettings } from "../../Services/laborSettingsService";
+import { getAllOverheadItems } from "../../Services/overheadItemService";
 
 export default function LaborSettingsPanel() {
   const queryClient = useQueryClient();
@@ -19,6 +20,12 @@ export default function LaborSettingsPanel() {
   const { data: settings, isLoading } = useQuery({
     queryKey: ['laborSettings'],
     queryFn: getLaborSettings
+  });
+
+  // טעינת עלויות עקיפות
+  const { data: overheadItems = [] } = useQuery({
+    queryKey: ['overheadItems'],
+    queryFn: getAllOverheadItems
   });
 
   // עדכון מוצלח
@@ -77,6 +84,21 @@ export default function LaborSettingsPanel() {
     const monthlyHours = formData.workingDaysPerMonth * formData.workingHoursPerDay;
     
     return monthlyHours === 0 ? 0 : monthlyTotal / monthlyHours;
+  };
+
+  // חישוב עלויות עקיפות לשעה
+  const calculateOverheadPerHour = () => {
+    const totalMonthlyCost = overheadItems
+      .filter(item => item.isActive)
+      .reduce((sum, item) => sum + (item.monthlyCost || 0), 0);
+    
+    const monthlyHours = formData.workingDaysPerMonth * formData.workingHoursPerDay;
+    return monthlyHours === 0 ? 0 : totalMonthlyCost / monthlyHours;
+  };
+
+  // חישוב סה"כ עלות לשעה (שכר + עקיפות)
+  const calculateTotalCostPerHour = () => {
+    return calculateHourlyCost() + calculateOverheadPerHour();
   };
 
   if (isLoading) {
@@ -173,11 +195,21 @@ export default function LaborSettingsPanel() {
         <Grid item xs={12}>
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="h6">
-              מחיר שעת עבודה: ₪{calculateHourlyCost().toFixed(2)}
+              עלות שכר לשעת עבודה: ₪{calculateHourlyCost().toFixed(2)}
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
               חישוב: (משכורת + הפרשות מעסיק) / ({formData.workingDaysPerMonth} ימים × {formData.workingHoursPerDay} שעות)
             </Typography>
+            {overheadItems.length > 0 && (
+              <>
+                <Typography variant="body1" sx={{ mt: 2, fontWeight: 600 }}>
+                  עלות עקיפה לשעת עבודה: ₪{calculateOverheadPerHour().toFixed(2)}
+                </Typography>
+                <Typography variant="h6" sx={{ mt: 2, color: '#751B13', fontWeight: 700 }}>
+                  סה"כ עלות לשעת עבודה: ₪{calculateTotalCostPerHour().toFixed(2)}
+                </Typography>
+              </>
+            )}
           </Alert>
         </Grid>
 
