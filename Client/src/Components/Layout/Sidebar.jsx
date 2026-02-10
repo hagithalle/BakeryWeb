@@ -11,6 +11,7 @@ import CakeIcon from '@mui/icons-material/Cake';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 const menuKeys = ["ingredients", "recipes", "products"];
 
@@ -26,6 +27,7 @@ export default function Sidebar({ lang = "he" }) {
         { label: strings.sidebar.packaging, path: "/packaging", icon: LocalShippingIcon },
         { label: strings.sidebar.recipes, path: "/recipes", icon: MenuBookIcon },
         { label: strings.sidebar.products, path: "/products", icon: CakeIcon },
+        { label: "ניהול עלויות", path: "/costs", icon: AttachMoneyIcon },
         
     ];
 

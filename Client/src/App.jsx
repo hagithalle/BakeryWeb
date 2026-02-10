@@ -4,6 +4,7 @@ import IngredientsPage from "./Pages/IngredientsPage.jsx";
 import RecipesPage from "./Pages/RecipesPage.jsx";  
 import ProductsPage from "./Pages/ProductsPage.jsx";
 import PackagingPage from "./Pages/PackagingPage.jsx";
+import CostsManagementPage from "./Pages/CostsManagementPage.jsx";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/recipes" element={<RecipesPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/packaging" element={<PackagingPage />} />
+        <Route path="/costs" element={<CostsManagementPage />} />
       </Routes>
     </MainLayout>
   );

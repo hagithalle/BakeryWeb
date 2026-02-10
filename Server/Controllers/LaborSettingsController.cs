@@ -5,7 +5,7 @@ using Server.Services;
 namespace Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/laborsettings")]
     public class LaborSettingsController : ControllerBase
     {
         private readonly ILaborSettingsService _service;

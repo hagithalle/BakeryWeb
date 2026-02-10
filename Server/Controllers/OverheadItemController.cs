@@ -5,7 +5,7 @@ using Server.Services;
 namespace Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/overheaditem")]
     public class OverheadItemController : ControllerBase
     {
         private readonly IOverheadItemService _service;
