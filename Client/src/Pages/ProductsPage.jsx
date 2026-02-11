@@ -18,7 +18,10 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchProducts, recalculateProductPrice } from "../Services/productService";
+import { fetchProducts, recalculateProductPrice, createProductWithImage } from "../Services/productService";
+import { getAllRecipes } from "../Services/RecipeService";
+import { fetchPackaging, addPackaging } from "../Services/packagingService";
+import AddProductDialog from "../Components/AddProductDialog";
 
 const getField = (obj, camelKey, pascalKey) => obj?.[camelKey] ?? obj?.[pascalKey];
 
@@ -30,10 +33,21 @@ export default function ProductsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts
+  });
+
+  const { data: recipes = [] } = useQuery({
+    queryKey: ['recipes'],
+    queryFn: getAllRecipes
+  });
+
+  const { data: packaging = [] } = useQuery({
+    queryKey: ['packaging'],
+    queryFn: fetchPackaging
   });
 
   const recalcMutation = useMutation({
@@ -42,6 +56,33 @@ export default function ProductsPage() {
       queryClient.invalidateQueries(['products']);
     }
   });
+
+  const addProductMutation = useMutation({
+    mutationFn: async ({ productData, imageFile }) => {
+      return await createProductWithImage(productData, imageFile);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['products']);
+      setIsAddDialogOpen(false);
+    }
+  });
+
+  const addPackagingMutation = useMutation({
+    mutationFn: addPackaging,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['packaging']);
+    }
+  });
+
+  const handleSaveProduct = async (productData) => {
+    const imageFile = productData.imageFile;
+    delete productData.imageFile; // הסר את imageFile מה-object, הוא יישלח בנפרד
+    await addProductMutation.mutateAsync({ productData, imageFile });
+  };
+
+  const handleAddPackaging = async (packagingData) => {
+    await addPackagingMutation.mutateAsync(packagingData);
+  };
 
   const filteredProducts = useMemo(() => {
     return (products || [])
@@ -92,7 +133,8 @@ export default function ProductsPage() {
         <Box />
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon sx={{ mr: 1 }} />}
+          onClick={() => setIsAddDialogOpen(true)}
           sx={{
             backgroundColor: '#C98929',
             color: 'white',
@@ -351,6 +393,18 @@ export default function ProductsPage() {
           ))
         )}
       </Grid>
+
+      {/* Add Product Dialog */}
+      <AddProductDialog
+        open={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSave={handleSaveProduct}
+        onAddPackaging={handleAddPackaging}
+        recipes={recipes}
+        products={products}
+        packaging={packaging}
+        strings={{}}
+      />
     </Box>
   );
 }
