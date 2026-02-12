@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Server.Models;
 using Server.Services;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Server.Controllers
 {
@@ -31,10 +34,17 @@ namespace Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Product product)
+        public async Task<IActionResult> Create([FromForm] CreateProductRequest request)
         {
-            var created = await _service.CreateAsync(product);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            try
+            {
+                var created = await _service.CreateAsync(request);
+                return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
@@ -57,5 +67,41 @@ namespace Server.Controllers
             var ok = await _service.DeleteAsync(id);
             return ok ? NoContent() : NotFound();
         }
+    }
+
+    /// <summary>
+    /// Request model for creating a product with form data and file upload
+    /// </summary>
+    public class CreateProductRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int ProductType { get; set; } // 0 = Single, 1 = Package
+        public int? RecipeId { get; set; }
+        public int RecipeUnits { get; set; } = 1;
+        public int? PackagingId { get; set; }
+        public int? PackagingTimeMinutes { get; set; }
+        public string? Category { get; set; }
+        public decimal ProfitMarginPercent { get; set; }
+        public decimal? ManualSellingPrice { get; set; }
+        public IFormFile? imageFile { get; set; }
+
+        // Package Items
+        public List<PackageItemRequest>? PackageItems { get; set; }
+
+        // Additional Packaging
+        public List<AdditionalPackagingRequest>? AdditionalPackaging { get; set; }
+    }
+
+    public class PackageItemRequest
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; } = 1;
+    }
+
+    public class AdditionalPackagingRequest
+    {
+        public int PackagingId { get; set; }
+        public int Quantity { get; set; } = 1;
     }
 }

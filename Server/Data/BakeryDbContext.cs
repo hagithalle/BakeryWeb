@@ -17,6 +17,8 @@ namespace Server.Data
         public DbSet<RecipeStep> RecipeSteps { get; set; }
         public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<PackageItem> PackageItems { get; set; }
+        public DbSet<ProductAdditionalPackaging> ProductAdditionalPackagings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,9 +84,51 @@ namespace Server.Data
                 .HasMaxLength(200);
 
             modelBuilder.Entity<Product>()
+                .Property(p => p.ProductType)
+                .HasConversion<int>();
+
+            modelBuilder.Entity<Product>()
                 .HasOne(p => p.Recipe)
                 .WithMany()
                 .HasForeignKey(p => p.RecipeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Packaging)
+                .WithMany()
+                .HasForeignKey(p => p.PackagingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // PackageItem configuration
+            modelBuilder.Entity<PackageItem>()
+                .HasKey(pi => pi.Id);
+
+            modelBuilder.Entity<PackageItem>()
+                .HasOne(pi => pi.Product)
+                .WithMany(p => p.PackageItems)
+                .HasForeignKey(pi => pi.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PackageItem>()
+                .HasOne(pi => pi.ItemProduct)
+                .WithMany()
+                .HasForeignKey(pi => pi.ItemProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ProductAdditionalPackaging configuration
+            modelBuilder.Entity<ProductAdditionalPackaging>()
+                .HasKey(pap => pap.Id);
+
+            modelBuilder.Entity<ProductAdditionalPackaging>()
+                .HasOne(pap => pap.Product)
+                .WithMany(p => p.AdditionalPackaging)
+                .HasForeignKey(pap => pap.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ProductAdditionalPackaging>()
+                .HasOne(pap => pap.Packaging)
+                .WithMany()
+                .HasForeignKey(pap => pap.PackagingId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

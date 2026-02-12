@@ -54,7 +54,7 @@ namespace Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Ingredients");
+                    b.ToTable("Ingredients", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.LaborSettings", b =>
@@ -85,7 +85,7 @@ namespace Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LaborSettings");
+                    b.ToTable("LaborSettings", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.OverheadItem", b =>
@@ -108,7 +108,7 @@ namespace Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OverheadItems");
+                    b.ToTable("OverheadItems", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.Packaging", b =>
@@ -131,7 +131,7 @@ namespace Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Packagings");
+                    b.ToTable("Packagings", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.Product", b =>
@@ -177,7 +177,7 @@ namespace Server.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.Recipe", b =>
@@ -219,7 +219,7 @@ namespace Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Recipes");
+                    b.ToTable("Recipes", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.RecipeIngredient", b =>
@@ -248,7 +248,7 @@ namespace Server.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("RecipeIngredients");
+                    b.ToTable("RecipeIngredients", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.RecipeStep", b =>
@@ -276,7 +276,7 @@ namespace Server.Migrations
 
                     b.HasIndex("RecipeId");
 
-                    b.ToTable("RecipeSteps");
+                    b.ToTable("RecipeSteps", (string)null);
                 });
 
             modelBuilder.Entity("Server.Models.Product", b =>

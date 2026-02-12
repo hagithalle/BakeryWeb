@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Server.Models
@@ -8,16 +9,26 @@ namespace Server.Models
 
         public string Name { get; set; } = string.Empty;
 
-        // על איזה מתכון המוצר מבוסס
-        public int RecipeId { get; set; }
-        public Recipe Recipe { get; set; } = null!;
+        // סוג המוצר: בודד (מבוסס מתכון) או מארז (המכיל מוצרים אחרים)
+        public ProductType ProductType { get; set; } = ProductType.Single;
+
+        // על איזה מתכון המוצר מבוסס (רלוונטי רק ל-Single type)
+        public int? RecipeId { get; set; }
+        public Recipe? Recipe { get; set; }
 
         // כמה יחידות מהמתכון נכנסות למוצר (לדוגמה: פרוסת עוגה = 1, עוגה שלמה = 12)
+        // רלוונטי רק ל-Single type
         public int RecipeUnitsQuantity { get; set; } = 1;
+
+        // פריטי המארז (רלוונטי רק ל-Package type)
+        public List<PackageItem> PackageItems { get; set; } = new();
 
         // אריזה ספציפית למוצר
         public int? PackagingId { get; set; }
         public Packaging? Packaging { get; set; }
+
+        // אריזה נוספת (למארז או מוצר)
+        public List<ProductAdditionalPackaging> AdditionalPackaging { get; set; } = new();
 
         // זמן אריזה בדקות (זמן עבודה נוסף מעבר לזמן המתכון)
         public int? PackagingTimeMinutes { get; set; }
