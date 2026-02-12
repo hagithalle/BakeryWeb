@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Typography, Box, Button, Chip } from "@mui/material";
+import { Typography, Box, Chip } from "@mui/material";
+import AddButton from "../Components/AddButton";
 import GenericFilter from "../Components/GenericFilter";
 import GenericTable from "../Components/GenericTable";
 import IngredientDialog from "../Components/IngredientDialog";
@@ -187,23 +188,9 @@ export default function IngredientsPage() {
     <Box>
       {/* Header with Button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<span style={{ fontSize: '20px', marginLeft: '8px' }}>+</span>}
-          onClick={() => setDialogOpen(true)}
-          sx={{
-            backgroundColor: '#C98929',
-            color: 'white',
-            borderRadius: 2,
-            px: 3,
-            fontWeight: 600,
-            '&:hover': {
-              backgroundColor: '#9B5A25'
-            }
-          }}
-        >
+        <AddButton onClick={() => setDialogOpen(true)}>
           {strings.ingredient?.add || "הוסף חומר גלם"}
-        </Button>
+        </AddButton>
       </Box>
 
       {filteredRows.length === 0 && (

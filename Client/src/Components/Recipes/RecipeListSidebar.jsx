@@ -1,8 +1,8 @@
-
 import React, { useState } from "react";
-import { Box, Typography, IconButton, Button, MenuItem, Select, InputBase, Paper } from "@mui/material";
+import { Box, Typography, IconButton, MenuItem, Select, InputBase, Paper } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddButton from "../AddButton";
 
 export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd, onEdit, onDelete, filter, onFilterChange, categories, selectedCategory, onCategoryChange }) {
   const [search, setSearch] = useState("");
@@ -21,9 +21,9 @@ export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd
         <Typography variant="h6" sx={{ fontFamily: 'Suez One, serif', color: '#751B13' }}>
           מתכונים
         </Typography>
-        <Button variant="contained" color="primary" sx={{ borderRadius: 2, fontWeight: 600, fontSize: 15, px: 2, py: 0.5, minWidth: 0 }} onClick={onAdd}>
-          + מתכון חדש
-        </Button>
+        <AddButton onClick={onAdd}>
+          מתכון חדש
+        </AddButton>
       </Box>
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <Select

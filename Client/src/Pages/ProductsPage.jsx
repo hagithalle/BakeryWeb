@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Paper,
-  Button,
   TextField,
   MenuItem,
   Select,
@@ -14,7 +13,7 @@ import {
   Grid,
   InputAdornment
 } from "@mui/material";
-import AddIcon from '@mui/icons-material/Add';
+import AddButton from "../Components/AddButton";
 import SearchIcon from '@mui/icons-material/Search';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -130,23 +129,10 @@ export default function ProductsPage() {
     <Box sx={{ backgroundColor: 'transparent', minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon sx={{ mr: 1 }} />}
-          onClick={() => setIsAddDialogOpen(true)}
-          sx={{
-            backgroundColor: '#C98929',
-            color: 'white',
-            borderRadius: 2,
-            px: 3,
-            '&:hover': {
-              backgroundColor: '#9B5A25'
-            }
-          }}
-        >
+        <Box />       
+        <AddButton onClick={() => setIsAddDialogOpen(true)}>
           מוצר חדש
-        </Button>
+        </AddButton>
       </Box>
 
       {/* Search and Filter Bar */}

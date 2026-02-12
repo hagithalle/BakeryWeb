@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { Box, Button, TextField } from "@mui/material";
+import { Box, TextField } from "@mui/material";
 import GenericTable from "../Components/GenericTable";
 import PackagingDialog from "../Components/PackagingDialog";
+import AddButton from "../Components/AddButton";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -49,26 +50,14 @@ export default function PackagingPage() {
     <Box>
       {/* Header with Button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<span style={{ fontSize: '20px', marginLeft: '8px' }}>+</span>}
+        <AddButton
           onClick={() => {
             setSelectedPackaging(null);
             setDialogOpen(true);
           }}
-          sx={{
-            backgroundColor: '#C98929',
-            color: 'white',
-            borderRadius: 2,
-            px: 3,
-            fontWeight: 600,
-            '&:hover': {
-              backgroundColor: '#9B5A25'
-            }
-          }}
         >
           {strings.packaging?.add || "הוסף מוצר אריזה"}
-        </Button>
+        </AddButton>
       </Box>
 
       {/* Search Section */}
