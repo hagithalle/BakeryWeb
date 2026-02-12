@@ -37,6 +37,7 @@ namespace Server.Services
                 Name = request.Name,
                 Description = request.Description,
                 ProductType = (ProductType)request.ProductType,
+                Category = request.Category,  // ✅ שמירת קטגוריה
                 RecipeId = request.RecipeId,
                 RecipeUnitsQuantity = request.RecipeUnits,  // מפה RecipeUnits → RecipeUnitsQuantity
                 PackagingId = request.PackagingId,

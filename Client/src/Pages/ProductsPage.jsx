@@ -73,7 +73,7 @@ export default function ProductsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['products']);
-      setIsAddDialogOpen(false);
+      setIsFormMode(false);
       setSelectedProduct(null);
     }
   });
@@ -82,7 +82,7 @@ export default function ProductsPage() {
     mutationFn: editProduct,
     onSuccess: () => {
       queryClient.invalidateQueries(['products']);
-      setIsAddDialogOpen(false);
+      setIsFormMode(false);
       setSelectedProduct(null);
     }
   });
