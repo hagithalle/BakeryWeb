@@ -110,9 +110,9 @@ namespace Server.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<PackageItem>()
-                .HasOne(pi => pi.ItemProduct)
+                .HasOne(pi => pi.Recipe)
                 .WithMany()
-                .HasForeignKey(pi => pi.ItemProductId)
+                .HasForeignKey(pi => pi.RecipeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ProductAdditionalPackaging configuration

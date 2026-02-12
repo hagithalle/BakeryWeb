@@ -125,18 +125,51 @@ namespace Server.Services
         // חישוב עלויות מוצר סופי (כולל אריזה וזמן אריזה)
         public ProductCostBreakdown CalculateProductCost(Product product)
         {
-            if (product == null || product.Recipe == null)
+            if (product == null)
                 return new ProductCostBreakdown();
 
-            // חישוב עלות המתכון ליחידה
-            var recipeCost = CalculateRecipeCost(product.Recipe);
             var recipeUnitsQuantity = product.RecipeUnitsQuantity > 0 ? product.RecipeUnitsQuantity : 1;
+            decimal recipeIngredientsCost = 0;
+            decimal recipeLaborCost = 0;
+            decimal recipeOverheadCost = 0;
+            decimal recipeTotalCost = 0;
 
-            // עלות הבסיס מהמתכון (כמות יחידות × עלות ליחידה)
-            var recipeTotalCost = recipeCost.CostPerUnit * recipeUnitsQuantity;
+            if (product.ProductType == ProductType.Package)
+            {
+                foreach (var item in product.PackageItems ?? Enumerable.Empty<PackageItem>())
+                {
+                    if (item.Recipe == null) continue;
+
+                    var itemRecipeCost = CalculateRecipeCost(item.Recipe);
+                    var itemQuantity = item.Quantity > 0 ? item.Quantity : 1;
+                    var itemUnits = itemRecipeCost.OutputUnits > 0 ? itemRecipeCost.OutputUnits : 1;
+
+                    recipeIngredientsCost += itemRecipeCost.IngredientsCost * itemQuantity / itemUnits;
+                    recipeLaborCost += itemRecipeCost.LaborCost * itemQuantity / itemUnits;
+                    recipeOverheadCost += itemRecipeCost.OverheadCost * itemQuantity / itemUnits;
+                    recipeTotalCost += itemRecipeCost.CostPerUnit * itemQuantity;
+                }
+            }
+            else
+            {
+                if (product.Recipe == null)
+                    return new ProductCostBreakdown();
+
+                // חישוב עלות המתכון ליחידה
+                var recipeCost = CalculateRecipeCost(product.Recipe);
+
+                // עלות הבסיס מהמתכון (כמות יחידות × עלות ליחידה)
+                recipeTotalCost = recipeCost.CostPerUnit * recipeUnitsQuantity;
+                recipeIngredientsCost = recipeCost.IngredientsCost * recipeUnitsQuantity / recipeCost.OutputUnits;
+                recipeLaborCost = recipeCost.LaborCost * recipeUnitsQuantity / recipeCost.OutputUnits;
+                recipeOverheadCost = recipeCost.OverheadCost * recipeUnitsQuantity / recipeCost.OutputUnits;
+            }
 
             // עלות אריזה ספציפית
-            var packagingCost = product.Packaging?.Cost ?? 0;
+            var basePackagingCost = product.Packaging?.Cost ?? 0;
+            var extraPackagingCost = product.AdditionalPackaging?
+                .Sum(p => (p.Packaging?.Cost ?? 0) * (p.Quantity > 0 ? p.Quantity : 1)) ?? 0;
+            var packagingCost = basePackagingCost + extraPackagingCost;
 
             // עלות עבודת אריזה
             var packagingTime = product.PackagingTimeMinutes ?? 0;
@@ -153,15 +186,15 @@ namespace Server.Services
             return new ProductCostBreakdown
             {
                 // פירוט עלות המתכון
-                RecipeIngredientsCost = recipeCost.IngredientsCost * recipeUnitsQuantity / recipeCost.OutputUnits,
-                RecipeLaborCost = recipeCost.LaborCost * recipeUnitsQuantity / recipeCost.OutputUnits,
-                RecipeOverheadCost = recipeCost.OverheadCost * recipeUnitsQuantity / recipeCost.OutputUnits,
-                
+                RecipeIngredientsCost = recipeIngredientsCost,
+                RecipeLaborCost = recipeLaborCost,
+                RecipeOverheadCost = recipeOverheadCost,
+
                 // עלויות נוספות למוצר
                 PackagingCost = packagingCost,
                 PackagingLaborCost = packagingLaborCost,
-                     PackagingOverheadCost = packagingOverheadCost,
-                
+                PackagingOverheadCost = packagingOverheadCost,
+
                 // סיכום
                 RecipeUnitsQuantity = recipeUnitsQuantity,
                 TotalCost = totalCost

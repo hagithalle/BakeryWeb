@@ -39,6 +39,9 @@ namespace Server.Models
         // תיאור
         public string? Description { get; set; }
 
+        // קטגוריה של המוצר
+        public string? Category { get; set; }
+
         // אחוז רווח רצוי (0.15 = 15%)
         public decimal ProfitMarginPercent { get; set; } = 0;
 

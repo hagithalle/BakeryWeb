@@ -11,8 +11,8 @@ using Server.Data;
 namespace Server.Migrations
 {
     [DbContext(typeof(BakeryDbContext))]
-    [Migration("20260209125904_AddUnitToRecipeIngredient")]
-    partial class AddUnitToRecipeIngredient
+    [Migration("20260212090230_CompleteProductModel")]
+    partial class CompleteProductModel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -114,6 +114,32 @@ namespace Server.Migrations
                     b.ToTable("OverheadItems");
                 });
 
+            modelBuilder.Entity("Server.Models.PackageItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ItemProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("PackageItems");
+                });
+
             modelBuilder.Entity("Server.Models.Packaging", b =>
                 {
                     b.Property<int>("Id")
@@ -145,6 +171,15 @@ namespace Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("ManualSellingPrice")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -156,7 +191,13 @@ namespace Server.Migrations
                     b.Property<int?>("PackagingTimeMinutes")
                         .HasColumnType("integer");
 
-                    b.Property<int>("RecipeId")
+                    b.Property<int>("ProductType")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ProfitMarginPercent")
+                        .HasColumnType("numeric");
+
+                    b.Property<int?>("RecipeId")
                         .HasColumnType("integer");
 
                     b.Property<int>("RecipeUnitsQuantity")
@@ -169,6 +210,32 @@ namespace Server.Migrations
                     b.HasIndex("RecipeId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("Server.Models.ProductAdditionalPackaging", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("PackagingId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PackagingId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductAdditionalPackagings");
                 });
 
             modelBuilder.Entity("Server.Models.Recipe", b =>
@@ -270,21 +337,59 @@ namespace Server.Migrations
                     b.ToTable("RecipeSteps");
                 });
 
+            modelBuilder.Entity("Server.Models.PackageItem", b =>
+                {
+                    b.HasOne("Server.Models.Product", "ItemProduct")
+                        .WithMany()
+                        .HasForeignKey("ItemProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Server.Models.Product", "Product")
+                        .WithMany("PackageItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ItemProduct");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Server.Models.Product", b =>
                 {
                     b.HasOne("Server.Models.Packaging", "Packaging")
                         .WithMany()
-                        .HasForeignKey("PackagingId");
+                        .HasForeignKey("PackagingId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Server.Models.Recipe", "Recipe")
                         .WithMany()
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Packaging");
 
                     b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("Server.Models.ProductAdditionalPackaging", b =>
+                {
+                    b.HasOne("Server.Models.Packaging", "Packaging")
+                        .WithMany()
+                        .HasForeignKey("PackagingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Server.Models.Product", "Product")
+                        .WithMany("AdditionalPackaging")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Packaging");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("Server.Models.RecipeIngredient", b =>
@@ -315,6 +420,13 @@ namespace Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("Server.Models.Product", b =>
+                {
+                    b.Navigation("AdditionalPackaging");
+
+                    b.Navigation("PackageItems");
                 });
 
             modelBuilder.Entity("Server.Models.Recipe", b =>

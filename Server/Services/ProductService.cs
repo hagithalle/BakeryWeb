@@ -38,7 +38,7 @@ namespace Server.Services
                 Description = request.Description,
                 ProductType = (ProductType)request.ProductType,
                 RecipeId = request.RecipeId,
-                RecipeUnitsQuantity = request.RecipeUnits,
+                RecipeUnitsQuantity = request.RecipeUnits,  // מפה RecipeUnits → RecipeUnitsQuantity
                 PackagingId = request.PackagingId,
                 PackagingTimeMinutes = request.PackagingTimeMinutes,
                 ProfitMarginPercent = request.ProfitMarginPercent,
@@ -81,17 +81,28 @@ namespace Server.Services
             // הוספת פריטי המארז אם זה סוג Package
             if ((ProductType)request.ProductType == ProductType.Package && request.PackageItems != null && request.PackageItems.Any())
             {
+                var itemIds = request.PackageItems.Select(item => item.RecipeId).Distinct().ToList();
+                var existingItemIds = await _db.Recipes
+                    .Where(r => itemIds.Contains(r.Id))
+                    .Select(r => r.Id)
+                    .ToListAsync();
+                var missingItemIds = itemIds.Except(existingItemIds).ToList();
+                if (missingItemIds.Count > 0)
+                {
+                    throw new InvalidOperationException($"Package items reference missing recipes: {string.Join(", ", missingItemIds)}");
+                }
+
                 Console.WriteLine($"  Adding {request.PackageItems.Count} package items...");
                 foreach (var item in request.PackageItems)
                 {
                     var packageItem = new PackageItem
                     {
                         ProductId = product.Id,
-                        ItemProductId = item.ProductId,
+                        RecipeId = item.RecipeId,
                         Quantity = item.Quantity
                     };
                     _db.PackageItems.Add(packageItem);
-                    Console.WriteLine($"    ✓ PackageItem: ProductId={item.ProductId}, Qty={item.Quantity}");
+                    Console.WriteLine($"    ✓ PackageItem: RecipeId={item.RecipeId}, Qty={item.Quantity}");
                 }
                 await _db.SaveChangesAsync();
             }
@@ -136,8 +147,9 @@ namespace Server.Services
                         .ThenInclude(ri => ri.Ingredient)
                 .Include(p => p.Packaging)
                 .Include(p => p.PackageItems)
-                    .ThenInclude(pi => pi.ItemProduct)
-                        .ThenInclude(ip => ip.Recipe)
+                    .ThenInclude(pi => pi.Recipe)
+                        .ThenInclude(r => r.Ingredients)
+                            .ThenInclude(ri => ri.Ingredient)
                 .Include(p => p.AdditionalPackaging)
                     .ThenInclude(ap => ap.Packaging)
                 .ToListAsync();
@@ -172,8 +184,9 @@ namespace Server.Services
                         .ThenInclude(ri => ri.Ingredient)
                 .Include(p => p.Packaging)
                 .Include(p => p.PackageItems)
-                    .ThenInclude(pi => pi.ItemProduct)
-                        .ThenInclude(ip => ip.Recipe)
+                    .ThenInclude(pi => pi.Recipe)
+                        .ThenInclude(r => r.Ingredients)
+                            .ThenInclude(ri => ri.Ingredient)
                 .Include(p => p.AdditionalPackaging)
                     .ThenInclude(ap => ap.Packaging)
                 .FirstOrDefaultAsync(p => p.Id == id);
@@ -202,18 +215,76 @@ namespace Server.Services
 
         public async Task<bool> UpdateAsync(int id, Product product)
         {
-            var existing = await _db.Products.FindAsync(id);
+            var existing = await _db.Products
+                .Include(p => p.PackageItems)
+                .Include(p => p.AdditionalPackaging)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            
             if (existing == null) return false;
 
+            // עדכון שדות בסיסיים
             existing.Name = product.Name;
+            existing.ProductType = product.ProductType;
             existing.RecipeId = product.RecipeId;
             existing.RecipeUnitsQuantity = product.RecipeUnitsQuantity;
             existing.PackagingId = product.PackagingId;
             existing.PackagingTimeMinutes = product.PackagingTimeMinutes;
             existing.ImageUrl = product.ImageUrl;
             existing.Description = product.Description;
+            existing.Category = product.Category;
             existing.ProfitMarginPercent = product.ProfitMarginPercent;
             existing.ManualSellingPrice = product.ManualSellingPrice;
+
+            // עדכון PackageItems אם יש
+            if (product.PackageItems != null)
+            {
+                var itemIds = product.PackageItems
+                    .Select(item => item.RecipeId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var existingItemIds = await _db.Recipes
+                    .Where(r => itemIds.Contains(r.Id))
+                    .Select(r => r.Id)
+                    .ToListAsync();
+                var missingItemIds = itemIds.Except(existingItemIds).ToList();
+                if (missingItemIds.Count > 0)
+                {
+                    throw new InvalidOperationException($"Package items reference missing recipes: {string.Join(", ", missingItemIds)}");
+                }
+
+                // מחיקת פריטים ישנים
+                _db.PackageItems.RemoveRange(existing.PackageItems);
+                
+                // הוספת חדשים
+                foreach (var item in product.PackageItems)
+                {
+                    _db.PackageItems.Add(new PackageItem
+                    {
+                        ProductId = id,
+                        RecipeId = item.RecipeId,
+                        Quantity = item.Quantity
+                    });
+                }
+            }
+
+            // עדכון AdditionalPackaging אם יש
+            if (product.AdditionalPackaging != null)
+            {
+                // מחיקת פריטים ישנים
+                _db.ProductAdditionalPackagings.RemoveRange(existing.AdditionalPackaging);
+                
+                // הוספת חדשים
+                foreach (var item in product.AdditionalPackaging)
+                {
+                    _db.ProductAdditionalPackagings.Add(new ProductAdditionalPackaging
+                    {
+                        ProductId = id,
+                        PackagingId = item.PackagingId,
+                        Quantity = item.Quantity
+                    });
+                }
+            }
 
             await _db.SaveChangesAsync();
             return true;

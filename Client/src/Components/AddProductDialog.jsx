@@ -12,6 +12,9 @@ import {
   Alert,
   Switch,
   FormControlLabel,
+  FormControl,
+  RadioGroup,
+  Radio,
   Card,
   CardMedia,
   CardContent,
@@ -36,10 +39,13 @@ import PackagingDialog from "./PackagingDialog";
  * @param {function} props.onClose - פונקציה לסגירת הדיאלוג
  * @param {function} props.onSave - פונקציה לשמירת המוצר החדש
  * @param {Array} props.recipes - רשימת מתכונים זמינים
- * @param {Array} props.products - רשימת מוצרים זמינים (לבניית מארז)
+ * @param {Array} props.products - רשימת מוצרים קיימים
  * @param {Array} props.packaging - רשימת מוצרי אריזה זמינים
  * @param {object} props.strings - מחרוזות תרגום
  * @param {object} props.initialValues - ערכים התחלתיים (למצב עריכה)
+ * @param {function} props.onDelete - callback למחיקת מוצר
+ * @param {function} props.onEditProduct - callback כשלוחצים עריכה על מוצר מהרשימה
+ * @param {function} props.onBackToList - callback כשלוחצים חזור לרשימה mFromEdit
  */
 export default function AddProductDialog({
   open,
@@ -50,9 +56,13 @@ export default function AddProductDialog({
   packaging = [],
   strings = {},
   initialValues = null,
+  onDelete,
+  onEditProduct,  // callback להודעה ל-ProductsPage שצריך לערוך מוצר
+  onBackToList,   // callback להודעה ל-ProductsPage שצריך לחזור לרשימה
   onAddPackaging  // callback להוספת מוצר אריזה חדש
 }) {
   // ========== States בסיסיים ==========
+  const [isCreatingNew, setIsCreatingNew] = useState(false); // תמיד נתחיל במצב יצירה
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("single"); // single או package
   const [description, setDescription] = useState("");
@@ -89,7 +99,7 @@ export default function AddProductDialog({
   
   // ========== מחירים ==========
   const [profitMarginPercent, setProfitMarginPercent] = useState(15);
-  const [useManualPrice, setUseManualPrice] = useState(false);
+  const [priceType, setPriceType] = useState("withVAT"); // withVAT, withoutVAT, manual
   const [manualSellingPrice, setManualSellingPrice] = useState("");
   
   // ========== תמונה ==========
@@ -126,13 +136,15 @@ export default function AddProductDialog({
       setAdditionalPackaging(initialValues.additionalPackaging || []);
       setPackagingTimeMinutes(initialValues.packagingTimeMinutes || 0);
       setProfitMarginPercent(initialValues.profitMarginPercent || 15);
-      setUseManualPrice(!!initialValues.manualSellingPrice);
+      setPriceType(initialValues.manualSellingPrice ? "manual" : "withVAT");
       setManualSellingPrice(initialValues.manualSellingPrice || "");
       setExistingImageUrl(initialValues.imageUrl || "");
       setImagePreview(null);
       setImageFile(null);
+      setIsCreatingNew(false); // עבור לטופס עריכה
     } else {
       resetForm();
+      setIsCreatingNew(false); // גם במצב חדש - ישר לטופס
     }
   }, [initialValues, open]);
 
@@ -153,7 +165,7 @@ export default function AddProductDialog({
     setEditingPackagingIdx(null);
     setPackagingTimeMinutes(0);
     setProfitMarginPercent(15);
-    setUseManualPrice(false);
+    setPriceType("withVAT");
     setManualSellingPrice("");
     setImageFile(null);
     setImagePreview(null);
@@ -308,22 +320,149 @@ export default function AddProductDialog({
   };
 
   // ========== חישוב מחירים (לצורך תצוגה בלבד) ==========
+  // ========== עוזרים לחישוב עלויות ==========
+  const getRecipeById = (id) => {
+    const recipe = recipes.find(r => Number(r.id ?? r.Id) === Number(id));
+    if (recipe) {
+      console.log(`🔍 Recipe ${recipe.name || recipe.Name}:`, {
+        id: recipe.id || recipe.Id,
+        totalCost: recipe.totalCost || recipe.TotalCost,
+        costPerUnit: recipe.costPerUnit || recipe.CostPerUnit,
+        ingredientsCost: recipe.ingredientsCost || recipe.IngredientsCost,
+        outputUnits: recipe.outputUnits || recipe.OutputUnits,
+        laborCost: recipe.laborCost || recipe.LaborCost,
+        overheadCost: recipe.overheadCost || recipe.OverheadCost,
+      });
+    }
+    return recipe;
+  };
+  
+  const getPackagingById = (id) => packaging.find(p => Number(p.id ?? p.Id) === Number(id));
+
   const calculatedPrices = useMemo(() => {
-    // כאן לצורך ה-UI נציג רק חישוב בסיסי
-    // החישוב האמיתי יבוצע בשרת
-    const baseCost = 50; // דמה
-    const totalCost = baseCost;
+    let baseCost = 0;
+    let packagingLaborCost = 0;
+    let packagingOverheadCost = 0;
+    let totalCost = 0;
+    let hasItems = false;
+
+    // חישוב עלות מתכונים
+    if (productType === "single" && selectedRecipeId) {
+      hasItems = true;
+      const recipe = getRecipeById(selectedRecipeId);
+      if (recipe) {
+        // TotalCost הוא עלות כל המתכון
+        // recipeUnits הוא כמה יחידות המתכון עושה
+        // ולכן עלות ליחידה = TotalCost / OutputUnits
+        const recipeTotalCost = recipe.TotalCost ?? recipe.totalCost ?? 0;
+        const recipeOutputUnits = recipe.OutputUnits ?? recipe.outputUnits ?? 1;
+        const recipeName = recipe.Name ?? recipe.name ?? "";
+        const costPerUnit = recipeTotalCost / recipeOutputUnits;
+        
+        console.log(`💰 Single Recipe Cost:`, {
+          name: recipeName,
+          totalCost: recipeTotalCost,
+          outputUnits: recipeOutputUnits,
+          costPerUnit: costPerUnit
+        });
+        
+        baseCost = costPerUnit > 0 ? costPerUnit : 0;
+      }
+    } else if (productType === "package" && packageItems.length > 0) {
+      hasItems = true;
+      // סכום עלויות כל המתכונים במארז
+      packageItems.forEach(item => {
+        const recipe = getRecipeById(item.productId); // productId contains recipeId
+        if (recipe) {
+          const recipeTotalCost = recipe.TotalCost ?? recipe.totalCost ?? 0;
+          const recipeOutputUnits = recipe.OutputUnits ?? recipe.outputUnits ?? 1;
+          const recipeName = recipe.Name ?? recipe.name ?? "";
+          const costPerUnit = recipeTotalCost / recipeOutputUnits;
+          const itemCost = costPerUnit * (item.quantity || 1);
+          
+          console.log(`💰 Package Item: ${recipeName}`, {
+            totalCost: recipeTotalCost,
+            outputUnits: recipeOutputUnits,
+            costPerUnit: costPerUnit,
+            quantity: item.quantity,
+            itemCost: itemCost
+          });
+          
+          baseCost += itemCost; // ✅ הוסף את עלות המוצרים למארז
+        }
+      });
+    }
+
+    // הוספת עלויות אריזה
+    if (additionalPackaging.length > 0) {
+      hasItems = true;
+      additionalPackaging.forEach(item => {
+        const pack = getPackagingById(item.packagingId);
+        if (pack) {
+          const packCost = pack.Cost || pack.cost || 0;
+          if (packCost > 0) {
+            const itemCost = packCost * (item.quantity || 1);
+            console.log(`📦 Packaging: ${pack.Name || pack.name}`, {
+              costPerUnit: packCost,
+              quantity: item.quantity,
+              itemCost: itemCost
+            });
+            baseCost += itemCost;
+          }
+        }
+      });
+    }
+
+    // הוספת עלות זמן אריזה (עבודה + תקורה)
+    // * ערכים משוערים בקליינט - השרת יחשב בדיוק
+    const HOURLY_LABOR = 200; // שקל לשעה (משוער)
+    const HOURLY_OVERHEAD = 100; // שקל לשעה (משוער)
+    if (packagingTimeMinutes > 0) {
+      hasItems = true;
+      packagingLaborCost = (packagingTimeMinutes / 60) * HOURLY_LABOR;
+      packagingOverheadCost = (packagingTimeMinutes / 60) * HOURLY_OVERHEAD;
+      console.log(`⏱️ Packaging Time: ${packagingTimeMinutes} דקות`, {
+        packagingTimeMinutes,
+        packagingLaborCost: packagingLaborCost.toFixed(2),
+        packagingOverheadCost: packagingOverheadCost.toFixed(2)
+      });
+    }
+
+    // אם אין פריטים בחורים, להציג 0
+    if (!hasItems) {
+      baseCost = 0;
+    }
+
+    // סה"כ עלות = בסיס + עבודה/תקורה
+    totalCost = baseCost + packagingLaborCost + packagingOverheadCost;
+
+    console.log(`📊 Final totalCost: ₪${totalCost.toFixed(2)}`);
+
     const profitAmount = totalCost * (profitMarginPercent / 100);
     const sellingPriceBeforeVAT = totalCost + profitAmount;
     const sellingPriceWithVAT = sellingPriceBeforeVAT * 1.17;
 
     return {
+      baseCost,
+      packagingLaborCost,
+      packagingOverheadCost,
       totalCost,
       profitAmount,
       sellingPriceBeforeVAT,
-      sellingPriceWithVAT
+      sellingPriceWithVAT,
+      hasItems // אם יש פריטים לחישוב או לא
     };
-  }, [profitMarginPercent]);
+  }, [
+    productType,
+    selectedRecipeId,
+    recipeUnits,
+    packageItems,
+    additionalPackaging,
+    packagingTimeMinutes,
+    profitMarginPercent,
+    recipes,
+    packaging
+  ]);
 
   // ========== בדיקת תקינות ==========
   const isValid = useMemo(() => {
@@ -343,7 +482,7 @@ export default function AddProductDialog({
     if (showCustomCategory && !customCategory.trim()) return false;
     
     // מחיר ידני
-    if (useManualPrice && (!manualSellingPrice || parseFloat(manualSellingPrice) <= 0)) return false;
+    if (priceType === "manual" && (!manualSellingPrice || parseFloat(manualSellingPrice) <= 0)) return false;
     
     return true;
   }, [
@@ -354,7 +493,7 @@ export default function AddProductDialog({
     category,
     showCustomCategory,
     customCategory,
-    useManualPrice,
+    priceType,
     manualSellingPrice
   ]);
 
@@ -364,13 +503,24 @@ export default function AddProductDialog({
     
     const finalCategory = showCustomCategory ? customCategory : category;
     
+    // חישוב המחיר הסופי בהתאם לבחירה
+    let sellingPrice;
+    if (priceType === "manual") {
+      sellingPrice = parseFloat(manualSellingPrice);
+    } else if (priceType === "withVAT") {
+      sellingPrice = calculatedPrices.sellingPriceWithVAT;
+    } else {
+      sellingPrice = calculatedPrices.sellingPriceBeforeVAT;
+    }
+    
     const productData = {
       name: productName,
       productType,
       description,
       category: finalCategory,
       profitMarginPercent: profitMarginPercent / 100,
-      manualSellingPrice: useManualPrice ? parseFloat(manualSellingPrice) : null,
+      manualSellingPrice: sellingPrice,
+      priceType: priceType,
       packagingTimeMinutes: parseInt(packagingTimeMinutes) || 0,
       imageFile: imageFile  // נוסיף את התמונה
     };
@@ -396,9 +546,11 @@ export default function AddProductDialog({
 
     try {
       await onSave(productData);
+      alert(isEdit ? "✅ המוצר עודכן בהצלחה!" : "✅ המוצר נשמר בהצלחה!");
       resetForm();
     } catch (error) {
       console.error("Error saving product:", error);
+      alert("❌ שגיאה בשמירת המוצר");
     } finally {
       setIsSaving(false);
     }
@@ -406,25 +558,48 @@ export default function AddProductDialog({
 
   const handleClose = () => {
     resetForm();
+    setIsCreatingNew(true);
     onClose();
+  };
+
+  const handleEditProduct = (product) => {
+    setIsCreatingNew(false);
+    // קרא ל-callback אם קיים
+    if (onEditProduct) {
+      onEditProduct(product);
+    }
+  };
+
+  const handleDeleteProduct = (productId) => {
+    if (window.confirm("האם למחוק את המוצר?")) {
+      if (onDelete) {
+        onDelete(productId);
+      }
+    }
   };
 
   const isEdit = !!(initialValues && initialValues.id);
   const title = isEdit ? "ערוך מוצר" : "הוסף מוצר חדש";
+  
+  // תמיד נציג את הטופס (לא את הרשימה)
+  const showEditForm = true;
 
   return (
-    <BaseDialog
-      open={open}
-      onClose={handleClose}
-      onSave={handleSave}
-      title={title}
-      strings={strings}
-      isValid={isValid}
-      isSaving={isSaving}
-      maxWidth="sm"
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {/* ========== מידע בסיסי ========== */}
+    <>
+      <BaseDialog
+        open={open}
+        onClose={handleClose}
+        onSave={handleSave}
+        title={title}
+        strings={strings}
+        isValid={isValid}
+        isSaving={isSaving}
+        maxWidth="sm"
+        showActions={true}
+      >
+        {/* ========== טופס מוצר ========== */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* ========== מידע בסיסי ========== */}
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: '#7B5B4B' }}>
             מידע בסיסי
@@ -577,7 +752,7 @@ export default function AddProductDialog({
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: '#7B5B4B' }}>
               בחר מוצר
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 select
                 label="מוצר (מתכון)"
@@ -596,20 +771,21 @@ export default function AddProductDialog({
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField
-                label="כמות יחידות"
-                type="number"
-                value={recipeUnits}
-                onChange={e => setRecipeUnits(Math.max(1, parseInt(e.target.value) || 1))}
-                sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 150 }}
-                InputProps={{
-                  inputProps: { min: 1 }
-                }}
-              />
+              <Box>
+                <TextField
+                  label="כמה יחידות המתכון עושה"
+                  type="number"
+                  value={recipeUnits}
+                  onChange={e => setRecipeUnits(Math.max(1, parseInt(e.target.value) || 1))}
+                  sx={{ bgcolor: '#fff', borderRadius: 2 }}
+                  fullWidth
+                  InputProps={{
+                    inputProps: { min: 1 }
+                  }}
+                  helperText="לדוגמה: מתכון עוגה עושה 12 פרוסות, אז כתוב 12"
+                />
+              </Box>
             </Box>
-            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
-              בחר את המתכון שמייצר את המוצר הזה וכמה יחידות ממנו
-            </Typography>
           </Box>
         )}
 
@@ -748,9 +924,25 @@ export default function AddProductDialog({
                     ) : (
                       // מצב צפייה
                       <>
-                        <Typography sx={{ flex: 1, color: '#5D4037' }}>
-                          {item.name} - {item.quantity} יחידות
-                        </Typography>
+                        {(() => {
+                          const recipe = getRecipeById(item.productId);
+                          if (recipe) {
+                            const recipeTotalCost = recipe.TotalCost ?? recipe.totalCost ?? 0;
+                            const recipeOutputUnits = recipe.OutputUnits ?? recipe.outputUnits ?? 1;
+                            const costPerUnit = recipeTotalCost / recipeOutputUnits;
+                            const itemCost = costPerUnit * (item.quantity || 1);
+                            return (
+                              <Typography sx={{ flex: 1, color: '#5D4037' }}>
+                                {item.name} - {item.quantity} יחידות (₪{itemCost.toFixed(2)})
+                              </Typography>
+                            );
+                          }
+                          return (
+                            <Typography sx={{ flex: 1, color: '#5D4037' }}>
+                              {item.name} - {item.quantity} יחידות
+                            </Typography>
+                          );
+                        })()}
                         <IconButton onClick={() => handleStartEditPackage(idx)} sx={{ color: '#5D4037' }}>
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -819,14 +1011,6 @@ export default function AddProductDialog({
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#7B5B4B' }}>
               עלויות נוספות
             </Typography>
-            <Button
-              startIcon={<AddIcon sx={{ mr: 1 }} />}
-              onClick={handleOpenAddPackagingRow}
-              size="small"
-              sx={{ color: '#C98929' }}
-            >
-              הוסף אריזה
-            </Button>
           </Box>
 
           {/* זמן עבודה לאריזה */}
@@ -841,6 +1025,15 @@ export default function AddProductDialog({
               inputProps: { min: 0 }
             }}
           />
+
+          <Button
+            startIcon={<AddIcon sx={{ mr: 1 }} />}
+            onClick={handleOpenAddPackagingRow}
+            size="small"
+            sx={{ color: '#C98929', mb: 2 }}
+          >
+            הוסף אריזה
+          </Button>
 
           {/* שורות הוספת אריזה */}
           {packagingAddRows.map((addRow, idx) => (
@@ -1012,23 +1205,65 @@ export default function AddProductDialog({
 
           {/* מחיר עלות (תצוגה בלבד - יחושב בשרת) */}
           <Box sx={{ bgcolor: '#FFF3E0', p: 2, borderRadius: 2, mb: 2 }}>
-            <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-              מחירים משוערים (החישוב המדויק יבוצע בשרת):
+            <Typography variant="body2" sx={{ color: '#666', mb: 2, fontWeight: 600 }}>
+              💰 פירוט עלויות (משוער - החישוב המדויק בשרת):
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-              <Typography variant="body2">
-                <strong>עלות אמיתית:</strong> ₪{calculatedPrices.totalCost.toFixed(2)}
+            {calculatedPrices.hasItems ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {/* עלות בסיסית */}
+                <Box sx={{ bgcolor: '#fff', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #C98929' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#5D4037', mb: 0.5 }}>
+                    📦 עלות בסיסית (מוצר + אריזה חומרים):
+                  </Typography>
+                  <Typography variant="body2">
+                    ₪{calculatedPrices.baseCost?.toFixed(2) || '0.00'}
+                  </Typography>
+                </Box>
+
+                {/* עלות אריזה/עבודה */}
+                {calculatedPrices.packagingLaborCost > 0 && (
+                  <Box sx={{ bgcolor: '#fff', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #FF9800' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#E65100', mb: 0.5 }}>
+                      ⏱️ עלות זמן אריזה/עבודה ({packagingTimeMinutes} דקות):
+                    </Typography>
+                    <Typography variant="body2" sx={{ pl: 1 }}>
+                      עבודה: ₪{calculatedPrices.packagingLaborCost?.toFixed(2) || '0.00'}
+                    </Typography>
+                    <Typography variant="body2" sx={{ pl: 1 }}>
+                      תקורה: ₪{calculatedPrices.packagingOverheadCost?.toFixed(2) || '0.00'}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* סה"כ עלות */}
+                <Box sx={{ bgcolor: '#E8D4C4', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #8B4513' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#5D4037' }}>
+                    🔢 סה"כ עלות מוצר: ₪{calculatedPrices.totalCost.toFixed(2)}
+                  </Typography>
+                </Box>
+
+                {/* תמחור סופי */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                  <Typography variant="body2">
+                    <strong>רווח ({profitMarginPercent}%):</strong> ₪{calculatedPrices.profitAmount.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>מחיר בלי מע"מ:</strong> ₪{calculatedPrices.sellingPriceBeforeVAT.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box sx={{ bgcolor: '#D7CCC8', p: 1, borderRadius: 1, textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#3E2723' }}>
+                    💵 מחיר מכירה סופי (עם מע"מ): ₪{calculatedPrices.sellingPriceWithVAT.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+                {productType === 'single' 
+                  ? '← בחר מתכון כדי לראות חישוב עלויות' 
+                  : '← הוסף מוצרים/אריזה כדי לראות חישוב עלויות'}
               </Typography>
-              <Typography variant="body2">
-                <strong>רווח:</strong> ₪{calculatedPrices.profitAmount.toFixed(2)}
-              </Typography>
-              <Typography variant="body2">
-                <strong>מחיר לפני מע"מ:</strong> ₪{calculatedPrices.sellingPriceBeforeVAT.toFixed(2)}
-              </Typography>
-              <Typography variant="body2">
-                <strong>מחיר כולל מע"מ:</strong> ₪{calculatedPrices.sellingPriceWithVAT.toFixed(2)}
-              </Typography>
-            </Box>
+            )}
           </Box>
 
           {/* אחוז רווח */}
@@ -1044,27 +1279,62 @@ export default function AddProductDialog({
             }}
           />
 
-          {/* מחיר ידני */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={useManualPrice}
-                onChange={e => setUseManualPrice(e.target.checked)}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#C98929',
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#C98929',
-                  }
-                }}
+          {/* בחירת סוג מחיר */}
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#7B5B4B', mb: 1 }}>
+              בחר סוג מחיר
+            </Typography>
+            <RadioGroup
+              value={priceType}
+              onChange={e => setPriceType(e.target.value)}
+              sx={{ ml: 1 }}
+            >
+              <FormControlLabel
+                value="withVAT"
+                control={
+                  <Radio
+                    sx={{
+                      color: '#C98929',
+                      '&.Mui-checked': {
+                        color: '#C98929',
+                      }
+                    }}
+                  />
+                }
+                label={`מחיר עם מע"מ (מומלץ): ₪${calculatedPrices.sellingPriceWithVAT?.toFixed(2) || '0.00'}`}
               />
-            }
-            label="קבע מחיר ידני"
-            sx={{ mb: useManualPrice ? 2 : 0 }}
-          />
+              <FormControlLabel
+                value="withoutVAT"
+                control={
+                  <Radio
+                    sx={{
+                      color: '#C98929',
+                      '&.Mui-checked': {
+                        color: '#C98929',
+                      }
+                    }}
+                  />
+                }
+                label={`מחיר בלי מע"מ: ₪${calculatedPrices.sellingPriceBeforeVAT?.toFixed(2) || '0.00'}`}
+              />
+              <FormControlLabel
+                value="manual"
+                control={
+                  <Radio
+                    sx={{
+                      color: '#C98929',
+                      '&.Mui-checked': {
+                        color: '#C98929',
+                      }
+                    }}
+                  />
+                }
+                label="קבע מחיר ידני"
+              />
+            </RadioGroup>
+          </FormControl>
 
-          {useManualPrice && (
+          {priceType === "manual" && (
             <TextField
               label='מחיר מכירה ידני (כולל מע"מ)'
               type="number"
@@ -1080,15 +1350,16 @@ export default function AddProductDialog({
             />
           )}
         </Box>
-      </Box>
-
-      {/* Packaging Dialog */}
-      <PackagingDialog
-        open={isPackagingDialogOpen}
-        onClose={() => setIsPackagingDialogOpen(false)}
-        onSave={handleSaveNewPackaging}
-        strings={strings}
-      />
+        </Box>
     </BaseDialog>
+
+    {/* Packaging Dialog */}
+    <PackagingDialog
+      open={isPackagingDialogOpen}
+      onClose={() => setIsPackagingDialogOpen(false)}
+      onSave={handleSaveNewPackaging}
+      strings={strings}
+    />
+    </>
   );
 }

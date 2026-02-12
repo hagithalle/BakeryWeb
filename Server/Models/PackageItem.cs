@@ -10,9 +10,9 @@ namespace Server.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public Product? Product { get; set; }
 
-        // המוצר/מתכון שנמצא בתוך המארז
-        public int ItemProductId { get; set; }
-        public Product? ItemProduct { get; set; }
+        // המתכון שנמצא בתוך המארז
+        public int RecipeId { get; set; }
+        public Recipe? Recipe { get; set; }
 
         // כמות של המוצר/מתכון במארז
         public int Quantity { get; set; }

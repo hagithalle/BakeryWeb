@@ -160,6 +160,14 @@ app.UseHttpsRedirection();
 // Use CORS policy
 app.UseCors("AllowFrontend");
 
+// Serve static files from Uploads folder
+app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "Uploads")),
+    RequestPath = "/uploads"
+});
+
 app.MapControllers();
 
 var summaries = new[]

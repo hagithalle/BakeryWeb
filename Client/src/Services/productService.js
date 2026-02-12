@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const PRODUCTS_API = '/api/product';
+const PRODUCTS_API = '/api/products';
 
 export async function fetchProducts() {
   const response = await axios.get(PRODUCTS_API);
@@ -26,12 +26,15 @@ export async function createProductWithImage(product, imageFile) {
   let fieldCount = 0;
 
   console.log('\n📦 בניה של FormData:');
+  const productTypeValue = typeof product.productType === 'number'
+    ? product.productType
+    : (product.productType === 'package' ? 1 : 0);
   
   // שדות בסיסיים
   const fieldMap = {
     Name: product.name,
     Description: product.description,
-    ProductType: product.productType,
+    ProductType: productTypeValue,
     Category: product.category,
     ProfitMarginPercent: product.profitMarginPercent,
     ManualSellingPrice: product.manualSellingPrice,
@@ -59,10 +62,11 @@ export async function createProductWithImage(product, imageFile) {
   if (product.productType === 'package' && Array.isArray(product.packageItems)) {
     console.log(`\n  [PACKAGE_ITEMS] ${product.packageItems.length} מוצרים במארז:`);
     product.packageItems.forEach((item, idx) => {
-      if (item.productId) {
-        formData.append(`PackageItems[${idx}].ProductId`, item.productId);
+      const recipeId = item.recipeId ?? item.productId;
+      if (recipeId) {
+        formData.append(`PackageItems[${idx}].RecipeId`, recipeId);
         formData.append(`PackageItems[${idx}].Quantity`, item.quantity || 1);
-        console.log(`    ✓ PackageItems[${idx}].ProductId = ${item.productId}`);
+        console.log(`    ✓ PackageItems[${idx}].RecipeId = ${recipeId}`);
         console.log(`    ✓ PackageItems[${idx}].Quantity = ${item.quantity || 1}`);
         fieldCount += 2;
       }
@@ -99,7 +103,7 @@ export async function createProductWithImage(product, imageFile) {
     console.log(`  📄 ${key} = ${displayValue}`);
   }
 
-  console.log('\n📤 שליחה ל-SERVER: POST /api/product\n');
+  console.log('\n📤 שליחה ל-SERVER: POST /api/products\n');
   
   try {
     const response = await axios.post(PRODUCTS_API, formData, {
