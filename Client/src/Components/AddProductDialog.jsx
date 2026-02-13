@@ -30,6 +30,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import BaseDialog from "./BaseDialog";
 import PackagingDialog from "./PackagingDialog";
+import { UnitTypeLabels } from "../utils/unitEnums";
 
 /**
  * דיאלוג להוספת מוצר חדש
@@ -70,6 +71,7 @@ export default function AddProductDialog({
   // ========== מוצר בודד ==========
   const [selectedRecipeId, setSelectedRecipeId] = useState("");
   const [recipeUnits, setRecipeUnits] = useState(1);
+  const [selectedRecipeData, setSelectedRecipeData] = useState(null);  // שמירת נתוני המתכון (outputUnits, outputUnitType)
   
   // ========== מארז ==========
   // כל פריט במערך הוא: { productId, quantity }
@@ -128,7 +130,7 @@ export default function AddProductDialog({
       setProductType(initialValues.productType || "single");
       setDescription(initialValues.description || "");
       setSelectedRecipeId(initialValues.recipeId || "");
-      setRecipeUnits(initialValues.recipeUnits || 1);
+      setRecipeUnits(initialValues.recipeUnits || initialValues.unitConversionRate || 1);
       setPackageItems(initialValues.packageItems || []);
       setCategory(initialValues.category || "");
       setCustomCategory(initialValues.customCategory || "");
@@ -154,6 +156,7 @@ export default function AddProductDialog({
     setDescription("");
     setSelectedRecipeId("");
     setRecipeUnits(1);
+    setSelectedRecipeData(null);
     setPackageItems([]);
     setPackageAddRows([]);
     setEditingPackageIdx(null);
@@ -456,6 +459,7 @@ export default function AddProductDialog({
     productType,
     selectedRecipeId,
     recipeUnits,
+    selectedRecipeData,
     packageItems,
     additionalPackaging,
     packagingTimeMinutes,
@@ -528,6 +532,7 @@ export default function AddProductDialog({
     if (productType === "single") {
       productData.recipeId = parseInt(selectedRecipeId);
       productData.recipeUnits = parseInt(recipeUnits);
+      productData.saleUnitType = selectedRecipeData?.outputUnitType ?? 0;
     } else {
       productData.packageItems = packageItems.map(item => ({
         productId: parseInt(item.productId),
@@ -750,20 +755,35 @@ export default function AddProductDialog({
         {productType === "single" && (
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: '#7B5B4B' }}>
-              בחר מוצר
+              בחר מתכון
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 select
-                label="מוצר (מתכון)"
+                label="מתכון"
                 value={selectedRecipeId}
-                onChange={e => setSelectedRecipeId(e.target.value)}
+                onChange={e => {
+                  const recipeId = e.target.value;
+                  setSelectedRecipeId(recipeId);
+                  if (recipeId) {
+                    const recipe = recipes.find(r => (r.id || r.Id) === parseInt(recipeId));
+                    if (recipe) {
+                      setSelectedRecipeData({
+                        outputUnits: recipe.outputUnits || recipe.OutputUnits || 1,
+                        outputUnitType: recipe.outputUnitType ?? recipe.OutputUnitType ?? 0,
+                        costPerUnit: recipe.costPerUnit || recipe.CostPerUnit || 0
+                      });
+                    }
+                  } else {
+                    setSelectedRecipeData(null);
+                  }
+                }}
                 fullWidth
                 required
                 sx={{ bgcolor: '#fff', borderRadius: 2 }}
               >
                 <MenuItem value="">
-                  <em>בחר מוצר...</em>
+                  <em>בחר מתכון...</em>
                 </MenuItem>
                 {recipes.map(recipe => (
                   <MenuItem key={recipe.id} value={recipe.id}>
@@ -771,9 +791,33 @@ export default function AddProductDialog({
                   </MenuItem>
                 ))}
               </TextField>
+              
+              {/* הצגת מידע מהמתכון - קרא-אונלי */}
+              {selectedRecipeData && (
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: '#FFF7F2', 
+                  borderRadius: 2, 
+                  border: '1px solid #D7CCC8'
+                }}>
+                  <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                    <strong>המתכון מייצא:</strong> {selectedRecipeData.outputUnits} {UnitTypeLabels[selectedRecipeData.outputUnitType] || "יחידה"}
+                  </Typography>
+                  {selectedRecipeData.costPerUnit !== undefined && selectedRecipeData.costPerUnit > 0 && (
+                    <Typography variant="body2" sx={{ color: '#5D4037', mt: 1 }}>
+                      <strong>עלות ליחידה:</strong> ₪{selectedRecipeData.costPerUnit.toFixed(2)}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+              
+              {/* בחירה כמה יחידות רוצה כמוצר */}
               <Box>
+                <Typography variant="body2" sx={{ color: '#7B5B4B', mb: 1, fontWeight: 500 }}>
+                  כמה יחידות רוצה כמוצר?
+                </Typography>
                 <TextField
-                  label="כמה יחידות המתכון עושה"
+                  label="כמות למוצר"
                   type="number"
                   value={recipeUnits}
                   onChange={e => setRecipeUnits(Math.max(1, parseInt(e.target.value) || 1))}
@@ -782,9 +826,33 @@ export default function AddProductDialog({
                   InputProps={{
                     inputProps: { min: 1 }
                   }}
-                  helperText="לדוגמה: מתכון עוגה עושה 12 פרוסות, אז כתוב 12"
+                  helperText="לדוגמה: אם המתכון עושה 5 עוגות, כתוב 5 בשביל עוגה שלמה או 30 בשביל חתיכות"
                 />
               </Box>
+
+              {/* סיכום בחירה - סוג יחידה ועלות */}
+              {selectedRecipeData && (
+                <Box sx={{
+                  p: 2,
+                  bgcolor: '#F3E5DB',
+                  borderRadius: 2,
+                  border: '2px solid #D7CCC8'
+                }}>
+                  <Typography variant="body2" sx={{ color: '#5D4037', mb: 1 }}>
+                    <strong>בחרת:</strong> {recipeUnits} {UnitTypeLabels[selectedRecipeData.outputUnitType] || "יחידה"}
+                  </Typography>
+                  {selectedRecipeData.costPerUnit !== undefined && selectedRecipeData.costPerUnit > 0 && (
+                    <>
+                      <Typography variant="body2" sx={{ color: '#5D4037', mb: 0.5 }}>
+                        <strong>עלות ליחידה:</strong> ₪{selectedRecipeData.costPerUnit.toFixed(2)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#D84315', fontWeight: 700 }}>
+                        <strong>סה"כ עלות:</strong> ₪{(selectedRecipeData.costPerUnit * recipeUnits).toFixed(2)}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              )}
             </Box>
           </Box>
         )}

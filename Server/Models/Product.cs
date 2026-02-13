@@ -16,9 +16,14 @@ namespace Server.Models
         public int? RecipeId { get; set; }
         public Recipe? Recipe { get; set; }
 
-        // כמה יחידות מהמתכון נכנסות למוצר (לדוגמה: פרוסת עוגה = 1, עוגה שלמה = 12)
+        // סוג היחידה שאנחנו מוכרים (חתיכה, עוגה שלמה וכו')
         // רלוונטי רק ל-Single type
-        public int RecipeUnitsQuantity { get; set; } = 1;
+        public UnitType SaleUnitType { get; set; } = UnitType.Piece;
+
+        // קצב המרה: כמה יחידות מכירה מ-1 יחידת מתכון
+        // דוגמה: מתכון ברוניז מייצא 1 עוגה גדולה, והמוצר הוא חתיכה → UnitConversionRate = 30
+        // רלוונטי רק ל-Single type
+        public int UnitConversionRate { get; set; } = 1;
 
         // פריטי המארז (רלוונטי רק ל-Package type)
         public List<PackageItem> PackageItems { get; set; } = new();

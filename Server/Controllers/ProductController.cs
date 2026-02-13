@@ -118,7 +118,8 @@ namespace Server.Controllers
 
         // עבור Single type
         public int? RecipeId { get; set; }
-        public int RecipeUnits { get; set; } = 1;  // מתאים ל-RecipeUnitsQuantity בModel
+        public int RecipeUnits { get; set; } = 1;  // מתאים ל-UnitConversionRate בModel
+        public int SaleUnitType { get; set; } = (int)Models.UnitType.Piece;  // סוג היחידה שמוכרים
 
         // עבור כל סוג
         public int? PackagingId { get; set; }

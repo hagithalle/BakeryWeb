@@ -13,6 +13,7 @@ import RecipeStepsSection from "./Details/RecipeStepsSection";
 import IngredientDialog from "../IngredientDialog";
 import { useLanguage } from "../../context/LanguageContext";
 import useLocaleStrings from "../../hooks/useLocaleStrings";
+import { UnitTypeOptions } from "../../utils/unitEnums";
 
 export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList, loadingIngredients, onIngredientAdded, initialValues }) {
   const { lang } = useLanguage();
@@ -47,10 +48,10 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [yieldAmount, setYieldAmount] = useState(1);
+  const [outputUnitType, setOutputUnitType] = useState(0);  // סוג היחידה שהמתכון עושה (Piece, Whole, וכו')
   const [bakeTime, setBakeTime] = useState(0);
   const [prepTime, setPrepTime] = useState(0);
   const [temperature, setTemperature] = useState(0);
-  const [unit, setUnit] = useState("יחידות");
   const [ingredients, setIngredients] = useState([]);
   const [ingredientName, setIngredientName] = useState("");
   const [ingredientAmount, setIngredientAmount] = useState("");
@@ -73,10 +74,10 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         setCategory(initialValues.category || "לחמים");
         setImagePreview(initialValues.imageUrl || null);
         setYieldAmount(initialValues.yieldAmount || 1);
+        setOutputUnitType(initialValues.outputUnitType ?? 0);
         setBakeTime(initialValues.bakeTime || 0);
         setPrepTime(initialValues.prepTime || 0);
         setTemperature(initialValues.temperature || 0);
-        setUnit(initialValues.unit || "יחידות");
         setIngredients(initialValues.ingredients || []);
         setSteps(initialValues.steps || []);
         console.log('AddRecipeDialog: set ingredients to:', initialValues.ingredients);
@@ -88,10 +89,10 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         setImageFile(null);
         setImagePreview(null);
         setYieldAmount(1);
+        setOutputUnitType(0);
         setBakeTime(0);
         setPrepTime(0);
         setTemperature(0);
-        setUnit("יחידות");
         setIngredients([]);
         setSteps([]);
       }
@@ -175,10 +176,10 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
       category,
       imageFile: imageFile ? { name: imageFile.name, size: imageFile.size } : null,
       yieldAmount,
+      outputUnitType,
       bakeTime,
       prepTime,
       temperature,
-      unit,
       ingredients,
       steps
     };
@@ -187,8 +188,8 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         name,
         description,
         category,
-        unit,
         yieldAmount: Number(yieldAmount),
+        outputUnitType: Number(outputUnitType),
         prepTime: Number(prepTime),
         bakeTime: Number(bakeTime),
         temperature: Number(temperature)
@@ -246,13 +247,13 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
             bakingTime={bakeTime}
             temperature={temperature}
             prepTime={prepTime}
-            servings={unit}
             yieldAmount={yieldAmount}
+            outputUnitType={outputUnitType}
             onBakingTimeChange={setBakeTime}
             onTemperatureChange={setTemperature}
             onPrepTimeChange={setPrepTime}
-            onServingsChange={setUnit}
             onYieldAmountChange={setYieldAmount}
+            onOutputUnitTypeChange={setOutputUnitType}
           />
           {/* Ingredients Section */}
           <RecipeIngredientsSection

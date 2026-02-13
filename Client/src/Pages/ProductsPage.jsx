@@ -118,7 +118,7 @@ export default function ProductsPage() {
   const buildInitialValues = (product) => {
     const productTypeValue = Number(getField(product, "productType", "ProductType") ?? 0);
     const productType = productTypeValue === 1 ? "package" : "single";
-    const recipeUnitsQuantity = getField(product, "recipeUnitsQuantity", "RecipeUnitsQuantity") ?? 1;
+    const recipeUnitsQuantity = getField(product, "unitConversionRate", "UnitConversionRate") ?? 1;
     const packageItems = (getField(product, "packageItems", "PackageItems") || []).map(item => {
       const itemRecipeId = getField(item, "recipeId", "RecipeId")
         ?? getField(item, "itemProductId", "ItemProductId")
@@ -148,6 +148,8 @@ export default function ProductsPage() {
       productType,
       recipeId: getField(product, "recipeId", "RecipeId") || "",
       recipeUnits: recipeUnitsQuantity,
+      unitConversionRate: recipeUnitsQuantity,
+      saleUnitType: getField(product, "saleUnitType", "SaleUnitType") ?? 0,
       packageItems,
       category: getField(product, "category", "Category") || "",
       additionalPackaging,
@@ -179,7 +181,8 @@ export default function ProductsPage() {
       category: productData.category,
       productType: productTypeValue,
       recipeId: productTypeValue === 0 ? Number(productData.recipeId) : null,
-      recipeUnitsQuantity: productTypeValue === 0 ? Number(productData.recipeUnits || 1) : 1,
+      unitConversionRate: productTypeValue === 0 ? Number(productData.recipeUnits || 1) : 1,
+      saleUnitType: productTypeValue === 0 ? Number(productData.saleUnitType ?? 0) : 0,
       packagingId: existingProduct.packagingId || null,
       packagingTimeMinutes: Number(productData.packagingTimeMinutes) || 0,
       imageUrl: existingProduct.imageUrl || null,
@@ -253,7 +256,7 @@ export default function ProductsPage() {
         const category = getField(p, "category", "Category") || recipe?.category || recipe?.Category || "";
         const productTypeValue = Number(getField(p, "productType", "ProductType") ?? 0);
         const productTypeLabel = productTypeValue === 1 ? "מארז" : "מוצר בודד";
-        const recipeUnits = getField(p, "recipeUnitsQuantity", "RecipeUnitsQuantity") || 1;
+        const recipeUnits = getField(p, "unitConversionRate", "UnitConversionRate") || 1;
 
         const ingredientsCost = toNumber(getField(p, "recipeIngredientsCost", "RecipeIngredientsCost"));
         const packagingCost = toNumber(getField(p, "packagingCost", "PackagingCost"));

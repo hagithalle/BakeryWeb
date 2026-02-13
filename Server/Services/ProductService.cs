@@ -39,7 +39,8 @@ namespace Server.Services
                 ProductType = (ProductType)request.ProductType,
                 Category = request.Category,  // ✅ שמירת קטגוריה
                 RecipeId = request.RecipeId,
-                RecipeUnitsQuantity = request.RecipeUnits,  // מפה RecipeUnits → RecipeUnitsQuantity
+                UnitConversionRate = request.RecipeUnits,  // מפה RecipeUnits → UnitConversionRate
+                SaleUnitType = (UnitType)request.SaleUnitType,
                 PackagingId = request.PackagingId,
                 PackagingTimeMinutes = request.PackagingTimeMinutes,
                 ProfitMarginPercent = request.ProfitMarginPercent,
@@ -227,7 +228,8 @@ namespace Server.Services
             existing.Name = product.Name;
             existing.ProductType = product.ProductType;
             existing.RecipeId = product.RecipeId;
-            existing.RecipeUnitsQuantity = product.RecipeUnitsQuantity;
+            existing.UnitConversionRate = product.UnitConversionRate;
+            existing.SaleUnitType = product.SaleUnitType;
             existing.PackagingId = product.PackagingId;
             existing.PackagingTimeMinutes = product.PackagingTimeMinutes;
             existing.ImageUrl = product.ImageUrl;

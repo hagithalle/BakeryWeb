@@ -53,9 +53,11 @@ export async function createProductWithImage(product, imageFile) {
   if (product.productType === 'single' && product.recipeId) {
     formData.append('RecipeId', product.recipeId);
     formData.append('RecipeUnits', product.recipeUnits || 1);
+    formData.append('SaleUnitType', product.saleUnitType !== undefined ? product.saleUnitType : 0);
     console.log(`  ✓ RecipeId = ${product.recipeId}`);
     console.log(`  ✓ RecipeUnits = ${product.recipeUnits || 1}`);
-    fieldCount += 2;
+    console.log(`  ✓ SaleUnitType = ${product.saleUnitType !== undefined ? product.saleUnitType : 0}`);
+    fieldCount += 3;
   }
 
   // אם מארז - רשימת מוצרים

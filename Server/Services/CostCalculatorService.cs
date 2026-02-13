@@ -128,7 +128,7 @@ namespace Server.Services
             if (product == null)
                 return new ProductCostBreakdown();
 
-            var recipeUnitsQuantity = product.RecipeUnitsQuantity > 0 ? product.RecipeUnitsQuantity : 1;
+            var unitConversionRate = product.UnitConversionRate > 0 ? product.UnitConversionRate : 1;
             decimal recipeIngredientsCost = 0;
             decimal recipeLaborCost = 0;
             decimal recipeOverheadCost = 0;
@@ -159,10 +159,10 @@ namespace Server.Services
                 var recipeCost = CalculateRecipeCost(product.Recipe);
 
                 // עלות הבסיס מהמתכון (כמות יחידות × עלות ליחידה)
-                recipeTotalCost = recipeCost.CostPerUnit * recipeUnitsQuantity;
-                recipeIngredientsCost = recipeCost.IngredientsCost * recipeUnitsQuantity / recipeCost.OutputUnits;
-                recipeLaborCost = recipeCost.LaborCost * recipeUnitsQuantity / recipeCost.OutputUnits;
-                recipeOverheadCost = recipeCost.OverheadCost * recipeUnitsQuantity / recipeCost.OutputUnits;
+                recipeTotalCost = recipeCost.CostPerUnit * unitConversionRate;
+                recipeIngredientsCost = recipeCost.IngredientsCost * unitConversionRate / recipeCost.OutputUnits;
+                recipeLaborCost = recipeCost.LaborCost * unitConversionRate / recipeCost.OutputUnits;
+                recipeOverheadCost = recipeCost.OverheadCost * unitConversionRate / recipeCost.OutputUnits;
             }
 
             // עלות אריזה ספציפית
@@ -196,7 +196,7 @@ namespace Server.Services
                 PackagingOverheadCost = packagingOverheadCost,
 
                 // סיכום
-                RecipeUnitsQuantity = recipeUnitsQuantity,
+                UnitConversionRate = unitConversionRate,
                 TotalCost = totalCost
             };
         }
@@ -228,7 +228,7 @@ namespace Server.Services
         public decimal PackagingOverheadCost { get; set; }
         
         // פרטים נוספים
-        public int RecipeUnitsQuantity { get; set; }
+        public int UnitConversionRate { get; set; }
         
         // סה"כ
         public decimal TotalCost { get; set; }

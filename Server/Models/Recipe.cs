@@ -18,6 +18,9 @@ namespace Server.Models
         // כמה יחידות יוצאות מהמתכון
         public int OutputUnits { get; set; }
 
+        // סוג היחידה שהמתכון מייצא (לדוגמה: "עוגה", "מנה", "עוגה גדולה")
+        public UnitType OutputUnitType { get; set; } = UnitType.Piece;
+
         // זמן הכנה בדקות
         public int? PrepTime { get; set; }
 
