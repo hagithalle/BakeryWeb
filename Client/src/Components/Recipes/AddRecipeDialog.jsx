@@ -10,12 +10,13 @@ import RecipeMainInfo from "./Details/RecipeMainInfo";
 import RecipeBakingInfo from "./Details/RecipeBakingInfo";
 import RecipeIngredientsSection from "./Details/RecipeIngredientsSection";
 import RecipeStepsSection from "./Details/RecipeStepsSection";
+import RecipeBaseRecipesSection from "./Details/RecipeBaseRecipesSection";
 import IngredientDialog from "../IngredientDialog";
 import { useLanguage } from "../../context/LanguageContext";
 import useLocaleStrings from "../../hooks/useLocaleStrings";
 import { UnitTypeOptions } from "../../utils/unitEnums";
 
-export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList, loadingIngredients, onIngredientAdded, initialValues }) {
+export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList, loadingIngredients, onIngredientAdded, initialValues, availableRecipes = [] }) {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
   const [categories, setCategories] = useState([]);
@@ -57,6 +58,7 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
   const [ingredientAmount, setIngredientAmount] = useState("");
   const [ingredientUnit, setIngredientUnit] = useState("");
   const [steps, setSteps] = useState([]);
+  const [baseRecipes, setBaseRecipes] = useState([]);  // מתכונים בסיסיים למתכון מורכב
   const [showAddIngredientDialog, setShowAddIngredientDialog] = useState(false);
   const [pendingIngredient, setPendingIngredient] = useState(null);
   const [addIngredientError, setAddIngredientError] = useState("");
@@ -80,6 +82,7 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         setTemperature(initialValues.temperature || 0);
         setIngredients(initialValues.ingredients || []);
         setSteps(initialValues.steps || []);
+        setBaseRecipes(initialValues.baseRecipes || []);
         console.log('AddRecipeDialog: set ingredients to:', initialValues.ingredients);
       } else {
         // New recipe mode - reset all fields
@@ -95,6 +98,7 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         setTemperature(0);
         setIngredients([]);
         setSteps([]);
+        setBaseRecipes([]);
       }
       // Always reset these fields when opening
       setIngredientName("");
@@ -181,7 +185,8 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
       prepTime,
       temperature,
       ingredients,
-      steps
+      steps,
+      baseRecipes
     };
     console.log('4️⃣ נתונים למטה לשלוח:', {
       basicInfo: {
@@ -196,7 +201,8 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
       },
       image: imageFile ? `יש תמונה: ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)}KB)` : 'אין תמונה',
       ingredientsCount: ingredients.length,
-      stepsCount: steps.length
+      stepsCount: steps.length,
+      baseRecipesCount: baseRecipes.length
     });
 
     // 5. שליחת הנתונים ללא שינוי
@@ -278,6 +284,23 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
               setIngredients(prev => prev.map((ing, i) => i === idx ? updatedIngredient : ing));
             }}
             onIngredientAdded={onIngredientAdded}
+          />
+          {/* Base Recipes Section */}
+          <RecipeBaseRecipesSection
+            baseRecipes={baseRecipes}
+            availableRecipes={availableRecipes}
+            onAddBaseRecipe={(item) => {
+              console.log('AddRecipeDialog: onAddBaseRecipe received:', item);
+              setBaseRecipes(prev => [...prev, item]);
+            }}
+            onRemoveBaseRecipe={(idx) => {
+              console.log('AddRecipeDialog: removing baseRecipe at index:', idx);
+              setBaseRecipes(prev => prev.filter((_, i) => i !== idx));
+            }}
+            onUpdateBaseRecipe={(idx, updatedItem) => {
+              console.log('AddRecipeDialog: updating baseRecipe at index:', idx, updatedItem);
+              setBaseRecipes(prev => prev.map((item, i) => i === idx ? updatedItem : item));
+            }}
           />
           {/* Steps Section */}
           <RecipeStepsSection

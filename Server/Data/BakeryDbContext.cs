@@ -16,6 +16,7 @@ namespace Server.Data
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<RecipeStep> RecipeSteps { get; set; }
         public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
+        public DbSet<RecipeItem> RecipeItems { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<PackageItem> PackageItems { get; set; }
         public DbSet<ProductAdditionalPackaging> ProductAdditionalPackagings { get; set; }
@@ -72,6 +73,22 @@ namespace Server.Data
                 .HasOne(ri => ri.Ingredient)
                 .WithMany()
                 .HasForeignKey(ri => ri.IngredientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // RecipeItem configuration (Recipe Composition)
+            modelBuilder.Entity<RecipeItem>()
+                .HasKey(ri => ri.Id);
+
+            modelBuilder.Entity<RecipeItem>()
+                .HasOne(ri => ri.ComposingRecipe)
+                .WithMany(r => r.BaseRecipes)
+                .HasForeignKey(ri => ri.ComposingRecipeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RecipeItem>()
+                .HasOne(ri => ri.BaseRecipe)
+                .WithMany()
+                .HasForeignKey(ri => ri.BaseRecipeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Product configuration

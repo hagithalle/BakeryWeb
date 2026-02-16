@@ -46,7 +46,15 @@ namespace Server.Controllers
             Console.WriteLine($"Name: {recipe.Name}");
             Console.WriteLine($"Ingredients: {recipe.Ingredients?.Count ?? 0}");
             Console.WriteLine($"Steps: {recipe.Steps?.Count ?? 0}");
-            Console.WriteLine("========== CREATE END INIT ==========\n");
+            Console.WriteLine($"BaseRecipes: {recipe.BaseRecipes?.Count ?? 0}");
+            if (recipe.BaseRecipes != null && recipe.BaseRecipes.Count > 0)
+            {
+                foreach (var br in recipe.BaseRecipes)
+                {
+                    Console.WriteLine($"  BaseRecipe: BaseRecipeId={br.BaseRecipeId}, Qty={br.Quantity}, Unit={br.Unit}");
+                }
+            }
+            Console.WriteLine("========== CREATE END INIT ==========");
             
             try
             {
@@ -110,6 +118,16 @@ namespace Server.Controllers
             }
             else
                 Console.WriteLine("   ℹ️  No steps");
+
+            // [4.5] מתכונים בסיסיים
+            Console.WriteLine($"\n[4.5] 🍰 BaseRecipes ({recipe.BaseRecipes?.Count ?? 0}):");
+            if (recipe.BaseRecipes?.Count > 0)
+            {
+                foreach (var br in recipe.BaseRecipes)
+                    Console.WriteLine($"   BaseRecipeId={br.BaseRecipeId}, Qty={br.Quantity}, Unit={br.Unit}");
+            }
+            else
+                Console.WriteLine("   ℹ️  No base recipes");
 
             // [5] תמונה (אם יש)
             Console.WriteLine("\n[5] 📸 Image:");

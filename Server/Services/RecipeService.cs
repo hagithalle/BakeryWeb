@@ -65,6 +65,25 @@ namespace Server.Services
                 Console.WriteLine($"   ℹ️ No steps to save");
             }
             
+            // שמור מתכونים בסיסיים (Recipe Composition)
+            Console.WriteLine($"   BaseRecipes count: {recipe.BaseRecipes?.Count ?? 0}");
+            if (recipe.BaseRecipes != null && recipe.BaseRecipes.Count > 0)
+            {
+                foreach (var br in recipe.BaseRecipes)
+                {
+                    Console.WriteLine($"      Adding BaseRecipe: BaseRecipeId={br.BaseRecipeId}, Qty={br.Quantity}");
+                    br.Id = 0; // Ensure new PK
+                    br.ComposingRecipeId = recipe.Id;
+                    _db.RecipeItems.Add(br);
+                }
+                await _db.SaveChangesAsync();
+                Console.WriteLine($"   ✅ {recipe.BaseRecipes.Count} base recipes saved");
+            }
+            else
+            {
+                Console.WriteLine($"   ℹ️ No base recipes to save");
+            }
+            
             Console.WriteLine($">>> RecipeService.CreateAsync END\n");
             return recipe;
         }
@@ -85,6 +104,8 @@ namespace Server.Services
                 .Include(r => r.Ingredients)
                 .ThenInclude(ri => ri.Ingredient)
                 .Include(r => r.Steps)
+                .Include(r => r.BaseRecipes)
+                .ThenInclude(br => br.BaseRecipe)
                 .ToListAsync();
             
             Console.WriteLine($"   Found {recipes.Count} recipes");
@@ -129,6 +150,8 @@ namespace Server.Services
                 .Include(r => r.Ingredients)
                 .ThenInclude(ri => ri.Ingredient)
                 .Include(r => r.Steps)
+                .Include(r => r.BaseRecipes)
+                .ThenInclude(br => br.BaseRecipe)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (recipe != null)
@@ -167,6 +190,7 @@ namespace Server.Services
             var existing = await _db.Recipes
                 .Include(r => r.Ingredients)
                 .Include(r => r.Steps)
+                .Include(r => r.BaseRecipes)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (existing == null) return false;
@@ -175,6 +199,7 @@ namespace Server.Services
             existing.Description = recipe.Description;
             existing.Category = recipe.Category;
             existing.OutputUnits = recipe.OutputUnits;
+            existing.OutputUnitType = recipe.OutputUnitType;
             existing.PrepTime = recipe.PrepTime;
             existing.BakeTime = recipe.BakeTime;
             existing.Temperature = recipe.Temperature;
@@ -207,6 +232,19 @@ namespace Server.Services
                     Order = rs.Order,
                     Description = rs.Description,
                     EstimatedMinutes = rs.EstimatedMinutes
+                });
+            }
+
+            // Replace base recipes (Recipe Composition)
+            _db.RecipeItems.RemoveRange(existing.BaseRecipes);
+            existing.BaseRecipes.Clear();
+            foreach (var br in recipe.BaseRecipes)
+            {
+                existing.BaseRecipes.Add(new RecipeItem
+                {
+                    BaseRecipeId = br.BaseRecipeId,
+                    Quantity = br.Quantity,
+                    Unit = br.Unit
                 });
             }
 

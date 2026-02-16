@@ -23,6 +23,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
     // אם Category בשרת הוא enum / int – כאן צריך להתאים:
     Category: recipe.category,
     OutputUnits: recipe.outputUnits ?? recipe.yieldAmount,
+    OutputUnitType: recipe.outputUnitType ?? 0,
     PrepTime: recipe.prepTime,
     BakeTime: recipe.bakeTime,
     Temperature: recipe.temperature,
@@ -61,6 +62,32 @@ export async function createRecipeWithImage(recipe, imageFile) {
         const fieldName = `Ingredients[${idx}].Unit`;
         formData.append(fieldName, unit);
         console.log(`    ✓ ${fieldName} = ${unit}`);
+        fieldCount++;
+      }
+    });
+  }
+
+  // מתכונים בסיסיים (Recipe Composition)
+  if (Array.isArray(recipe.baseRecipes) && recipe.baseRecipes.length > 0) {
+    console.log(`\n  [BASE_RECIPES] ${recipe.baseRecipes.length} מתכונים בסיסיים:`);
+    recipe.baseRecipes.forEach((br, idx) => {
+      const baseRecipeId = br.baseRecipeId ?? br.BaseRecipeId;
+      const quantity = br.quantity ?? br.Quantity ?? 1;
+      const unit = br.unit ?? br.Unit ?? 5; // ברירת מחדל: 5 = Unit
+
+      if (baseRecipeId !== undefined && baseRecipeId !== null) {
+        formData.append(`BaseRecipes[${idx}].BaseRecipeId`, baseRecipeId);
+        console.log(`    ✓ BaseRecipes[${idx}].BaseRecipeId = ${baseRecipeId}`);
+        fieldCount++;
+      }
+      if (quantity !== undefined && quantity !== null) {
+        formData.append(`BaseRecipes[${idx}].Quantity`, quantity);
+        console.log(`    ✓ BaseRecipes[${idx}].Quantity = ${quantity}`);
+        fieldCount++;
+      }
+      if (unit !== undefined && unit !== null) {
+        formData.append(`BaseRecipes[${idx}].Unit`, unit);
+        console.log(`    ✓ BaseRecipes[${idx}].Unit = ${unit}`);
         fieldCount++;
       }
     });
@@ -188,6 +215,7 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
     Description: recipe.description,
     Category: recipe.category,
     OutputUnits: recipe.outputUnits,
+    OutputUnitType: recipe.outputUnitType ?? 0,
     PrepTime: recipe.prepTime,
     BakeTime: recipe.bakeTime,
     Temperature: recipe.temperature,
@@ -225,6 +253,32 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
         const fieldName = `Ingredients[${idx}].Unit`;
         formData.append(fieldName, unit);
         console.log(`    ✓ ${fieldName} = ${unit}`);
+        fieldCount++;
+      }
+    });
+  }
+
+  // מתכונים בסיסיים (Recipe Composition)
+  if (Array.isArray(recipe.baseRecipes) && recipe.baseRecipes.length > 0) {
+    console.log(`\n  [BASE_RECIPES] ${recipe.baseRecipes.length} מתכונים בסיסיים:`);
+    recipe.baseRecipes.forEach((br, idx) => {
+      const baseRecipeId = br.baseRecipeId ?? br.BaseRecipeId;
+      const quantity = br.quantity ?? br.Quantity ?? 1;
+      const unit = br.unit ?? br.Unit ?? 5;
+
+      if (baseRecipeId !== undefined && baseRecipeId !== null) {
+        formData.append(`BaseRecipes[${idx}].BaseRecipeId`, baseRecipeId);
+        console.log(`    ✓ BaseRecipes[${idx}].BaseRecipeId = ${baseRecipeId}`);
+        fieldCount++;
+      }
+      if (quantity !== undefined && quantity !== null) {
+        formData.append(`BaseRecipes[${idx}].Quantity`, quantity);
+        console.log(`    ✓ BaseRecipes[${idx}].Quantity = ${quantity}`);
+        fieldCount++;
+      }
+      if (unit !== undefined && unit !== null) {
+        formData.append(`BaseRecipes[${idx}].Unit`, unit);
+        console.log(`    ✓ BaseRecipes[${idx}].Unit = ${unit}`);
         fieldCount++;
       }
     });

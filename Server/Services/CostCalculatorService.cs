@@ -83,15 +83,39 @@ namespace Server.Services
             return ingredient.PricePerKg * quantityInKg;
         }
 
+        // חישוב עלות של מתכון בסיסי שמשמש כרכיב במתכון מורכב
+        public decimal CalculateRecipeItemCost(RecipeItem recipeItem)
+        {
+            if (recipeItem?.BaseRecipe == null)
+                return 0;
+
+            // חישוב עלות המתכון הבסיסי (רקורסיה)
+            var baseRecipeCost = CalculateRecipeCost(recipeItem.BaseRecipe);
+            
+            // המרה של כמות ליחידות
+            var quantity = recipeItem.Quantity;
+            var unit = (UnitOfMeasure)recipeItem.Unit;
+            
+            // TODO: צריך להמיר את quantity בהתאם ל-OutputUnitType של המתכון הבסיסי
+            // כרגע נניח שהכמות היא ביחידות של המתכון
+            
+            // עלות = עלות ליחידה * כמות
+            return baseRecipeCost.CostPerUnit * quantity;
+        }
+
         // חישוב עלויות כוללות של מתכון (ללא אריזה)
         public RecipeCostBreakdown CalculateRecipeCost(Recipe recipe)
         {
             if (recipe == null)
                 return new RecipeCostBreakdown();
 
-            // עלות חומרים
+            // עלות חומרים ישירים
             var ingredientCosts = recipe.Ingredients?
                 .Sum(ri => CalculateIngredientCost(ri)) ?? 0;
+
+            // עלות מתכונים בסיסיים (רקורסיה)
+            var baseRecipesCost = recipe.BaseRecipes?
+                .Sum(ri => CalculateRecipeItemCost(ri)) ?? 0;
 
             // עלות עבודה (הכנה + אפייה בלבד)
             var totalTime = (recipe.PrepTime ?? 0) + (recipe.BakeTime ?? 0);
@@ -104,7 +128,7 @@ namespace Server.Services
                 .Sum(x => x.MonthlyCost / 30m) ?? 0;  // חלוקה ל-30 ימים
 
             // סה"כ עלויות (ללא אריזה - תתווסף במוצר)
-            var totalCost = ingredientCosts + laborCost + overheadCost;
+            var totalCost = ingredientCosts + baseRecipesCost + laborCost + overheadCost;
 
             // עלות ליחידה
             var outputUnits = recipe.OutputUnits > 0 ? recipe.OutputUnits : 1;
@@ -113,6 +137,7 @@ namespace Server.Services
             return new RecipeCostBreakdown
             {
                 IngredientsCost = ingredientCosts,
+                BaseRecipesCost = baseRecipesCost,
                 LaborCost = laborCost,
                 OverheadCost = overheadCost,
                 PackagingCost = 0, // אריזה מטופלת ברמת המוצר
@@ -206,6 +231,7 @@ namespace Server.Services
     public class RecipeCostBreakdown
     {
         public decimal IngredientsCost { get; set; }
+        public decimal BaseRecipesCost { get; set; }  // עלות מתכונים בסיסיים
         public decimal LaborCost { get; set; }
         public decimal OverheadCost { get; set; }
         public decimal PackagingCost { get; set; }

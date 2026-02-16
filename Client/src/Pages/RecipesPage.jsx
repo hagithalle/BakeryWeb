@@ -76,6 +76,14 @@ export default function RecipesPage() {
                             // המרת מבנה החומרים והשלבים למבנה שהדיאלוג מצפה לו, ללא כפילויות ותמיד עם שם ויחידה
                             const mappedRecipe = {
                                 ...recipe,
+                                yieldAmount: recipe.outputUnits || recipe.OutputUnits || 1,
+                                outputUnitType: recipe.outputUnitType ?? recipe.OutputUnitType ?? 0,
+                                baseRecipes: (recipe.baseRecipes || recipe.BaseRecipes || []).map(br => ({
+                                    baseRecipeId: br.baseRecipeId || br.BaseRecipeId,
+                                    name: br.baseRecipe?.name || br.BaseRecipe?.name || '',
+                                    quantity: br.quantity || br.Quantity || 1,
+                                    unit: br.unit ?? br.Unit ?? 5
+                                })),
                                 ingredients: (recipe.ingredients || recipe.Ingredients || [])
                                     .filter((ri, idx, arr) => {
                                         const currentId = ri.ingredient?.id || ri.Ingredient?.id || ri.ingredientId || ri.IngredientId;
@@ -226,6 +234,15 @@ export default function RecipesPage() {
                         console.log(`\n   📦 סה"כ שלבים שישלחו: ${mappedSteps.length}`);
                         console.log('   ', JSON.stringify(mappedSteps, null, 4));
 
+                        // 3.5 בדיקת מתכונים בסיסיים
+                        console.log('\n▶️ מתכונים בסיסיים:');
+                        console.log('   baseRecipes count:', recipe.baseRecipes?.length ?? 0);
+                        if (recipe.baseRecipes && recipe.baseRecipes.length > 0) {
+                            recipe.baseRecipes.forEach((br, idx) => {
+                                console.log(`   [${idx}] BaseRecipeId=${br.baseRecipeId}, Name="${br.name}", Qty=${br.quantity}, Unit=${br.unit}`);
+                            });
+                        }
+
                         // 4. בניית הnload שנשלח לשרת
                         console.log('\n▶️ בניית payload סופי:');
                         const recipeToSend = {
@@ -233,12 +250,14 @@ export default function RecipesPage() {
                             description: recipe.description,
                             category: recipe.category,
                             outputUnits: Number(recipe.yieldAmount) || 0,
+                            outputUnitType: Number(recipe.outputUnitType) ?? 0,
                             prepTime: Number(recipe.prepTime) || 0,
                             bakeTime: Number(recipe.bakeTime) || 0,
                             temperature: Number(recipe.temperature) || 0,
                             recipeType: recipe.recipeType ?? 2,
                             ingredients: ensuredIngredients,
-                            steps: mappedSteps
+                            steps: mappedSteps,
+                            baseRecipes: recipe.baseRecipes || []
                         };
                         
                         console.log('   📤 שלח לשרת:');
@@ -291,6 +310,7 @@ export default function RecipesPage() {
                 loadingIngredients={ingredientsLoading}
                 onIngredientAdded={() => queryClient.invalidateQueries(['ingredients'])}
                 initialValues={editRecipe}
+                availableRecipes={rows || []}
             />
         </Box>
     );

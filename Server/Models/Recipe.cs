@@ -35,6 +35,10 @@ namespace Server.Models
 
         public List<RecipeStep> Steps { get; set; } = new();
         public List<RecipeIngredient> Ingredients { get; set; } = new();
+        
+        // מתכונים בסיסיים שמשמשים כרכיבים במתכון הזה
+        // לדוגמה: סנדוויץ יכיל לחמנייה + סלט טונה
+        public List<RecipeItem> BaseRecipes { get; set; } = new();
 
         // סוג מתכון: חלבי/בשרי/פרווה
         public RecipeType RecipeType { get; set; } = RecipeType.Parve;
