@@ -13,6 +13,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
 
 const menuKeys = ["ingredients", "recipes", "products"];
@@ -25,12 +26,12 @@ export default function Sidebar({ lang = "he" }) {
     console.log('Sidebar direction:', strings.direction, 'lang:', lang);
 
     const menuItems = [
+        { label: "דשבורד", path: "/dashboard", icon: DashboardIcon },
         { label: strings.sidebar.ingredients, path: "/ingredients", icon: InventoryIcon },
         { label: strings.sidebar.packaging, path: "/packaging", icon: LocalShippingIcon },
         { label: strings.sidebar.recipes, path: "/recipes", icon: MenuBookIcon },
         { label: strings.sidebar.products, path: "/products", icon: CakeIcon },
         { label: "ניהול עלויות", path: "/costs", icon: AttachMoneyIcon },
-        
     ];
 
     return (

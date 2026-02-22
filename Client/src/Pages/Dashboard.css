@@ -1,0 +1,138 @@
+.dashboard-container {
+  direction: rtl;
+  background: #f8f5f2;
+  min-height: 100vh;
+  padding: 24px;
+  font-family: 'Heebo', sans-serif;
+}
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #7c5c3b;
+}
+.dashboard-subtitle {
+  color: #bfa47a;
+  font-size: 1rem;
+}
+.dashboard-cards-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.dashboard-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px #0000000a;
+  padding: 24px 32px;
+  min-width: 120px;
+  text-align: center;
+  flex: 1;
+}
+.dashboard-card-title {
+  color: #bfa47a;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.dashboard-card-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #7c5c3b;
+}
+.dashboard-main-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.dashboard-section {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px #0000000a;
+  padding: 24px;
+  flex: 1;
+}
+.dashboard-section-title {
+  color: #bfa47a;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+.dashboard-donut-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dashboard-donut {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 16px solid #d2b48c;
+  border-top: 16px solid #f8f5f2;
+  margin-bottom: 8px;
+}
+.dashboard-donut-label {
+  color: #7c5c3b;
+  font-size: 1rem;
+}
+.dashboard-section-empty {
+  color: #bfa47a;
+  font-size: 1rem;
+  text-align: center;
+  margin-top: 32px;
+}
+.dashboard-bottom-row {
+  display: flex;
+  gap: 24px;
+}
+.dashboard-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.dashboard-action {
+  background: #f8f5f2;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #7c5c3b;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dashboard-action-product {
+  background: #ffe5e0;
+}
+.dashboard-action-recipe {
+  background: #f7e9d7;
+}
+.dashboard-action-expense {
+  background: #e9e3dc;
+}
+.dashboard-action-income {
+  background: #e0ffe5;
+}
+.dashboard-action:hover {
+  background: #e0d7c3;
+}
+.dashboard-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 1rem;
+}
+.dashboard-summary-income {
+  color: #7c5c3b;
+}
+.dashboard-summary-expense {
+  color: #d46a6a;
+}
+.dashboard-summary-profit {
+  color: #7c5c3b;
+  font-weight: bold;
+}
