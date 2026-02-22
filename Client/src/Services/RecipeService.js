@@ -1,4 +1,8 @@
 import axios from 'axios';
+import { LogManager, ConsoleLogger } from '../utils/logging';
+
+const logManager = new LogManager();
+logManager.addLogger(new ConsoleLogger());
 
 // מחיקת מתכון לפי מזהה
 export async function deleteRecipe(id) {
@@ -8,13 +12,13 @@ export async function deleteRecipe(id) {
 // יצירת מתכון חדש עם קובץ תמונה
 
 export async function createRecipeWithImage(recipe, imageFile) {
-  console.log('\n>>> createRecipeWithImage START');
-  console.log('📥 קיבל מ-Component:', JSON.stringify(recipe, null, 2));
+  logManager.log('\n>>> createRecipeWithImage START');
+  logManager.log('📥 קיבל מ-Component:' + JSON.stringify(recipe, null, 2));
   
   const formData = new FormData();
   let fieldCount = 0;
 
-  console.log('\n📦 בניה של FormData:');
+  logManager.log('\n📦 בניה של FormData:');
   
   // שדות בסיסיים – שמות תואמים למודל בצד השרת
   const fieldMap = {
@@ -33,14 +37,14 @@ export async function createRecipeWithImage(recipe, imageFile) {
   Object.entries(fieldMap).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       formData.append(key, value);
-      console.log(`  ✓ ${key} = ${value}`);
+      logManager.log(`  ✓ ${key} = ${value}`);
       fieldCount++;
     }
   });
 
   // רכיבים
   if (Array.isArray(recipe.ingredients)) {
-    console.log(`\n  [INGREDIENTS] ${recipe.ingredients.length} רכיבים:`);
+    logManager.log(`\n  [INGREDIENTS] ${recipe.ingredients.length} רכיבים:`);
     recipe.ingredients.forEach((ing, idx) => {
       const ingredientId = ing.IngredientId ?? ing.ingredientId;
       const quantity = ing.Quantity ?? ing.quantity;
@@ -49,19 +53,19 @@ export async function createRecipeWithImage(recipe, imageFile) {
       if (ingredientId !== undefined && ingredientId !== null) {
         const fieldName = `Ingredients[${idx}].IngredientId`;
         formData.append(fieldName, ingredientId);
-        console.log(`    ✓ ${fieldName} = ${ingredientId}`);
+        logManager.log(`    ✓ ${fieldName} = ${ingredientId}`);
         fieldCount++;
       }
       if (quantity !== undefined && quantity !== null) {
         const fieldName = `Ingredients[${idx}].Quantity`;
         formData.append(fieldName, quantity);
-        console.log(`    ✓ ${fieldName} = ${quantity}`);
+        logManager.log(`    ✓ ${fieldName} = ${quantity}`);
         fieldCount++;
       }
       if (unit !== undefined && unit !== null) {
         const fieldName = `Ingredients[${idx}].Unit`;
         formData.append(fieldName, unit);
-        console.log(`    ✓ ${fieldName} = ${unit}`);
+        logManager.log(`    ✓ ${fieldName} = ${unit}`);
         fieldCount++;
       }
     });
@@ -69,7 +73,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
 
   // מתכונים בסיסיים (Recipe Composition)
   if (Array.isArray(recipe.baseRecipes) && recipe.baseRecipes.length > 0) {
-    console.log(`\n  [BASE_RECIPES] ${recipe.baseRecipes.length} מתכונים בסיסיים:`);
+    logManager.log(`\n  [BASE_RECIPES] ${recipe.baseRecipes.length} מתכונים בסיסיים:`);
     recipe.baseRecipes.forEach((br, idx) => {
       const baseRecipeId = br.baseRecipeId ?? br.BaseRecipeId;
       const quantity = br.quantity ?? br.Quantity ?? 1;
@@ -77,17 +81,17 @@ export async function createRecipeWithImage(recipe, imageFile) {
 
       if (baseRecipeId !== undefined && baseRecipeId !== null) {
         formData.append(`BaseRecipes[${idx}].BaseRecipeId`, baseRecipeId);
-        console.log(`    ✓ BaseRecipes[${idx}].BaseRecipeId = ${baseRecipeId}`);
+        logManager.log(`    ✓ BaseRecipes[${idx}].BaseRecipeId = ${baseRecipeId}`);
         fieldCount++;
       }
       if (quantity !== undefined && quantity !== null) {
         formData.append(`BaseRecipes[${idx}].Quantity`, quantity);
-        console.log(`    ✓ BaseRecipes[${idx}].Quantity = ${quantity}`);
+        logManager.log(`    ✓ BaseRecipes[${idx}].Quantity = ${quantity}`);
         fieldCount++;
       }
       if (unit !== undefined && unit !== null) {
         formData.append(`BaseRecipes[${idx}].Unit`, unit);
-        console.log(`    ✓ BaseRecipes[${idx}].Unit = ${unit}`);
+        logManager.log(`    ✓ BaseRecipes[${idx}].Unit = ${unit}`);
         fieldCount++;
       }
     });
@@ -115,7 +119,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
       })
       .filter(s => s !== null);
 
-    console.log(`\n  [STEPS] ${cleanedSteps.length} שלבים (אחרי ניקוי):`);
+    logManager.log(`\n  [STEPS] ${cleanedSteps.length} שלבים (אחרי ניקוי):`);
 
     cleanedSteps.forEach((step, idx) => {
       const descField = `Steps[${idx}].Description`;
@@ -123,32 +127,35 @@ export async function createRecipeWithImage(recipe, imageFile) {
       formData.append(descField, step.description);
       formData.append(orderField, step.order);
 
-      console.log(`    ✓ ${descField} = "${step.description}"`);
-      console.log(`    ✓ ${orderField} = ${step.order}`);
+      logManager.log(`    ✓ ${descField} = "${step.description}"`);
+      logManager.log(`    ✓ ${orderField} = ${step.order}`);
       fieldCount += 2;
     });
   } else {
-    console.log(`\n  [STEPS] אין שלבים`);
+    logManager.log(`\n  [STEPS] אין שלבים`);
   }
   
   // תמונה
   if (imageFile) {
     formData.append('imageFile', imageFile);
-    console.log(`\n  [IMAGE] ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)}KB)`);
+    logManager.log(`\n  [IMAGE] ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)}KB)`);
     fieldCount++;
   }
   
   console.log(`\n✅ סה"כ ${fieldCount} שדות ב-FormData`);
+  logManager.log(`\n✅ סה"כ ${fieldCount} שדות ב-FormData`);
 
   // לוג של כל ה-FormData בפועל (מאוד שימושי)
   console.log('\n📋 FormData content:');
+    logManager.log('\n📋 FormData content:');
   for (const [key, value] of formData.entries()) {
     const displayValue = value instanceof File ? `[File: ${value.name}]` : value;
-    console.log(`  📄 ${key} = ${displayValue}`);
+    logManager.log(`  📄 ${key} = ${displayValue}`);
   }
 
   // הדפסה מפורטת של כל מה שנשלח
   console.log('\n📤 מה בדיוק השרת הולך לקבל:');
+    logManager.log('\n📤 מה בדיוק השרת הולך לקבל:');
   const formDataContent = {};
   for (const [key, value] of formData.entries()) {
     if (formDataContent[key] === undefined) {
@@ -162,28 +169,29 @@ export async function createRecipeWithImage(recipe, imageFile) {
     }
   }
   console.log(JSON.stringify(formDataContent, null, 2));
+  logManager.log(JSON.stringify(formDataContent, null, 2));
 
   console.log('\n📤 שליחה ל-SERVER: POST /api/recipe\n');
+    logManager.log('\n📤 שליחה ל-SERVER: POST /api/recipe\n');
   
   try {
     const response = await axios.post('/api/recipe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    
-    console.log('✅ תשובה מהשרת:');
-    console.log(`   Status: ${response.status}`);
-    console.log(`   Data:`, response.data);
-    console.log('>>> createRecipeWithImage END\n');
+    logManager.log('✅ תשובה מהשרת:');
+    logManager.log(`   Status: ${response.status}`);
+    logManager.log(`   Data: ${JSON.stringify(response.data)}`);
+    logManager.log('>>> createRecipeWithImage END\n');
     return response.data;
   } catch (err) {
-    console.error('\n❌ שגיאה ב-axios:');
-    console.error(`   Message: ${err.message}`);
-    console.error(`   Status: ${err.response?.status}`);
-    console.error(`   Data: ${JSON.stringify(err.response?.data)}`);
+    logManager.log('\n❌ שגיאה ב-axios:');
+    logManager.log(`   Message: ${err.message}`);
+    logManager.log(`   Status: ${err.response?.status}`);
+    logManager.log(`   Data: ${JSON.stringify(err.response?.data)}`);
     if (err.request && !err.response) {
-      console.error('   ⚠️ No response from server - check if server is running');
+      logManager.log('   ⚠️ No response from server - check if server is running');
     }
-    console.error('>>> createRecipeWithImage ERROR\n');
+    logManager.log('>>> createRecipeWithImage ERROR\n');
     throw err;
   }
 }
@@ -191,24 +199,24 @@ export async function createRecipeWithImage(recipe, imageFile) {
 
 // קבלת כל המתכונים מהשרת
 export async function getAllRecipes() {
-  console.log('getAllRecipes: fetching from server...');
+  logManager.log('getAllRecipes: fetching from server...');
   const response = await axios.get('/api/recipe');
-  console.log('getAllRecipes: received', response.data.length, 'recipes');
+  logManager.log('getAllRecipes: received ' + response.data.length + ' recipes');
   response.data.forEach((recipe, idx) => {
-    console.log(`Recipe[${idx}]: id=${recipe.id}, name=${recipe.name}, ingredients=${recipe.ingredients?.length ?? 0}, Ingredients=${recipe.Ingredients?.length ?? 0}`);
+    logManager.log(`Recipe[${idx}]: id=${recipe.id}, name=${recipe.name}, ingredients=${recipe.ingredients?.length ?? 0}, Ingredients=${recipe.Ingredients?.length ?? 0}`);
   });
   return response.data;
 }
 
 // עדכון מתכון קיים (כולל אפשרות לעדכן תמונה)
 export async function updateRecipeWithImage(id, recipe, imageFile) {
-  console.log('\n>>> updateRecipeWithImage START (ID:', id, ')');
-  console.log('📥 קיבל מ-Component:', JSON.stringify(recipe, null, 2));
+  logManager.log(`\n>>> updateRecipeWithImage START (ID: ${id})`);
+  logManager.log('📥 קיבל מ-Component:' + JSON.stringify(recipe, null, 2));
   
   const formData = new FormData();
   let fieldCount = 0;
 
-  console.log('\n📦 בניה של FormData:');
+  logManager.log('\n📦 בניה של FormData:');
   
   const fieldMap = {
     Name: recipe.name,
@@ -225,13 +233,13 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
   Object.entries(fieldMap).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       formData.append(key, value);
-      console.log(`  ✓ ${key} = ${value}`);
+      logManager.log(`  ✓ ${key} = ${value}`);
       fieldCount++;
     }
   });
 
   if (Array.isArray(recipe.ingredients)) {
-    console.log(`\n  [INGREDIENTS] ${recipe.ingredients.length} רכיבים:`);
+    logManager.log(`\n  [INGREDIENTS] ${recipe.ingredients.length} רכיבים:`);
     recipe.ingredients.forEach((ing, idx) => {
       const ingredientId = ing.IngredientId ?? ing.ingredientId;
       const quantity = ing.Quantity ?? ing.quantity;
@@ -240,19 +248,19 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
       if (ingredientId !== undefined && ingredientId !== null) {
         const fieldName = `Ingredients[${idx}].IngredientId`;
         formData.append(fieldName, ingredientId);
-        console.log(`    ✓ ${fieldName} = ${ingredientId}`);
+        logManager.log(`    ✓ ${fieldName} = ${ingredientId}`);
         fieldCount++;
       }
       if (quantity !== undefined && quantity !== null) {
         const fieldName = `Ingredients[${idx}].Quantity`;
         formData.append(fieldName, quantity);
-        console.log(`    ✓ ${fieldName} = ${quantity}`);
+        logManager.log(`    ✓ ${fieldName} = ${quantity}`);
         fieldCount++;
       }
       if (unit !== undefined && unit !== null) {
         const fieldName = `Ingredients[${idx}].Unit`;
         formData.append(fieldName, unit);
-        console.log(`    ✓ ${fieldName} = ${unit}`);
+        logManager.log(`    ✓ ${fieldName} = ${unit}`);
         fieldCount++;
       }
     });
@@ -260,7 +268,7 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
 
   // מתכונים בסיסיים (Recipe Composition)
   if (Array.isArray(recipe.baseRecipes) && recipe.baseRecipes.length > 0) {
-    console.log(`\n  [BASE_RECIPES] ${recipe.baseRecipes.length} מתכונים בסיסיים:`);
+    logManager.log(`\n  [BASE_RECIPES] ${recipe.baseRecipes.length} מתכונים בסיסיים:`);
     recipe.baseRecipes.forEach((br, idx) => {
       const baseRecipeId = br.baseRecipeId ?? br.BaseRecipeId;
       const quantity = br.quantity ?? br.Quantity ?? 1;
@@ -268,24 +276,24 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
 
       if (baseRecipeId !== undefined && baseRecipeId !== null) {
         formData.append(`BaseRecipes[${idx}].BaseRecipeId`, baseRecipeId);
-        console.log(`    ✓ BaseRecipes[${idx}].BaseRecipeId = ${baseRecipeId}`);
+        logManager.log(`    ✓ BaseRecipes[${idx}].BaseRecipeId = ${baseRecipeId}`);
         fieldCount++;
       }
       if (quantity !== undefined && quantity !== null) {
         formData.append(`BaseRecipes[${idx}].Quantity`, quantity);
-        console.log(`    ✓ BaseRecipes[${idx}].Quantity = ${quantity}`);
+        logManager.log(`    ✓ BaseRecipes[${idx}].Quantity = ${quantity}`);
         fieldCount++;
       }
       if (unit !== undefined && unit !== null) {
         formData.append(`BaseRecipes[${idx}].Unit`, unit);
-        console.log(`    ✓ BaseRecipes[${idx}].Unit = ${unit}`);
+        logManager.log(`    ✓ BaseRecipes[${idx}].Unit = ${unit}`);
         fieldCount++;
       }
     });
   }
 
   if (Array.isArray(recipe.steps)) {
-    console.log(`\n  [STEPS] ${recipe.steps.length} שלבים:`);
+    logManager.log(`\n  [STEPS] ${recipe.steps.length} שלבים:`);
     recipe.steps.forEach((step, idx) => {
       const description = typeof step === 'string' ? step : (step.Description || step.description || '');
       const order = typeof step === 'string' ? (idx + 1) : (step.Order || step.order || idx + 1);
@@ -295,24 +303,25 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
       formData.append(descField, description);
       formData.append(orderField, order);
       
-      console.log(`    ✓ ${descField} = "${description}"`);
-      console.log(`    ✓ ${orderField} = ${order}`);
+      logManager.log(`    ✓ ${descField} = "${description}"`);
+      logManager.log(`    ✓ ${orderField} = ${order}`);
       fieldCount += 2;
     });
   }
   
   if (imageFile) {
     formData.append('imageFile', imageFile);
-    console.log(`\n  [IMAGE] ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)}KB)`);
+    logManager.log(`\n  [IMAGE] ${imageFile.name} (${(imageFile.size / 1024).toFixed(2)}KB)`);
+      logManager.log(`\n✅ סה"כ ${fieldCount} שדות ב-FormData`);
     fieldCount++;
   }
   
   console.log(`\n✅ סה"כ ${fieldCount} שדות ב-FormData`);
   console.log('\n📤 שליחה ל-SERVER: PUT /api/recipe/' + id);
+    logManager.log('\n📤 שליחה ל-SERVER: PUT /api/recipe/' + id);
   
   const response = await axios.put(`/api/recipe/${id}`, formData);
-  
-  console.log('✅ תשובה מהשרת:', response.data);
-  console.log('>>> updateRecipeWithImage END\n');
+  logManager.log('✅ תשובה מהשרת: ' + JSON.stringify(response.data));
+  logManager.log('>>> updateRecipeWithImage END\n');
   return response.data;
 }

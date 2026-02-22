@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Server.Controllers;
 using Server.Data;
 using Server.Models;
+using BakeryWeb.Server.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,19 +15,21 @@ namespace Server.Services
 {
     public class ProductService : IProductService
     {
+        private readonly LogManager _logManager;
         private readonly BakeryDbContext _db;
         private readonly CostCalculatorService _costCalculator;
         private readonly IConfiguration _configuration;
         private readonly decimal _vatRate;
         private readonly string _uploadPath;
 
-        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration)
+        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager)
         {
             _db = db;
             _costCalculator = costCalculator;
             _configuration = configuration;
             _vatRate = configuration.GetValue<decimal>("PricingSettings:VatRate", 0.17m);
             _uploadPath = configuration.GetValue<string>("FileUpload:Path") ?? "Uploads/Products";
+            _logManager = logManager;
         }
 
         public async Task<Product> CreateAsync(CreateProductRequest request)
@@ -55,21 +58,18 @@ namespace Server.Services
                     var fileName = Guid.NewGuid().ToString() + Path.GetExtension(request.imageFile.FileName);
                     var filePath = Path.Combine(_uploadPath, fileName);
 
-                    // יצירת התיקייה אם לא קיימת
                     Directory.CreateDirectory(_uploadPath);
-
-                    // שמירת הקובץ
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await request.imageFile.CopyToAsync(stream);
                     }
 
                     product.ImageUrl = $"/uploads/products/{fileName}";
-                    Console.WriteLine($"✓ Image saved: {product.ImageUrl}");
+                    _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Image saved: {product.ImageUrl}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"✗ Error saving image: {ex.Message}");
+                    _logManager.LogError(nameof(ProductService), nameof(CreateAsync), $"Error saving image: {ex.Message}");
                     throw;
                 }
             }
@@ -77,8 +77,7 @@ namespace Server.Services
             // הוספת המוצר לבסיס הנתונים
             _db.Products.Add(product);
             await _db.SaveChangesAsync();
-
-            Console.WriteLine($"✓ Product created with ID: {product.Id}");
+            _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Product created with ID: {product.Id}");
 
             // הוספת פריטי המארז אם זה סוג Package
             if ((ProductType)request.ProductType == ProductType.Package && request.PackageItems != null && request.PackageItems.Any())
@@ -94,7 +93,7 @@ namespace Server.Services
                     throw new InvalidOperationException($"Package items reference missing recipes: {string.Join(", ", missingItemIds)}");
                 }
 
-                Console.WriteLine($"  Adding {request.PackageItems.Count} package items...");
+                _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Adding {request.PackageItems.Count} package items...");
                 foreach (var item in request.PackageItems)
                 {
                     var packageItem = new PackageItem
@@ -104,7 +103,7 @@ namespace Server.Services
                         Quantity = item.Quantity
                     };
                     _db.PackageItems.Add(packageItem);
-                    Console.WriteLine($"    ✓ PackageItem: RecipeId={item.RecipeId}, Qty={item.Quantity}");
+                    _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"PackageItem: RecipeId={item.RecipeId}, Qty={item.Quantity}");
                 }
                 await _db.SaveChangesAsync();
             }
@@ -112,7 +111,7 @@ namespace Server.Services
             // הוספת אריזה נוספת
             if (request.AdditionalPackaging != null && request.AdditionalPackaging.Any())
             {
-                Console.WriteLine($"  Adding {request.AdditionalPackaging.Count} additional packaging items...");
+                _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Adding {request.AdditionalPackaging.Count} additional packaging items...");
                 foreach (var item in request.AdditionalPackaging)
                 {
                     var packaging = new ProductAdditionalPackaging
@@ -122,7 +121,7 @@ namespace Server.Services
                         Quantity = item.Quantity
                     };
                     _db.ProductAdditionalPackagings.Add(packaging);
-                    Console.WriteLine($"    ✓ AdditionalPackaging: PackagingId={item.PackagingId}, Qty={item.Quantity}");
+                    _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"AdditionalPackaging: PackagingId={item.PackagingId}, Qty={item.Quantity}");
                 }
                 await _db.SaveChangesAsync();
             }

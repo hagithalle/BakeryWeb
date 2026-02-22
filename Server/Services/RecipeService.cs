@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
+using BakeryWeb.Server.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,32 +9,34 @@ namespace Server.Services
 {
     public class RecipeService : IRecipeService
     {
+        private readonly LogManager _logManager;
         private readonly BakeryDbContext _db;
         private readonly CostCalculatorService _costCalculator;
 
-        public RecipeService(BakeryDbContext db, CostCalculatorService costCalculator)
+        public RecipeService(BakeryDbContext db, CostCalculatorService costCalculator, LogManager logManager)
         {
             _db = db;
             _costCalculator = costCalculator;
+            _logManager = logManager;
         }
 
         public async Task<Recipe> CreateAsync(Recipe recipe)
         {
-            Console.WriteLine($"\n>>> RecipeService.CreateAsync START");
-            Console.WriteLine($"   Recipe: Name={recipe.Name}, OutputUnits={recipe.OutputUnits}");
+            _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"START");
+            _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"Recipe: Name={recipe.Name}, OutputUnits={recipe.OutputUnits}");
             
             _db.Recipes.Add(recipe);
             await _db.SaveChangesAsync();
             
-            Console.WriteLine($"   ✅ Recipe saved with ID: {recipe.Id}");
+            _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"Recipe saved with ID: {recipe.Id}");
 
             // שמור את החומרים
-            Console.WriteLine($"   Ingredients count: {recipe.Ingredients?.Count ?? 0}");
+            _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"Ingredients count: {recipe.Ingredients?.Count ?? 0}");
             if (recipe.Ingredients != null && recipe.Ingredients.Count > 0)
             {
                 foreach (var ri in recipe.Ingredients)
                 {
-                    Console.WriteLine($"      Adding Ingredient: ID={ri.IngredientId}, Qty={ri.Quantity}");
+                    _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"Adding Ingredient: ID={ri.IngredientId}, Qty={ri.Quantity}");
                     ri.Id = 0; // Ensure new PK
                     ri.RecipeId = recipe.Id;
                     _db.RecipeIngredients.Add(ri);

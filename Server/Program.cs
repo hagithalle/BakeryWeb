@@ -32,6 +32,7 @@ builder.Services.AddCors(options =>
 });
 
 // Register application services
+builder.Services.AddSingleton<BakeryWeb.Server.Services.LogManager>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IPackagingService, PackagingService>();
 builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();

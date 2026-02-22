@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BakeryWeb.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
+using BakeryWeb.Server.Services;
 
 namespace Server.Services
 {
@@ -13,9 +15,11 @@ namespace Server.Services
     public class IngredientService : IIngredientService
     {
         private readonly BakeryDbContext _context;
-        public IngredientService(BakeryDbContext context)
+        private readonly LogManager _logManager;
+        public IngredientService(BakeryDbContext context, LogManager logManager)
         {
             _context = context;
+            _logManager = logManager;
         }
 
         /// <summary>
@@ -42,17 +46,17 @@ namespace Server.Services
         public async Task<Ingredient> CreateAsync(Ingredient ingredient)
         {
             // Log the ingredient object before saving
-            Console.WriteLine($"[CreateAsync] קיבלתי אובייקט: {System.Text.Json.JsonSerializer.Serialize(ingredient)}");
+            _logManager.LogSuccess(nameof(IngredientService), nameof(CreateAsync), $"קיבלתי אובייקט: {System.Text.Json.JsonSerializer.Serialize(ingredient)}");
             try
             {
                 _context.Ingredients.Add(ingredient);
                 await _context.SaveChangesAsync();
-                Console.WriteLine("[CreateAsync] נשמר בהצלחה");
+                _logManager.LogSuccess(nameof(IngredientService), nameof(CreateAsync), "נשמר בהצלחה");
                 return ingredient;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[CreateAsync] שגיאה: {ex.Message}\n{ex.StackTrace}");
+                _logManager.LogError(nameof(IngredientService), nameof(CreateAsync), $"שגיאה: {ex.Message}\n{ex.StackTrace}");
                 throw;
             }
         }
