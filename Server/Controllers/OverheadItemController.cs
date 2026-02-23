@@ -9,16 +9,22 @@ namespace Server.Controllers
     public class OverheadItemController : ControllerBase
     {
         private readonly IOverheadItemService _service;
+        private readonly ILogger<OverheadItemController> _logger;
 
-        public OverheadItemController(IOverheadItemService service)
+        public OverheadItemController(IOverheadItemService service, ILogger<OverheadItemController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var list = await _service.GetAllAsync();
+            foreach (var item in list)
+            {
+                _logger.LogInformation($"[GET] FixedExpenseCard expense: {{title: '{item.Name}', category: '{item.Category}', amount: {item.MonthlyCost}, type: '{item.Type}', isActive: {item.IsActive}, id: {item.Id}}}");
+            }
             return Ok(list);
         }
 
@@ -41,6 +47,7 @@ namespace Server.Controllers
         public async Task<IActionResult> Update(int id, OverheadItem item)
         {
             var ok = await _service.UpdateAsync(id, item);
+            _logger.LogInformation($"[UPDATE] FixedExpenseCard expense: {{title: '{item.Name}', category: '{item.Category}', amount: {item.MonthlyCost}, type: '{item.Type}', isActive: {item.IsActive}, id: {item.Id}}}");
             return ok ? NoContent() : NotFound();
         }
 

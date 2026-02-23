@@ -1,26 +1,65 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
 
+// קטגוריות קבועות (int enum, תואם backend)
+const expenseCategories = [
+  { value: 0, label: 'הוצאות תפעול' }, // Operational
+  { value: 1, label: 'שכירות' },       // Rent
+  { value: 2, label: 'רואה חשבון' },    // Accountant
+  { value: 3, label: 'ביטוח' },        // Insurance
+  { value: 4, label: 'שונות' },        // Other
+];
+
 const expenseTypes = [
-  { value: 'קבועה', label: 'הוצאה קבועה' },
-  { value: 'עקיפה', label: 'הוצאה עקיפה' },
+  { value: 1, label: 'הוצאה קבועה' },
+  { value: 0, label: 'הוצאה עקיפה' },
 ];
 
 export default function AddExpenseDialog({ open, onClose, onSave, initialData }) {
-  const [form, setForm] = useState(initialData || {
-    title: '',
-    category: '',
-    amount: '',
-    type: 'קבועה',
-  });
+
+
+  // Helper to convert label to value if needed
+  const getTypeValue = (type) => {
+    if (typeof type === 'number') return type;
+    if (type === 'הוצאה קבועה') return 1;
+    if (type === 'הוצאה עקיפה') return 0;
+    return 1;
+  };
+
+  // Helper to convert category to int value
+  const getCategoryValue = (cat) => {
+    if (typeof cat === 'number') return cat;
+    const found = expenseCategories.find((c) => c.label === cat);
+    return found ? found.value : 4; // default Other
+  };
+
+  const getInitialForm = (data) => {
+    if (!data) return { title: '', category: 0, amount: '', type: 1 };
+    return {
+      ...data,
+      type: getTypeValue(data.type),
+      category: getCategoryValue(data.category)
+    };
+  };
+
+  const [form, setForm] = useState(getInitialForm(initialData));
+
+  React.useEffect(() => {
+    setForm(getInitialForm(initialData));
+  }, [initialData, open]);
 
   const handleChange = (field) => (e) => {
-    setForm({ ...form, [field]: e.target.value });
+    let value = e.target.value;
+    if (field === 'type' || field === 'category') value = Number(value);
+    setForm({ ...form, [field]: value });
   };
 
   const handleSave = () => {
     if (!form.title || !form.amount) return;
-    onSave({ ...form, amount: parseFloat(form.amount) });
+    const payload = { ...form, amount: parseFloat(form.amount), category: Number(form.category) };
+    console.log('AddExpenseDialog onSave payload:', payload);
+    onSave(payload);
   };
 
   return (
@@ -35,11 +74,18 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
             fullWidth
           />
           <TextField
+            select
             label="קטגוריה"
             value={form.category}
             onChange={handleChange('category')}
             fullWidth
-          />
+          >
+            {expenseCategories.map((cat) => (
+              <MenuItem key={cat.value} value={cat.value}>
+                {cat.label}
+              </MenuItem>
+            ))}
+          </TextField>
           <TextField
             label="סכום חודשי (₪)"
             type="number"

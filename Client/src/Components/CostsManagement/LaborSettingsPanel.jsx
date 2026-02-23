@@ -69,8 +69,9 @@ export default function LaborSettingsPanel() {
       workingDaysPerMonth: formData.workingDaysPerMonth,
       workingHoursPerDay: formData.workingHoursPerDay
     };
-    
     saveSettings(dataToSave);
+    // Emit event for other components to refresh labor settings
+    window.dispatchEvent(new Event('laborSettingsUpdated'));
   };
 
   // חישוב עלות שעת עבודה

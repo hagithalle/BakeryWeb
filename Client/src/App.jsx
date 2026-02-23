@@ -16,7 +16,7 @@ function App() {
   return (
     <MainLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/fixed-expenses" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/ingredients" element={<IngredientsPage />} />
         <Route path="/recipes" element={<RecipesPage />} />

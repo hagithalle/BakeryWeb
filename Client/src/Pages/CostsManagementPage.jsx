@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Tabs, Tab, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import LaborSettingsPanel from "../Components/CostsManagement/LaborSettingsPanel";
 import OverheadItemsPanel from "../Components/CostsManagement/OverheadItemsPanel";
@@ -7,35 +7,130 @@ import FixedExpensesSummary from './FixedExpenses/FixedExpensesSummary';
 import AddIcon from '@mui/icons-material/Add';
 import AddButton from '../Components/AddButton';
 import AddExpenseDialog from './FixedExpenses/AddExpenseDialog';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper as MuiPaper, Chip } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper as MuiPaper, Chip, IconButton, Snackbar, Alert } from '@mui/material';
+import FixedExpensesPage from './FixedExpensesPage';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../Services/fixedExpenseService';
+import { getLaborSettings } from '../Services/laborSettingsService';
 
 export default function CostsManagementPage() {
+
+
   const [currentTab, setCurrentTab] = useState(0);
   const [displayMode, setDisplayMode] = useState('cards');
-  const [expenses, setExpenses] = useState([
-    { title: 'שכירות סדנה', category: 'שכירות', amount: 3500, type: 'קבועה' },
-    { title: 'ראה חשבון חודשי', category: 'ראה חשבון', amount: 800, type: 'קבועה' },
-    { title: 'חשמל', category: 'חשמל', amount: 1200, type: 'קבועה' },
-    { title: 'ביטוח עסק', category: 'ביטוח', amount: 350, type: 'קבועה' },
-    { title: 'ארנונה', category: 'עלויות עקיפות', amount: 900, type: 'עקיפה' },
-    { title: 'תחזוקה', category: 'עלויות עקיפות', amount: 400, type: 'עקיפה' },
-  ]);
+  const [expenses, setExpenses] = useState([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [laborSettings, setLaborSettings] = useState({ workingDaysPerMonth: 22, workingHoursPerDay: 8 });
 
-  // דמו: ערכים קבועים לחישוב עבודה עקיפה
-  const laborSettings = { workingDaysPerMonth: 22, workingHoursPerDay: 8 };
+  // מיפוי קטגוריה לאייקון וצבע (אפשר להרחיב)
+  const CATEGORY_ICON_COLOR = {
+    'שכירות': { type: 'קבועה' },
+    'ראה חשבון': { type: 'עקיפה' },
+    'חשמל': { type: 'קבועה' },
+    'ביטוח': { type: 'עקיפה' },
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const data = await getAllExpenses();
+      const mapped = data.map(item => {
+        const cat = CATEGORY_ICON_COLOR[item.name] || {};
+        return {
+          title: item.name,
+          category: item.name,
+          amount: item.monthlyCost,
+          type: cat.type || 'קבועה',
+          isActive: item.isActive,
+          id: item.id,
+        };
+      });
+      setExpenses(mapped);
+    } catch (err) {
+      setExpenses([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchExpenses();
+    const fetchLabor = () => {
+      getLaborSettings().then(data => {
+        setLaborSettings({
+          workingDaysPerMonth: data.workingDaysPerMonth || 22,
+          workingHoursPerDay: data.workingHoursPerDay || 8
+        });
+      });
+    };
+    fetchLabor();
+    // Listen for labor settings update event
+    const handler = () => fetchLabor();
+    window.addEventListener('laborSettingsUpdated', handler);
+    return () => window.removeEventListener('laborSettingsUpdated', handler);
+  }, []);
+
+  // חישוב עלות עקיפה לשעה לפי הגדרות מהשרת
   const totalOverhead = expenses.filter(e => e.type === 'עקיפה').reduce((sum, e) => sum + e.amount, 0);
   const monthlyHours = (laborSettings.workingDaysPerMonth || 0) * (laborSettings.workingHoursPerDay || 0);
   const overheadPerHour = monthlyHours === 0 ? 0 : totalOverhead / monthlyHours;
 
   const handleTabChange = (event, newValue) => setCurrentTab(newValue);
+    // Fetch expenses when switching to tab 1
+    useEffect(() => {
+      if (currentTab === 1) {
+        fetchExpenses();
+      }
+    }, [currentTab]);
   const handleDisplayMode = (event, newMode) => { if (newMode) setDisplayMode(newMode); };
-  const handleAddExpense = () => setAddDialogOpen(true);
-  const handleSaveExpense = (expense) => {
-    setExpenses([...expenses, expense]);
-    setAddDialogOpen(false);
+  const handleAddExpense = () => {
+    setEditExpense(null);
+    setAddDialogOpen(true);
   };
-  const handleCloseDialog = () => setAddDialogOpen(false);
+  const handleEditExpense = (expense) => {
+    setEditExpense(expense);
+    setAddDialogOpen(true);
+  };
+  const handleDeleteExpense = async (expense) => {
+    if (window.confirm(`האם למחוק את "${expense.title}"?`)) {
+      try {
+        await deleteExpense(expense.id);
+        setSnackbar({ open: true, message: 'ההוצאה נמחקה בהצלחה', severity: 'success' });
+        fetchExpenses();
+      } catch (err) {
+        setSnackbar({ open: true, message: 'שגיאה במחיקה', severity: 'error' });
+      }
+    }
+  };
+  const handleSaveExpense = async (expense) => {
+    try {
+      if (editExpense) {
+        await updateExpense(editExpense.id, {
+          id: editExpense.id,
+          name: expense.title,
+          monthlyCost: expense.amount,
+          isActive: true
+        });
+        setSnackbar({ open: true, message: 'ההוצאה עודכנה בהצלחה', severity: 'success' });
+      } else {
+        await createExpense({
+          name: expense.title,
+          monthlyCost: expense.amount,
+          isActive: true
+        });
+        setSnackbar({ open: true, message: 'ההוצאה נוספה בהצלחה', severity: 'success' });
+      }
+      setAddDialogOpen(false);
+      setEditExpense(null);
+      fetchExpenses();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'שגיאה בשמירה', severity: 'error' });
+    }
+  };
+  const handleCloseDialog = () => {
+    setAddDialogOpen(false);
+    setEditExpense(null);
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
@@ -66,84 +161,7 @@ export default function CostsManagementPage() {
       {/* תוכן */}
       <Box sx={{ mt: 3, flexGrow: 1, overflow: 'auto' }}>
         {currentTab === 0 && <LaborSettingsPanel />}
-        {currentTab === 1 && (
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexDirection: 'row-reverse', justifyContent: 'space-between' }}>
-              {/* Add button on right */}
-              <AddButton onClick={handleAddExpense}>
-                הוצאה חדשה
-              </AddButton>
-              {/* Toggle on left */}
-              <ToggleButtonGroup
-                value={displayMode}
-                exclusive
-                onChange={handleDisplayMode}
-                aria-label="display mode"
-                sx={{ direction: 'ltr' }}
-              >
-                <ToggleButton value="table" aria-label="table" sx={{ borderRadius: '50%', px: 2, mx: 0.5 }}>
-                  טבלה
-                </ToggleButton>
-                <ToggleButton value="cards" aria-label="cards" sx={{ borderRadius: '50%', px: 2, mx: 0.5 }}>
-                  כרטיסיות
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-            <FixedExpensesSummary expenses={expenses} />
-            <MuiPaper sx={{ p: 2, mb: 2, bgcolor: '#f8f5f2' }}>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                עלות עקיפה לשעת עבודה: ₪{overheadPerHour.toFixed(2)}
-              </Typography>
-            </MuiPaper>
-            {displayMode === 'cards' ? (
-              <FixedExpensesList expenses={expenses} />
-            ) : (
-              <TableContainer component={MuiPaper} sx={{ mt: 2 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: '#FFF7F2' }}>
-                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>שם ההוצאה</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>קטגוריה</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>סכום חודשי (₪)</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>סוג</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {expenses.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                          <Typography color="text.secondary">
-                            אין הוצאות קבועות או עקיפות.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      expenses.map((e, idx) => (
-                        <TableRow key={e.title + idx} hover>
-                          <TableCell align="right">{e.title}</TableCell>
-                          <TableCell align="right">{e.category}</TableCell>
-                          <TableCell align="right">₪{e.amount.toLocaleString()}</TableCell>
-                          <TableCell align="right">
-                            <Chip
-                              label={e.type === 'קבועה' ? 'קבועה' : 'עקיפה'}
-                              size="small"
-                              sx={{
-                                bgcolor: e.type === 'קבועה' ? '#C98929' : '#e0e0e0',
-                                color: e.type === 'קבועה' ? 'white' : 'black',
-                                fontWeight: 600
-                              }}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-            <AddExpenseDialog open={addDialogOpen} onClose={handleCloseDialog} onSave={handleSaveExpense} />
-          </Box>
-        )}
+        {currentTab === 1 && <FixedExpensesPage />}
       </Box>
     </Box>
   );

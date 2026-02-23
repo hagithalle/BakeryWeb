@@ -53,6 +53,8 @@ namespace Server.Services
         existingItem.Name = item.Name;
         existingItem.MonthlyCost = item.MonthlyCost;
         existingItem.IsActive = item.IsActive;
+        existingItem.Type = item.Type;
+        existingItem.Category = item.Category;
 
         await _context.SaveChangesAsync();
         return true;

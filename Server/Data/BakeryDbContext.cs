@@ -147,6 +147,11 @@ namespace Server.Data
                 .WithMany()
                 .HasForeignKey(pap => pap.PackagingId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Ensure OverheadItem.Type is stored as int (not string)
+            modelBuilder.Entity<OverheadItem>()
+                .Property(o => o.Type)
+                .HasConversion<int>();
         }
     }
 }
