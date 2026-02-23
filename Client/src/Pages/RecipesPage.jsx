@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { Box } from "@mui/material";
+import { Box, Grid } from "@mui/material";
+import RecipeCard from "../Components/Recipes/RecipeCard";
+import PageHeader from "../Components/Common/PageHeader";
+import FilterBar from "../Components/FilterBar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import AddRecipeDialog from "../Components/Recipes/AddRecipeDialog";
@@ -17,6 +20,7 @@ import {
   updateRecipeWithImage,
 } from "../Services/RecipeService";
 
+
 export default function RecipesPage() {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
@@ -25,6 +29,10 @@ export default function RecipesPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editRecipe, setEditRecipe] = useState(null);
+
+  // Filter/search state
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
 
   // Fetch recipes
   const {
@@ -43,6 +51,30 @@ export default function RecipesPage() {
     queryKey: ["ingredients"],
     queryFn: fetchIngredients,
   });
+
+
+  // קטגוריות ייחודיות מתוך המתכונים
+  const categories = useMemo(() => {
+    const cats = (rows || [])
+      .map((r) => r.category)
+      .filter((c) => !!c && c !== "");
+    return [
+      { label: "הכל", value: "all" },
+      ...Array.from(new Set(cats)).map((c) => ({ label: c, value: c })),
+    ];
+  }, [rows]);
+
+  // סינון מתכונים לפי חיפוש וקטגוריה
+  const filteredRows = useMemo(() => {
+    return (rows || []).filter((r) => {
+      const matchesCategory = category === "all" || r.category === category;
+      const matchesSearch =
+        !search ||
+        (r.name && r.name.toLowerCase().includes(search.toLowerCase())) ||
+        (r.description && r.description.toLowerCase().includes(search.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [rows, search, category]);
 
   const selectedRecipe = rows.find((r) => r.id === selectedId) || null;
 
@@ -373,54 +405,85 @@ export default function RecipesPage() {
   };
 
   return (
-    <Box>
-      <Box sx={{ display: "flex", gap: 3 }}>
-        <Box sx={{ flex: 1 }}>
-          <RecipeListSidebar
-            recipes={rows}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onAdd={() => {
-              setEditRecipe(null);
-              setAddDialogOpen(true);
-            }}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            loading={recipesLoading}
-            filter=""
-            onFilterChange={() => {}}
-            strings={strings}
+    <Box sx={{ bgcolor: '#FFF7F2', minHeight: '100vh', py: 4 }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', mb: 4 }}>
+        <PageHeader
+          title="מתכונים"
+          subtitle="ניהול המתכונים שלך"
+          buttonLabel="מתכון חדש"
+          onAdd={() => { setEditRecipe(null); setAddDialogOpen(true); }}
+        />
+        {/* שורת פילטרים */}
+        {!selectedId && (
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            filters={[
+              {
+                label: "קטגוריה",
+                value: category,
+                onChange: setCategory,
+                options: categories,
+              },
+            ]}
+            searchLabel="חפש מתכון..."
           />
-        </Box>
-
-        <Box sx={{ flex: 2, minWidth: 0 }}>
-          <RecipeDetailsPanel
-            recipe={fullSelectedRecipe}
-            onEdit={() => {
-              if (fullSelectedRecipe) handleEdit(fullSelectedRecipe);
-            }}
-            onDelete={() => {
-              if (fullSelectedRecipe) handleDelete(fullSelectedRecipe);
-            }}
-            tab="ingredients"
-            onTabChange={() => {}}
-            strings={strings}
-          />
-        </Box>
+        )}
       </Box>
 
+      {/* מצב ללא מתכון נבחר: גריד כרטיסים */}
+      {!selectedId && (
+        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+          <Grid container spacing={3}>
+            {(filteredRows || []).map((recipe) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.id}>
+                <RecipeCard recipe={recipe} onClick={() => setSelectedId(recipe.id)} />
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      {/* מצב מתכון נבחר: Master-Detail */}
+      {selectedId && (
+        <Box sx={{ maxWidth: 1400, mx: 'auto', display: 'flex', gap: 3 }}>
+          {/* פאנל רשימת מתכונים */}
+          <Box sx={{ flex: 1, minWidth: 320 }}>
+            <RecipeListSidebar
+              recipes={rows}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onAdd={() => { setEditRecipe(null); setAddDialogOpen(true); }}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              loading={recipesLoading}
+              filter=""
+              onFilterChange={() => {}}
+              strings={strings}
+            />
+          </Box>
+          {/* פאנל פרטי מתכון */}
+          <Box sx={{ flex: 2, minWidth: 0 }}>
+            <RecipeDetailsPanel
+              recipe={fullSelectedRecipe}
+              onEdit={() => { if (fullSelectedRecipe) handleEdit(fullSelectedRecipe); }}
+              onDelete={() => { if (fullSelectedRecipe) handleDelete(fullSelectedRecipe); }}
+              tab="ingredients"
+              onTabChange={() => {}}
+              strings={strings}
+            />
+          </Box>
+        </Box>
+      )}
+
+      {/* דיאלוג הוספה/עריכה */}
       <AddRecipeDialog
         open={addDialogOpen}
-        onClose={() => {
-          setAddDialogOpen(false);
-          setEditRecipe(null);
-        }}
+        onClose={() => { setAddDialogOpen(false); setEditRecipe(null); }}
         onSave={handleSave}
         ingredientsList={ingredientsList}
         loadingIngredients={ingredientsLoading}
-        onIngredientAdded={() =>
-          queryClient.invalidateQueries(["ingredients"])
-        }
+        onIngredientAdded={() => queryClient.invalidateQueries(["ingredients"])}
         initialValues={editRecipe}
         availableRecipes={rows || []}
         strings={strings}
