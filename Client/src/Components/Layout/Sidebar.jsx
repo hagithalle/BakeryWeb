@@ -15,6 +15,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
+import CalculateIcon from '@mui/icons-material/Calculate';
 
 const menuKeys = ["ingredients", "recipes", "products"];
 
@@ -31,7 +32,8 @@ export default function Sidebar({ lang = "he" }) {
         { label: strings.sidebar.packaging, path: "/packaging", icon: LocalShippingIcon },
         { label: strings.sidebar.recipes, path: "/recipes", icon: MenuBookIcon },
         { label: strings.sidebar.products, path: "/products", icon: CakeIcon },
-        { label: "ניהול עלויות", path: "/costs", icon: AttachMoneyIcon },
+        { label: "הכנסות והוצאות", path: "/income-expense", icon: AttachMoneyIcon },
+        { label: "ניהול עלויות", path: "/costs", icon: CalculateIcon },
     ];
 
     return (
@@ -40,7 +42,7 @@ export default function Sidebar({ lang = "he" }) {
             flexShrink: 0,
             bgcolor: '#FEFEFE',
             color: '#971936',
-            boxShadow: '2px 0 8px rgba(151, 25, 54, 0.08)',
+            boxShadow: '8px 0 24px -8px #e0cfc2', // soft shadow only on the left
             direction: strings.direction,
             textAlign: strings.direction === "rtl" ? "right" : "left",
             order: strings.direction === "rtl" ? 1 : 0,

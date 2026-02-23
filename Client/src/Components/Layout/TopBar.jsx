@@ -54,15 +54,7 @@ export default function TopBar() {
           py: 1
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                color: '#971936',
-                fontWeight: 700
-              }}
-            >
-              {pageTitle}
-            </Typography>
+           
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Button 

@@ -3,6 +3,8 @@ import { Box, TextField } from "@mui/material";
 import GenericTable from "../Components/GenericTable";
 import PackagingDialog from "../Components/PackagingDialog";
 import AddButton from "../Components/AddButton";
+import FilterBar from "../Components/FilterBar";
+import PageHeader from '../Components/Common/PageHeader';
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -48,40 +50,22 @@ export default function PackagingPage() {
 
   return (
     <Box>
-      {/* Header with Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-        <AddButton
-          onClick={() => {
-            setSelectedPackaging(null);
-            setDialogOpen(true);
-          }}
-        >
-          {strings.packaging?.add || "הוסף מוצר אריזה"}
-        </AddButton>
-      </Box>
+      <PageHeader
+        title={strings.sidebar?.packaging || "אריזות"}
+        subtitle={strings.packaging?.subtitle || "ניהול מוצרי אריזה"}
+        buttonLabel={strings.packaging?.add || "הוסף מוצר אריזה"}
+        onAdd={() => {
+          setSelectedPackaging(null);
+          setDialogOpen(true);
+        }}
+      />
 
       {/* Search Section */}
-      <Box sx={{ mb: 2 }}>
-        <TextField
-          placeholder={strings.filter?.search || "חפש לפי שם..."}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          variant="outlined"
-          size="small"
-          sx={{ 
-            flexGrow: 1,
-            minWidth: 250,
-            backgroundColor: '#FEFEFE',
-            borderRadius: 2,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-              '& fieldset': {
-                borderColor: '#D2A5A0'
-              }
-            }
-          }}
-        />
-      </Box>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchLabel={strings.filter?.search || "חפש לפי שם..."}
+      />
 
       {/* Table */}
       <GenericTable

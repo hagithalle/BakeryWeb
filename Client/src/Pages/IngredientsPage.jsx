@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Typography, Box, Chip } from "@mui/material";
+import PageHeader from '../Components/Common/PageHeader';
+import FilterBar from '../Components/FilterBar';
 import AddButton from "../Components/AddButton";
 import GenericFilter from "../Components/GenericFilter";
 import GenericTable from "../Components/GenericTable";
@@ -22,6 +24,7 @@ const mockCategories = [
 
 
 export default function IngredientsPage() {
+
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
   
@@ -186,12 +189,15 @@ export default function IngredientsPage() {
 
   return (
     <Box>
-      {/* Header with Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-        <AddButton onClick={() => setDialogOpen(true)}>
-          {strings.ingredient?.add || "הוסף חומר גלם"}
-        </AddButton>
-      </Box>
+      <PageHeader
+        title={strings.sidebar?.ingredients || "חומרי גלם"}
+        subtitle={strings.ingredient?.subtitle || "ניהול חומרי גלם"}
+        buttonLabel={strings.ingredient?.add || "הוסף חומר גלם"}
+        onAdd={() => {
+          setSelectedIngredient(null);
+          setDialogOpen(true);
+        }}
+      />
 
       {filteredRows.length === 0 && (
         <Typography variant="body1" sx={{ color: '#971936', mb: 2 }}>
@@ -199,19 +205,19 @@ export default function IngredientsPage() {
         </Typography>
       )}
       
-      {/* Filter Section */}
-      <Box sx={{ mb: 2 }}>
-        <GenericFilter
-          searchValue={search}
-          onSearchChange={setSearch}
-          categoryValue={category}
-          onCategoryChange={setCategory}
-          categories={categories.map(cat => ({ ...cat, label: strings.ingredient?.categoryValues?.[cat.label] || cat.label }))}
-          searchLabel={strings.filter.search}
-          categoryLabel={strings.filter.category}
-          strings={strings}
-        />
-      </Box>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchLabel={strings.filter?.search || "חפש לפי שם..."}
+        filters={[
+          {
+            value: category,
+            onChange: setCategory,
+            options: categories.map(cat => ({ value: cat.value, label: strings.ingredient?.categoryValues?.[cat.label] || cat.label })),
+            label: strings.filter?.category || "קטגוריה"
+          }
+        ]}
+      />
       
       {/* Table */}
       <GenericTable
