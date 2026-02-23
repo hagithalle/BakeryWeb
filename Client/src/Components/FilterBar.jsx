@@ -23,7 +23,10 @@ export default function FilterBar({
         p: 2,
         boxShadow: 2,
         borderRadius: 2,
-        direction: "rtl"
+        direction: "rtl",
+        background: '#fffbe9',
+        border: '2px solid #bfa47a',
+        minHeight: 60,
       }}
     >
       <Box

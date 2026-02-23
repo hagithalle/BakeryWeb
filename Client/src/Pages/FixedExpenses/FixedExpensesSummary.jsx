@@ -29,9 +29,9 @@ export default function FixedExpensesSummary({ expenses }) {
   }));
 
   return (
-    <Grid container spacing={4} sx={{ mb: 3, justifyContent: 'center' }}>
+    <Grid container spacing={4} sx={{ mb: 3, justifyContent: 'center' }} columns={12}>
       {/* סה"כ חודשי בצד ימין */}
-      <Grid item xs={12} md={5} order={{ xs: 2, md: 1 }}>
+      <Grid sx={{ gridColumn: { xs: '1 / -1', md: '1 / 6' }, order: { xs: 2, md: 1 } }}>
         <Paper elevation={3} sx={{ p: 3, borderRadius: 3, minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#fffbe9' }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>סה"כ חודשי</Typography>
           <Typography variant="h3" sx={{ color: '#bfa47a', fontWeight: 700 }}>{`₪${monthlyTotal.toLocaleString()}`}</Typography>
@@ -39,12 +39,12 @@ export default function FixedExpensesSummary({ expenses }) {
         </Paper>
       </Grid>
       {/* התפלגות הוצאות בצד שמאל */}
-      <Grid item xs={12} md={7} order={{ xs: 1, md: 2 }}>
+      <Grid sx={{ gridColumn: { xs: '1 / -1', md: '6 / 13' }, order: { xs: 1, md: 2 } }}>
         <Paper elevation={3} sx={{ p: 3, borderRadius: 3, minHeight: 220, background: '#fffbe9' }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, textAlign: 'center' }}>התפלגות הוצאות</Typography>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
-            <Box sx={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <Box sx={{ width: 160, height: 160, minWidth: 120, minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={120} minHeight={120}>
                 <PieChart>
                   <Pie
                     data={coloredExpenses}
