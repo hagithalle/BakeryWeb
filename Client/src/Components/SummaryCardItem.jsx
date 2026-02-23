@@ -118,7 +118,7 @@ export default function SummaryCardItem({
           )}
           <Typography
             variant="subtitle2"
-            sx={{ color: "#7c5c3b", fontWeight: 400, mb: 0.5 }}
+            sx={{ color: "#ffffff", fontWeight: 400, mb: 0.5 }}
           >
             {title}
           </Typography>

@@ -117,7 +117,7 @@ export default function LaborSettingsPanel() {
 
       <Grid container spacing={3}>
         {/* משכורת חודשית רצויה */}
-        <Grid item xs={12} md={6}>
+          <Grid>
           <TextField
             fullWidth
             label="משכורת חודשית רצויה (₪)"
@@ -129,7 +129,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* פנסיה */}
-        <Grid item xs={12} md={6}>
+          <Grid>
           <TextField
             fullWidth
             label="פנסיה - אחוז מעסיק (%)"
@@ -142,7 +142,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* קרן השתלמות */}
-        <Grid item xs={12} md={6}>
+          <Grid>
           <TextField
             fullWidth
             label="קרן השתלמות - אחוז מעסיק (%)"
@@ -155,7 +155,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* עלויות מעסיק נוספות */}
-        <Grid item xs={12} md={6}>
+          <Grid>
           <TextField
             fullWidth
             label="עלויות מעסיק נוספות (%)"
@@ -168,7 +168,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* ימי עבודה בחודש */}
-        <Grid item xs={12} md={6}>
+          <Grid>
           <TextField
             fullWidth
             label="ימי עבודה בחודש"
@@ -180,7 +180,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* שעות עבודה ביום */}
-        <Grid item xs={12} md={6}>
+          <Grid>
           <TextField
             fullWidth
             label="שעות עבודה ביום"
@@ -192,7 +192,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* תצוגת תוצאה */}
-        <Grid item xs={12}>
+          <Grid>
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="h6">
               עלות שכר לשעת עבודה: ₪{calculateHourlyCost().toFixed(2)}
@@ -214,7 +214,7 @@ export default function LaborSettingsPanel() {
         </Grid>
 
         {/* כפתור שמירה */}
-        <Grid item xs={12}>
+          <Grid>
           <Button
             variant="contained"
             onClick={handleSave}

@@ -9,8 +9,8 @@ import PackagingPage from "./Pages/PackagingPage.jsx";
 import CostsManagementPage from "./Pages/CostsManagementPage.jsx";
 
 import IncomeExpense from "./Pages/IncomeExpense.jsx";
-
-import RecipesPage from "./Pages/RecipesPage.jsx";
+import FixedExpensesPage from './Pages/FixedExpensesPage.jsx';
+import RecipesPage from './Pages/RecipesPage.jsx';
 
 function App() {
   return (
@@ -24,6 +24,7 @@ function App() {
         <Route path="/packaging" element={<PackagingPage />} />
          <Route path="/income-expense" element={<IncomeExpense />} />
         <Route path="/costs" element={<CostsManagementPage />} />
+        <Route path="/fixed-expenses" element={<FixedExpensesPage />} />
        
       </Routes>
     </MainLayout>

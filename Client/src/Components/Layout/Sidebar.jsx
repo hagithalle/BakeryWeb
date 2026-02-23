@@ -16,6 +16,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
 import CalculateIcon from '@mui/icons-material/Calculate';
+import PieChartIcon from '@mui/icons-material/PieChart';
 
 const menuKeys = ["ingredients", "recipes", "products"];
 
