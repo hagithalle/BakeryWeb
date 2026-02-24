@@ -25,6 +25,7 @@ export default function FilterBar({
         borderRadius: 2,
         direction: "rtl",
         background: '#fff',
+        border: '2px solid #bfa47a',
         minHeight: 60,
       }}
     >

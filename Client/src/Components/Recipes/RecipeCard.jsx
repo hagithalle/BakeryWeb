@@ -107,19 +107,32 @@ export default function RecipeCard({ recipe, onClick }) {
             }}
           >
             {/* קטגוריה מעל שם המתכון */}
-            {recipe.category && (
-              <Chip
-                label={recipe.category}
-                size="small"
-                sx={{
-                  bgcolor: "#F5E0D3",
-                  color: "#7c5c3b",
-                  fontWeight: 500,
-                  borderRadius: 999,
-                  mb: 0.5,
-                }}
-              />
-            )}
+            <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
+              {recipe.category && (
+                <Chip
+                  label={recipe.category}
+                  size="small"
+                  sx={{
+                    bgcolor: "#F5E0D3",
+                    color: "#7c5c3b",
+                    fontWeight: 500,
+                    borderRadius: 999,
+                  }}
+                />
+              )}
+              {typeof recipe.recipeType !== 'undefined' && (
+                <Chip
+                  label={recipe.recipeType === 0 ? 'חלבי' : recipe.recipeType === 1 ? 'בשרי' : 'פרווה'}
+                  size="small"
+                  sx={{
+                    bgcolor: "#E3F7D6",
+                    color: "#4B7B5B",
+                    fontWeight: 500,
+                    borderRadius: 999,
+                  }}
+                />
+              )}
+            </Box>
 
             {/* שם המתכון */}
             <Typography

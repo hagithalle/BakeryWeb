@@ -112,14 +112,45 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
   }
 
   return (
-    <Box sx={{ flex: 1, bgcolor: '#FFF7F2', p: 3, borderRadius: 3, minHeight: 600 }}>
+    <Box sx={{
+      flex: 1,
+      bgcolor: '#FFF7F2',
+      p: 3.5,
+      borderRadius: '28px',
+      minHeight: '100vh',
+      height: '100vh',
+      boxShadow: '0 6px 32px 0 rgba(80, 50, 20, 0.10)',
+      border: '2.5px solid #F7E7C1',
+      position: 'relative',
+      transition: 'box-shadow 0.2s',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 0,
+    }}>
 
       {/* אזור עליון: תמונה מימין, כותרת, תיאור, אינפו */}
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 3, mb: 3 }}>
         {/* תוכן טקסטואלי */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h5" sx={{ fontFamily: 'Suez One, serif', color: '#751B13', fontWeight: 700, flex: 1 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontFamily: 'Heebo, Suez One, serif',
+                color: '#7B3B1D',
+                fontWeight: 900,
+                fontSize: 32,
+                letterSpacing: 0.7,
+                flex: 1,
+                textAlign: 'right',
+                background: 'none',
+                boxShadow: 'none',
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                textShadow: '0 1px 0 #fff, 0 2px 4px #e0b08944',
+              }}
+            >
               {recipe.name}
             </Typography>
             <IconButton color="primary" onClick={onEdit} sx={{ ml: 1 }}>

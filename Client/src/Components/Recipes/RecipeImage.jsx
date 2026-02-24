@@ -7,17 +7,21 @@ export default function RecipeImage({ src, alt }) {
   return (
     <Box
       sx={{
-        width: '100%',
-        height: 250,
-        mb: 3,
-        bgcolor: 'white',
-        borderRadius: '38px 12px 32px 18px', // קצוות לא שוות
-        boxShadow: 1,
+        width: 170,
+        height: 130,
+        mb: 0,
+        bgcolor: '#fff',
+        borderRadius: '22px 32px 18px 28px', // קופסא מעוגלת לא סימטרית
+        boxShadow: '0 4px 24px 0 rgba(180,140,90,0.13)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        border: '2px dashed #D7CCC8'
+        border: '3px solid #E0B089',
+        transition: 'box-shadow 0.2s',
+        ':hover': {
+          boxShadow: '0 8px 32px 0 rgba(180,140,90,0.18)'
+        }
       }}
     >
       <img
@@ -26,7 +30,8 @@ export default function RecipeImage({ src, alt }) {
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover'
+          objectFit: 'cover',
+          borderRadius: '20px 30px 16px 24px' // גם לתמונה עצמה
         }}
       />
     </Box>

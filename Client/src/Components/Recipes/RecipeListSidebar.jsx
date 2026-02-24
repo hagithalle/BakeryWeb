@@ -7,27 +7,103 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
 import AddButton from "../AddButton";
 import BraImg from "../../assets/images/Bra.jpg";
-import FilterBar from "../FilterBar";
+import RecipesFilterBar from "./RecipesFilterBar";
+import { MAIN_RECIPE_CATEGORIES, getSubCategoryOptions, RECIPE_TYPES, KOSHER_TYPES } from "../../constants/categories";
+import useLocaleStrings from "../../hooks/useLocaleStrings";
 
-export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd, onEdit, onDelete, filter, onFilterChange, onBack }) {
+export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd, onEdit, onDelete, filter, onFilterChange, onBack, strings: stringsProp }) {
+  const strings = stringsProp || useLocaleStrings();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
-  // הפקת רשימת קטגוריות ייחודיות
-  const categories = Array.from(new Set((recipes || []).map(r => r.category).filter(Boolean)));
-  // סינון מתכונים לפי חיפוש וקטגוריה
-  const filteredRecipes = (recipes || []).filter(recipe => {
-    const matchesSearch = !search || (recipe.name && recipe.name.includes(search));
-    const matchesCategory = category === "all" || recipe.category === category;
-    return matchesSearch && matchesCategory;
-  });
+  const [type, setType] = useState("all");
+
+  // Handler to reset type when main category changes
+  const handleMainCategoryChange = (newCategory) => {
+    setCategory(newCategory);
+    // Reset type if not 'kosher' or 'type'
+    if (newCategory !== "kosher" && newCategory !== "type") {
+      setType("all");
+    }
+  };
+
+  // קטגוריות ראשיות וסוגים דינמיים - הכל בקובץ חיצוני
+  const mainCategoryOptions = MAIN_RECIPE_CATEGORIES;
+  const subCategoryOptions = getSubCategoryOptions(category);
+  // סינון מתכונים לפי חיפוש, קטגוריה וסוג
+  // עוזר למציאת label לפי value
+ // עוזר למציאת label לפי value
+function getTypeLabel(value) {
+  const allTypes = [...RECIPE_TYPES, ...KOSHER_TYPES];
+  const found = allTypes.find(opt => opt.value === value);
+  return found ? found.label : value;
+}
+
+const filteredRecipes = (recipes || []).filter((recipe) => {
+  // חיפוש חופשי בשם
+  const name = recipe.name || "";
+  const matchesSearch =
+    !search || name.toLowerCase().includes(search.toLowerCase());
+
+  // ברירת מחדל – לא מסננים לפי recipe.category
+  let matchesCategory = true;
+
+  // אם בעתיד יהיו קטגוריות אמיתיות (לא "type"/"kosher") אפשר לסנן כאן:
+  if (category !== "all" && category !== "type" && category !== "kosher") {
+    matchesCategory = recipe.category === category;
+  }
+
+  // סינון לפי סוג / כשרות
+  let matchesType = true;
+
+  if (category === "type") {
+    // סינון לפי סוג מתכון (עוגות/עוגיות/לחמים...) מתוך RECIPE_TYPES
+    if (type !== "all") {
+      // כאן אני מניח ש־recipe.category מחזיק את סוג המתכון (עוגות/עוגיות/לחמים)
+      matchesType =
+        recipe.category === type ||
+        getTypeLabel(recipe.category) === getTypeLabel(type);
+    }
+  } else if (category === "kosher") {
+    // סינון לפי כשרות (חלבי/בשרי/פרווה) מתוך KOSHER_TYPES
+    if (type !== "all") {
+      const kosherValue = recipe.kosherType ?? recipe.recipeType; // תעדכני לפי השדה האמיתי שלך
+      matchesType =
+        kosherValue === type ||
+        String(kosherValue) === String(type) ||
+        getTypeLabel(kosherValue) === getTypeLabel(type);
+    }
+  }
+
+  return matchesSearch && matchesCategory && matchesType;
+});
 
   return (
-    <Box sx={{ width: 320, bgcolor: '#F9E3D6', p: 2, borderRadius: 3, minHeight: 600, boxShadow: 2 }}>
+    <Box sx={{ width: 320, bgcolor: '#F9E3D6', p: 2, borderRadius: 3, minHeight: '100vh', boxShadow: 2, height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
-        <Typography variant="h6" sx={{ fontFamily: 'Suez One, serif', color: '#751B13', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-          מתכונים
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: 'Heebo, Suez One, serif',
+            color: '#7B3B1D',
+            fontWeight: 900,
+            fontSize: 26,
+            letterSpacing: 0.7,
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            textAlign: 'right',
+            background: 'none',
+            boxShadow: 'none',
+            px: 1,
+            py: 0.5,
+            borderRadius: 1,
+            textShadow: '0 1px 0 #fff, 0 2px 4px #e0b08944',
+          }}
+        >
+          {strings.sidebar?.recipes || "מתכונים"}
           {onBack && (
-            <Tooltip title="חזור לכל המתכונים">
+            <Tooltip title={strings.sidebar?.backToAllRecipes || "חזור לכל המתכונים"}>
               <IconButton onClick={onBack} sx={{ color: '#7B5B4B', ml: 1 }}>
                 <ArrowForwardIcon />
               </IconButton>
@@ -41,20 +117,15 @@ export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd
           </AddButton>
         )}
       </Box>
-      <FilterBar
+      <RecipesFilterBar
         search={search}
         onSearchChange={setSearch}
-        filters={[
-          {
-            label: "קטגוריה",
-            value: category,
-            onChange: setCategory,
-            options: [
-              { value: "all", label: "כל הקטגוריות" },
-              ...categories.map(cat => ({ value: cat, label: cat }))
-            ]
-          }
-        ]}
+        mainCategory={category}
+        onMainCategoryChange={handleMainCategoryChange}
+        mainCategoryOptions={mainCategoryOptions}
+        subCategory={type}
+        onSubCategoryChange={setType}
+        subCategoryOptions={subCategoryOptions}
         searchLabel="חפש מתכון..."
       />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 400 }}>
@@ -84,8 +155,8 @@ export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd
                   {recipe.category && (
                     <Chip label={recipe.category} size="small" sx={{ bgcolor: '#F7E7C1', color: '#7c5c3b', fontWeight: 500, px: 1, fontSize: 13 }} />
                   )}
-                  {recipe.type && (
-                    <Chip label={recipe.type} size="small" sx={{ bgcolor: '#F7E7C1', color: '#7c5c3b', fontWeight: 500, px: 1, fontSize: 13 }} />
+                  {typeof recipe.recipeType !== 'undefined' && (
+                    <Chip label={recipe.recipeType === 0 ? 'חלבי' : recipe.recipeType === 1 ? 'בשרי' : 'פרווה'} size="small" sx={{ bgcolor: '#E3F7D6', color: '#4B7B5B', fontWeight: 500, px: 1, fontSize: 13 }} />
                   )}
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

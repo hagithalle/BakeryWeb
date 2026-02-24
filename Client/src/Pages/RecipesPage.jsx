@@ -4,6 +4,7 @@ import RecipeCard from "../Components/Recipes/RecipeCard";
 import BraImage from "../assets/images/Bra.jpg";
 import PageHeader from "../Components/Common/PageHeader";
 import FilterBar from "../Components/FilterBar";
+// שים לב: ה-sidebar משתמש ב-RecipesFilterBar, כאן נשאר FilterBar הרגיל
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import AddRecipeDialog from "../Components/Recipes/AddRecipeDialog";
@@ -452,9 +453,18 @@ export default function RecipesPage() {
 
       {/* מצב מתכון נבחר: Master-Detail */}
       {selectedId && (
-        <Box sx={{ maxWidth: 1400, mx: 'auto', display: 'flex', gap: 3, alignItems: 'stretch', minHeight: '80vh' }}>
+        <Box sx={{
+          maxWidth: 1400,
+          mx: 'auto',
+          display: 'grid',
+          gridTemplateColumns: '1fr 2fr',
+          gap: 3,
+          alignItems: 'stretch',
+          height: '100vh',
+          minHeight: '100vh',
+        }}>
           {/* פאנל רשימת מתכונים */}
-          <Box sx={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ minWidth: 320, height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <RecipeListSidebar
               recipes={rows}
               selectedId={selectedId}
@@ -469,7 +479,7 @@ export default function RecipesPage() {
             />
           </Box>
           {/* פאנל פרטי מתכון */}
-          <Box sx={{ flex: 2, minWidth: 0 }}>
+          <Box sx={{ minWidth: 0, height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <RecipeDetailsPanel
               recipe={fullSelectedRecipe}
               onEdit={() => { if (fullSelectedRecipe) handleEdit(fullSelectedRecipe); }}

@@ -46,6 +46,8 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("לחמים");
+  // סוג מתכון: 0=חלבי, 1=בשרי, 2=פרווה (כמו ב-Enum בשרת)
+  const [recipeType, setRecipeType] = useState(2);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [yieldAmount, setYieldAmount] = useState(1);
@@ -74,6 +76,10 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         setName(initialValues.name || "");
         setDescription(initialValues.description || "");
         setCategory(initialValues.category || "לחמים");
+        setRecipeType(typeof initialValues.recipeType === 'number' ? initialValues.recipeType :
+          initialValues.recipeType === 'Dairy' ? 0 :
+          initialValues.recipeType === 'Meat' ? 1 :
+          2);
         setImagePreview(initialValues.imageUrl || null);
         setYieldAmount(initialValues.yieldAmount || 1);
         setOutputUnitType(initialValues.outputUnitType ?? 0);
@@ -89,6 +95,7 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
         setName("");
         setDescription("");
         setCategory("לחמים");
+        setRecipeType(2);
         setImageFile(null);
         setImagePreview(null);
         setYieldAmount(1);
@@ -178,6 +185,7 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
       name,
       description,
       category,
+      recipeType,
       imageFile: imageFile ? { name: imageFile.name, size: imageFile.size } : null,
       yieldAmount,
       outputUnitType,
@@ -248,6 +256,15 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
             onCategoryChange={setCategory}
             onImageChange={handleImageChange}
           />
+          {/* Recipe Type Selector */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: -2 }}>
+            <label style={{ fontWeight: 600, color: '#7B5B4B', minWidth: 80 }}>סוג מתכון:</label>
+            <select value={recipeType} onChange={e => setRecipeType(Number(e.target.value))} style={{ fontSize: 16, padding: '6px 12px', borderRadius: 8, border: '1px solid #D4A574', background: '#fff7f2', color: '#7B5B4B', fontWeight: 500 }}>
+              <option value={2}>פרווה</option>
+              <option value={0}>חלבי</option>
+              <option value={1}>בשרי</option>
+            </select>
+          </Box>
           {/* Baking Info */}
           <RecipeBakingInfo
             bakingTime={bakeTime}
