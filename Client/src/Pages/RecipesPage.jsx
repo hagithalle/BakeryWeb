@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Box, Grid } from "@mui/material";
 import RecipeCard from "../Components/Recipes/RecipeCard";
+import BraImage from "../assets/images/Bra.jpg";
 import PageHeader from "../Components/Common/PageHeader";
 import FilterBar from "../Components/FilterBar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -379,14 +380,12 @@ export default function RecipesPage() {
             };
           }),
       steps:
-        recipe.steps || recipe.Steps || []
+        (recipe.steps || recipe.Steps || [])
           .sort(
             (a, b) =>
               (a.order || a.Order || 0) - (b.order || b.Order || 0)
           )
-          .map((s) => ({
-            description: s.description || s.Description || "",
-          })),
+          .map((s) => s.description || s.Description || ""),
     };
 
     setEditRecipe(mappedRecipe);
@@ -435,20 +434,27 @@ export default function RecipesPage() {
       {!selectedId && (
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
           <Grid container spacing={3}>
-            {(filteredRows || []).map((recipe) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.id}>
-                <RecipeCard recipe={recipe} onClick={() => setSelectedId(recipe.id)} />
-              </Grid>
-            ))}
+            {(filteredRows || []).map((recipe) => {
+              // הוסף תמונה לבראוניז בלבד
+              const recipeWithImage =
+                recipe.name && recipe.name.includes("בראוניז")
+                  ? { ...recipe, imageUrl: BraImage }
+                  : recipe;
+              return (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.id}>
+                  <RecipeCard recipe={recipeWithImage} onClick={() => setSelectedId(recipe.id)} />
+                </Grid>
+              );
+            })}
           </Grid>
         </Box>
       )}
 
       {/* מצב מתכון נבחר: Master-Detail */}
       {selectedId && (
-        <Box sx={{ maxWidth: 1400, mx: 'auto', display: 'flex', gap: 3 }}>
+        <Box sx={{ maxWidth: 1400, mx: 'auto', display: 'flex', gap: 3, alignItems: 'stretch', minHeight: '80vh' }}>
           {/* פאנל רשימת מתכונים */}
-          <Box sx={{ flex: 1, minWidth: 320 }}>
+          <Box sx={{ flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column', height: '100%' }}>
             <RecipeListSidebar
               recipes={rows}
               selectedId={selectedId}
@@ -456,9 +462,9 @@ export default function RecipesPage() {
               onAdd={() => { setEditRecipe(null); setAddDialogOpen(true); }}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              loading={recipesLoading}
               filter=""
               onFilterChange={() => {}}
+              onBack={() => setSelectedId(null)}
               strings={strings}
             />
           </Box>

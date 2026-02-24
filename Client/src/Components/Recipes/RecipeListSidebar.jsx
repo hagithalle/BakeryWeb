@@ -1,71 +1,112 @@
 import React, { useState } from "react";
-import { Box, Typography, IconButton, MenuItem, Select, InputBase, Paper } from "@mui/material";
+import { Box, Typography, IconButton, Chip, Tooltip, MenuItem } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
 import AddButton from "../AddButton";
+import BraImg from "../../assets/images/Bra.jpg";
+import FilterBar from "../FilterBar";
 
-export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd, onEdit, onDelete, filter, onFilterChange, categories, selectedCategory, onCategoryChange }) {
+export default function RecipeListSidebar({ recipes, selectedId, onSelect, onAdd, onEdit, onDelete, filter, onFilterChange, onBack }) {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState(selectedCategory || "all");
-
+  const [category, setCategory] = useState("all");
+  // הפקת רשימת קטגוריות ייחודיות
+  const categories = Array.from(new Set((recipes || []).map(r => r.category).filter(Boolean)));
   // סינון מתכונים לפי חיפוש וקטגוריה
   const filteredRecipes = (recipes || []).filter(recipe => {
     const matchesSearch = !search || (recipe.name && recipe.name.includes(search));
-    const matchesCategory = category === "all" || recipe.categoryId === category || recipe.category === category || recipe.categoryName === category;
+    const matchesCategory = category === "all" || recipe.category === category;
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <Box sx={{ width: 350, bgcolor: '#F9E3D6', p: 2, borderRadius: 3, minHeight: 600 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'space-between' }}>
-        <Typography variant="h6" sx={{ fontFamily: 'Suez One, serif', color: '#751B13' }}>
+    <Box sx={{ width: 320, bgcolor: '#F9E3D6', p: 2, borderRadius: 3, minHeight: 600, boxShadow: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+        <Typography variant="h6" sx={{ fontFamily: 'Suez One, serif', color: '#751B13', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           מתכונים
+          {onBack && (
+            <Tooltip title="חזור לכל המתכונים">
+              <IconButton onClick={onBack} sx={{ color: '#7B5B4B', ml: 1 }}>
+                <ArrowForwardIcon />
+              </IconButton>
+            </Tooltip>
+          )}
         </Typography>
-        <AddButton onClick={onAdd}>
-          מתכון חדש
-        </AddButton>
+        {/* כפתור הוספת מתכון חדש - רק אם לא פתוח מתכון */}
+        {!selectedId && (
+          <AddButton onClick={onAdd}>
+            מתכון חדש
+          </AddButton>
+        )}
       </Box>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <Select
-          value={category}
-          onChange={e => { setCategory(e.target.value); onCategoryChange && onCategoryChange(e.target.value); }}
-          sx={{ bgcolor: '#fff', borderRadius: 2, minWidth: 120, fontFamily: 'inherit', fontSize: 15 }}
-        >
-          <MenuItem value="all">כל הקטגוריות</MenuItem>
-          {(categories || []).map(cat => (
-            <MenuItem key={cat.id || cat.name} value={cat.id || cat.name}>{cat.name}</MenuItem>
-          ))}
-        </Select>
-        <Paper component="form" sx={{ p: '2px 6px', display: 'flex', alignItems: 'center', flex: 1, bgcolor: '#fff', borderRadius: 2 }}>
-          <InputBase
-            sx={{ ml: 1, flex: 1, fontFamily: 'inherit', fontSize: 15 }}
-            placeholder="חיפוש מתכון..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); onFilterChange && onFilterChange(e.target.value); }}
-            inputProps={{ 'aria-label': 'search recipes' }}
-          />
-        </Paper>
-      </Box>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        filters={[
+          {
+            label: "קטגוריה",
+            value: category,
+            onChange: setCategory,
+            options: [
+              { value: "all", label: "כל הקטגוריות" },
+              ...categories.map(cat => ({ value: cat, label: cat }))
+            ]
+          }
+        ]}
+        searchLabel="חפש מתכון..."
+      />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minHeight: 400 }}>
         {filteredRecipes.length === 0 && (
           <Typography sx={{ color: '#888', textAlign: 'center', mt: 4 }}>לא נמצאו מתכונים</Typography>
         )}
-        {filteredRecipes.map(recipe => (
-          <Box
-            key={recipe.id}
-            sx={{
-              display: 'flex', alignItems: 'center',
-              bgcolor: selectedId === recipe.id ? '#FFE5D0' : 'transparent',
-              borderRadius: 2, px: 1, py: 0.5, cursor: 'pointer',
-              '&:hover': { bgcolor: '#FFE5D0' }
-            }}
-            onClick={() => onSelect(recipe.id)}
-          >
-            <Typography sx={{ flex: 1, fontWeight: 500 }}>{recipe.name}</Typography>
-            <IconButton size="small" onClick={e => { e.stopPropagation(); onEdit(recipe); }}><EditIcon fontSize="small" /></IconButton>
-            <IconButton size="small" onClick={e => { e.stopPropagation(); onDelete(recipe); }}><DeleteIcon fontSize="small" /></IconButton>
-          </Box>
-        ))}
+        {filteredRecipes.map(recipe => {
+          // דוגמה: הצגת תמונה לבראוניז בלבד
+          const image = recipe.imageUrl || (recipe.name && recipe.name.includes("בראוניז") ? BraImg : null);
+          return (
+            <Box
+              key={recipe.id}
+              sx={{
+                display: 'flex', alignItems: 'center',
+                bgcolor: selectedId === recipe.id ? '#FFE5D0' : 'transparent',
+                borderRadius: 2, px: 1, py: 1, cursor: 'pointer',
+                boxShadow: selectedId === recipe.id ? 2 : 0,
+                border: selectedId === recipe.id ? '2px solid #E0B089' : '2px solid transparent',
+                transition: 'all 0.15s',
+                '&:hover': { bgcolor: '#FFE5D0' }
+              }}
+              onClick={() => onSelect(recipe.id)}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 700, color: selectedId === recipe.id ? '#751B13' : '#7B5B4B', fontSize: 17, mb: 0.5, lineHeight: 1 }}>{recipe.name}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  {recipe.category && (
+                    <Chip label={recipe.category} size="small" sx={{ bgcolor: '#F7E7C1', color: '#7c5c3b', fontWeight: 500, px: 1, fontSize: 13 }} />
+                  )}
+                  {recipe.type && (
+                    <Chip label={recipe.type} size="small" sx={{ bgcolor: '#F7E7C1', color: '#7c5c3b', fontWeight: 500, px: 1, fontSize: 13 }} />
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AccessTimeIcon sx={{ fontSize: 18, color: '#B77B4B' }} />
+                  <Typography sx={{ fontSize: 14, color: '#B77B4B', fontWeight: 500 }}>{recipe.time || recipe.prepTime || recipe.bakeTime ? `${recipe.prepTime || 0}${recipe.bakeTime ? `+${recipe.bakeTime}` : ''} דק׳` : ''}</Typography>
+                  {recipe.yield && (
+                    <>
+                      <BakeryDiningIcon sx={{ fontSize: 18, color: '#B77B4B', ml: 1 }} />
+                      <Typography sx={{ fontSize: 14, color: '#B77B4B', fontWeight: 500 }}>{recipe.yield} יח׳</Typography>
+                    </>
+                  )}
+                </Box>
+              </Box>
+              {image && (
+                <Box sx={{ width: 56, height: 56, borderRadius: 2, overflow: 'hidden', ml: 2, boxShadow: 1, border: '1.5px solid #E0B089', bgcolor: '#fff' }}>
+                  <img src={image} alt={recipe.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </Box>
+              )}
+            </Box>
+          );
+        })}
       </Box>
     </Box>
   );

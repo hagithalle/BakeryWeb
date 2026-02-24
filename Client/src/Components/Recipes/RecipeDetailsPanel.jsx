@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from "react";
-import { Box, Typography, IconButton, Chip, Grid } from "@mui/material";
+import { Box, Typography, IconButton } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
-import ThermostatIcon from '@mui/icons-material/Thermostat';
-import TimerIcon from '@mui/icons-material/Timer';
-import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
-import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
+import BraImg from '../../assets/images/Bra.jpg';
+import RecipeImage from "./RecipeImage";
+import RecipeInfoChips from "./RecipeInfoChips";
 import RecipeTabs from "./RecipeTabs";
 import RecipeIngredientsTable from "./RecipeIngredientsTable";
 import RecipeStepsPanel from "./RecipeStepsPanel";
@@ -114,144 +113,43 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
 
   return (
     <Box sx={{ flex: 1, bgcolor: '#FFF7F2', p: 3, borderRadius: 3, minHeight: 600 }}>
-      {/* כותרת ופעולות */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" sx={{ fontFamily: 'Suez One, serif', color: '#751B13', flex: 1 }}>
-          {recipe.name}
-        </Typography>
-        <IconButton color="primary" onClick={onEdit} sx={{ ml: 1 }}>
-          <EditIcon />
-        </IconButton>
-      </Box>
 
-      {/* תמונת המתכון */}
-      {(recipe.imageUrl || recipe.ImageUrl) && (
-        <Box
-          sx={{
-            width: '100%',
-            height: 250,
-            mb: 3,
-            bgcolor: 'white',
-            borderRadius: 2,
-            boxShadow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            border: '2px dashed #D7CCC8'
-          }}
-        >
-          <img
-            src={recipe.imageUrl || recipe.ImageUrl}
-            alt={recipe.name}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
+      {/* אזור עליון: תמונה מימין, כותרת, תיאור, אינפו */}
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 3, mb: 3 }}>
+        {/* תוכן טקסטואלי */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h5" sx={{ fontFamily: 'Suez One, serif', color: '#751B13', fontWeight: 700, flex: 1 }}>
+              {recipe.name}
+            </Typography>
+            <IconButton color="primary" onClick={onEdit} sx={{ ml: 1 }}>
+              <EditIcon />
+            </IconButton>
+          </Box>
+          <Typography variant="body1" sx={{ mb: 2, color: '#5D4037', lineHeight: 1.7 }}>
+            {recipeData.description}
+          </Typography>
+          <RecipeInfoChips
+            difficulty={recipeData.difficulty}
+            temperature={recipeData.temperature}
+            yieldValue={recipeData.yield}
+            totalTime={recipeData.totalTime}
           />
         </Box>
-      )}
+        {/* תמונה מימין */}
+        <Box sx={{ flexShrink: 0, width: 170, height: 130, borderRadius: '22px', overflow: 'hidden', boxShadow: 2, bgcolor: '#fff', border: '2px solid #F7E7C1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src={recipe.imageUrl || recipe.ImageUrl || BraImg}
+            alt={recipe.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Box>
+      </Box>
 
-      {/* תיאור */}
-      <Typography variant="body1" sx={{ mb: 3, color: '#5D4037', lineHeight: 1.7 }}>
-        {recipeData.description}
-      </Typography>
 
-      {/* מידע מהיר */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {recipeData.difficulty && (
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              p: 1.5,
-              bgcolor: 'white',
-              borderRadius: 2,
-              boxShadow: 1
-            }}>
-              <SignalCellularAltIcon sx={{ color: '#D84315' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary">קטגוריה</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {recipeData.difficulty}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        )}
-        
-        {recipeData.temperature > 0 && (
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              p: 1.5,
-              bgcolor: 'white',
-              borderRadius: 2,
-              boxShadow: 1
-            }}>
-              <ThermostatIcon sx={{ color: '#D84315' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary">טמפרטורה</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  {recipeData.temperature}°C
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        )}
-        
-        <Grid item xs={6} sm={3}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            p: 1.5,
-            bgcolor: 'white',
-            borderRadius: 2,
-            boxShadow: 1
-          }}>
-            <BakeryDiningIcon sx={{ color: '#D84315' }} />
-            <Box>
-              <Typography variant="caption" color="text.secondary">תפוקה</Typography>
-              <Typography variant="body2" fontWeight="bold">
-                {recipeData.yield} יחידות
-              </Typography>
-            </Box>
-          </Box>
-        </Grid>
-        
-        {recipeData.totalTime > 0 && (
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              p: 1.5,
-              bgcolor: 'white',
-              borderRadius: 2,
-              boxShadow: 1,
-              flexDirection: 'column',
-              alignItems: 'flex-start'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                <TimerIcon sx={{ color: '#D84315' }} />
-                <Typography variant="caption" color="text.secondary">זמן הכנה</Typography>
-              </Box>
-              <Typography variant="body2" fontWeight="bold" sx={{ ml: 4 }}>
-                {recipeData.prepTime > 0 && `הכנה: ${recipeData.prepTime} דק׳${recipeData.bakeTime > 0 ? ' • ' : ''}`}
-                {recipeData.bakeTime > 0 && `אפייה: ${recipeData.bakeTime} דק׳`}
-              </Typography>
-              <Typography variant="caption" sx={{ ml: 4, color: '#D84315', fontWeight: 'bold' }}>
-                סה״כ: {recipeData.totalTime} דקות
-              </Typography>
-            </Box>
-          </Grid>
-        )}
-      </Grid>
+
+
+
 
       {/* טאבים */}
       <RecipeTabs tab={currentTab} onTabChange={setCurrentTab} />

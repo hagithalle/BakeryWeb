@@ -1,34 +1,191 @@
 import React from "react";
-import { Card, CardActionArea, CardContent, Typography, Box, Chip, Avatar } from "@mui/material";
+import {
+  Card,
+  CardActionArea,
+  CardContent,
+  Typography,
+  Box,
+  Chip,
+  Avatar,
+} from "@mui/material";
 
 export default function RecipeCard({ recipe, onClick }) {
+  // כמות רכיבים – תומך גם ב־recipe.Ingredients
+  const ingredientsCount =
+    recipe.ingredients?.length ??
+    recipe.Ingredients?.length ??
+    0;
+
+  const outputUnits = recipe.outputUnits ?? recipe.OutputUnits ?? null;
+
+  // תמונה – חצי "קפסולה" בצד שמאל
+  const floatingImage = (
+  <Box
+    sx={{
+      position: "relative",
+      left: -18,               // כמה התמונה יוצאת שמאלה
+      width: 88,
+      height: 88,
+      ml: -2,                   // מרווח שלילי כדי "לחבר" את התמונה לכרטיס
+      borderRadius: "0 50% 30% 30%",     // חצי עיגול בצד שמאל
+      overflow: "hidden",
+      boxShadow: "0 6px 14px rgba(0,0,0,0.12)",
+      border: "4px solid #FFF7F2",  // מסגרת שמחברת אותה לכרטיס
+      bgcolor: "#f5f5f5",
+      flexShrink: 0,
+    }}
+  >
+    {recipe.imageUrl ? (
+      <img
+        src={recipe.imageUrl}
+        alt={recipe.name}
+        style={{
+            width: "115%",
+        height: "100%",
+        objectFit: "cover",
+        objectPosition: "center center",
+        transform: "translateX(2px)",
+        }}
+      />
+    ) : (
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+          background:
+            "linear-gradient(135deg, #f7e7c1 0%, #e9d8c3 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Avatar
+          sx={{
+            width: 50,
+            height: 50,
+            bgcolor: "#bfa47a",
+            fontSize: 26,
+            color: "#fff",
+          }}
+        >
+          🍰
+        </Avatar>
+      </Box>
+    )}
+  </Box>
+);
+
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: '0 2px 12px #e9d8c3', bgcolor: '#fff', minHeight: 180 }}>
-      <CardActionArea onClick={onClick} sx={{ height: '100%' }}>
-        {/* תמונה */}
-        {recipe.imageUrl && (
-          <Box sx={{ width: '100%', height: 120, overflow: 'hidden', mb: 1, borderRadius: 2, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={recipe.imageUrl} alt={recipe.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </Box>
-        )}
-        <CardContent sx={{ pb: '16px !important' }}>
-          <Typography variant="h6" sx={{ color: '#7c5c3b', fontWeight: 700, mb: 0.5, fontSize: 20 }} noWrap>{recipe.name}</Typography>
-          {recipe.category && (
-            <Chip label={recipe.category} size="small" sx={{ bgcolor: '#f7e7c1', color: '#7c5c3b', fontWeight: 500, mb: 1 }} />
-          )}
-          <Typography variant="body2" sx={{ color: '#7c5c3b', opacity: 0.7, minHeight: 36 }} noWrap>
-            {recipe.description}
-          </Typography>
-          {/* פרטי מתכון נוספים */}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-            {recipe.ingredients && (
-              <Chip label={`רכיבים: ${recipe.ingredients.length}`} size="small" />
+    <Card
+      sx={{
+        borderRadius: 3,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+        bgcolor: "#FFF7F2",
+        overflow: "visible",
+      }}
+    >
+      <CardActionArea onClick={onClick} sx={{ height: "100%" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",        // טקסט מימין, תמונה משמאל
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: 2.2,
+            py: 1.8,                     // פחות גובה – יושב יותר “מדויק”
+            gap: 2,
+            direction: "rtl",
+            textAlign: "right",
+          }}
+        >
+          {/* צד ימין – טקסט */}
+          <CardContent
+            sx={{
+              p: 0,
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {/* קטגוריה מעל שם המתכון */}
+            {recipe.category && (
+              <Chip
+                label={recipe.category}
+                size="small"
+                sx={{
+                  bgcolor: "#F5E0D3",
+                  color: "#7c5c3b",
+                  fontWeight: 500,
+                  borderRadius: 999,
+                  mb: 0.5,
+                }}
+              />
             )}
-            {recipe.outputUnits && (
-              <Chip label={`תפוקה: ${recipe.outputUnits}`} size="small" />
+
+            {/* שם המתכון */}
+            <Typography
+              variant="h6"
+              sx={{
+                color: "#7c5c3b",
+                fontWeight: 700,
+                fontSize: 18,
+              }}
+              noWrap
+            >
+              {recipe.name}
+            </Typography>
+
+            {/* תיאור קצר */}
+            {recipe.description && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#8b715c",
+                  opacity: 0.8,
+                  mt: 0.5,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {recipe.description}
+              </Typography>
             )}
-          </Box>
-        </CardContent>
+
+            {/* שורת צ'יפים תחתונה – רכיבים / תפוקה */}
+            <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
+              {ingredientsCount > 0 && (
+                <Chip
+                  label={`רכיבים: ${ingredientsCount}`}
+                  size="small"
+                  sx={{
+                    bgcolor: "#FFFFFF",
+                    color: "#7c5c3b",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    px: 1.5,
+                  }}
+                />
+              )}
+              {outputUnits && (
+                <Chip
+                  label={`תפוקה: ${outputUnits}`}
+                  size="small"
+                  sx={{
+                    bgcolor: "#FFFFFF",
+                    color: "#7c5c3b",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    px: 1.5,
+                  }}
+                />
+              )}
+            </Box>
+          </CardContent>
+
+          {/* צד שמאל – תמונה מעוצבת */}
+          {floatingImage}
+        </Box>
       </CardActionArea>
     </Card>
   );
