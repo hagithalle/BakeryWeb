@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from "react";
-import { addIngredient, fetchCategories } from "../../Services/ingredientsService";
+import { addIngredient } from "../../Services/ingredientsService";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, MenuItem, Autocomplete, IconButton, Divider, Paper, Tooltip, Avatar, TextField } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import RecipeMainInfo from "./Details/RecipeMainInfo";
+import RecipeTypeSelector from "./Details/RecipeTypeSelector";
 import RecipeBakingInfo from "./Details/RecipeBakingInfo";
 import RecipeIngredientsSection from "./Details/RecipeIngredientsSection";
 import RecipeStepsSection from "./Details/RecipeStepsSection";
@@ -14,33 +15,14 @@ import RecipeBaseRecipesSection from "./Details/RecipeBaseRecipesSection";
 import IngredientDialog from "../IngredientDialog";
 import { useLanguage } from "../../context/LanguageContext";
 import useLocaleStrings from "../../hooks/useLocaleStrings";
-import { UnitTypeOptions } from "../../utils/unitEnums";
+import { units } from "../../constants/units";
+import useRecipeCategories from "../../hooks/useRecipeCategories";
 
 export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList, loadingIngredients, onIngredientAdded, initialValues, availableRecipes = [] }) {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
-  const [categories, setCategories] = useState([]);
-  
-  // יחידות מידה מוגדרות מראש (תואם ל-UnitOfMeasure enum)
-  const units = [
-    { value: 1, label: "Kilogram" },
-    { value: 2, label: "Gram" },
-    { value: 3, label: "Liter" },
-    { value: 4, label: "Milliliter" },
-    { value: 5, label: "Unit" },
-    { value: 6, label: "Dozen" },
-    { value: 7, label: "Package" },
-    { value: 8, label: "Teaspoon" },
-    { value: 9, label: "Tablespoon" },
-    { value: 10, label: "Cup" }
-  ];
-  
-  useEffect(() => {
-    fetchCategories().then(data => {
-      const mapped = (data || []).map(cat => ({ value: cat.value, label: cat.name }));
-      setCategories(mapped);
-    });
-  }, []);
+  // קטגוריות מתכון (מנוהלות ב-hook נפרד)
+  const categories = useRecipeCategories();
   
   // State for all fields
   const [name, setName] = useState("");
@@ -257,14 +239,7 @@ export default function AddRecipeDialog({ open, onClose, onSave, ingredientsList
             onImageChange={handleImageChange}
           />
           {/* Recipe Type Selector */}
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: -2 }}>
-            <label style={{ fontWeight: 600, color: '#7B5B4B', minWidth: 80 }}>סוג מתכון:</label>
-            <select value={recipeType} onChange={e => setRecipeType(Number(e.target.value))} style={{ fontSize: 16, padding: '6px 12px', borderRadius: 8, border: '1px solid #D4A574', background: '#fff7f2', color: '#7B5B4B', fontWeight: 500 }}>
-              <option value={2}>פרווה</option>
-              <option value={0}>חלבי</option>
-              <option value={1}>בשרי</option>
-            </select>
-          </Box>
+          <RecipeTypeSelector recipeType={recipeType} onChange={setRecipeType} />
           {/* Baking Info */}
           <RecipeBakingInfo
             bakingTime={bakeTime}
