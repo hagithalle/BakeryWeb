@@ -1,5 +1,6 @@
 // src/Components/Recipes/Import/ImportRecipeDialog.jsx
 import React, { useState } from "react";
+
 import {
   Dialog,
   DialogTitle,
@@ -16,8 +17,10 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import ImportSourceSelector from "./ImportSourceSelector";
 import ImportFileArea from "./ImportFileArea";
-// כאן את תשתמשי בפונקציות האמיתיות שלך
-// import { importRecipeFromFile, importRecipeFromUrl, importRecipeFromText } from "../../Services/RecipeService";
+
+import { useLanguage } from "../../../context/LanguageContext.jsx";
+import useLocaleStrings from "../../../hooks/useLocaleStrings.js";
+
 
 export default function ImportRecipeDialog({
   open,
@@ -25,12 +28,15 @@ export default function ImportRecipeDialog({
   onImported,
   onBackToStart, // 🔙 לחזור למסך הראשון
 }) {
+  const { lang } = useLanguage();
+  const strings = useLocaleStrings(lang).importDialog;
   const [source, setSource] = useState("file"); // 'file' | 'url' | 'text'
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState("");
   const [rawText, setRawText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const resetState = () => {
     setSource("file");
@@ -39,6 +45,7 @@ export default function ImportRecipeDialog({
     setRawText("");
     setIsAnalyzing(false);
     setError("");
+    setSuccessMessage("");
   };
 
   const handleClose = () => {
@@ -50,34 +57,36 @@ export default function ImportRecipeDialog({
   const handleAnalyze = async () => {
     try {
       setError("");
+      setSuccessMessage("");
 
       if (source === "file" && !file) {
-        setError("בחרי קובץ קודם 🙂");
+        setError(strings.errorNoFile || "בחרי קובץ קודם 🙂");
         return;
       }
       if (source === "url" && !url.trim()) {
-        setError("הכניסי כתובת URL תקינה 🙂");
+        setError(strings.errorNoFile || "הכניסי כתובת URL תקינה 🙂");
         return;
       }
       if (source === "text" && !rawText.trim()) {
-        setError("הדביקי טקסט של מתכון 🙂");
+        setError(strings.errorNoFile || "הדביקי טקסט של מתכון 🙂");
         return;
       }
 
       setIsAnalyzing(true);
+      console.log("🔍 מתחילה לנתח מתכון ממקור:", source);
 
       let recipeDraft;
 
       // 🧠 פה את מחברת ל־API שלך
       if (source === "file") {
         // recipeDraft = await importRecipeFromFile(file);
-        console.log("TODO: call importRecipeFromFile(file)");
+        console.log("📁 מנסה לייבא מתכון מקובץ");
       } else if (source === "url") {
         // recipeDraft = await importRecipeFromUrl(url);
-        console.log("TODO: call importRecipeFromUrl(url)");
+        console.log("🌐 מנסה לייבא מתכון מ-URL");
       } else if (source === "text") {
         // recipeDraft = await importRecipeFromText(rawText);
-        console.log("TODO: call importRecipeFromText(rawText)");
+        console.log("📝 מנסה לייבא מתכון מטקסט");
       }
 
       // בינתיים לדוגמה – שנראה איך זה זורם:
@@ -97,11 +106,15 @@ export default function ImportRecipeDialog({
         baseRecipes: [],
       };
 
+      setSuccessMessage(strings.successMessage || "המתכון נותח בהצלחה! 🎉");
+      console.log("✅ המתכון נותח בהצלחה");
       onImported && onImported(recipeDraft);
-      resetState();
-      onClose();
+      setTimeout(() => {
+        resetState();
+        onClose();
+      }, 1200);
     } catch (err) {
-      console.error("❌ Error importing recipe:", err);
+      console.error("❌ אירעה שגיאה בניתוח המתכון:", err);
       setError(
         err?.response?.data?.message ||
           err?.message ||
@@ -131,7 +144,7 @@ export default function ImportRecipeDialog({
       <DialogTitle
         sx={{ textAlign: "center", fontWeight: 700, color: "#971936", mt: 1 }}
       >
-        ייבוא מתכון
+        {strings.title}
       </DialogTitle>
 
       <DialogContent sx={{ pt: 1 }}>
@@ -139,7 +152,7 @@ export default function ImportRecipeDialog({
           variant="body2"
           sx={{ textAlign: "center", mb: 2, color: "#9B5A25" }}
         >
-          שלב 1 מתוך 2 – בחרי מקור והדביקי
+          {strings.step?.replace("{step}", "1").replace("{total}", "2") || "שלב 1 מתוך 2 – בחרי מקור והדביקי"}
         </Typography>
 
         {/* בחירת מקור */}
@@ -162,7 +175,7 @@ export default function ImportRecipeDialog({
             <TextField
               fullWidth
               placeholder="https://example.com/recipe..."
-              label="כתובת מתכון (URL)"
+              label="URL"
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
@@ -179,8 +192,8 @@ export default function ImportRecipeDialog({
               fullWidth
               multiline
               minRows={5}
-              placeholder="הדביקי כאן את טקסט המתכון..."
-              label="טקסט מתכון"
+              placeholder={strings.textPlaceholder || "הדביקי כאן את טקסט המתכון..."}
+              label={strings.textLabel || "טקסט מתכון"}
               value={rawText}
               onChange={(e) => {
                 setRawText(e.target.value);
@@ -203,7 +216,7 @@ export default function ImportRecipeDialog({
                 color: "#9B5A25",
               }}
             >
-              מנתחת את המתכון... זה עשוי לקחת כמה שניות
+              {strings.analyzing || "מנתחת את המתכון... זה עשוי לקחת כמה שניות"}
             </Typography>
           </Box>
         )}
@@ -214,6 +227,14 @@ export default function ImportRecipeDialog({
             sx={{ mt: 2, color: "#c62828", textAlign: "center" }}
           >
             {error}
+          </Typography>
+        )}
+        {successMessage && (
+          <Typography
+            variant="body2"
+            sx={{ mt: 2, color: "#388e3c", textAlign: "center", fontWeight: 700 }}
+          >
+            {successMessage}
           </Typography>
         )}
       </DialogContent>
@@ -242,7 +263,7 @@ export default function ImportRecipeDialog({
             </Button>
           )}
           <Button onClick={handleClose} disabled={isAnalyzing}>
-            ביטול
+            {strings.cancel || "ביטול"}
           </Button>
         </Box>
 
@@ -251,9 +272,9 @@ export default function ImportRecipeDialog({
           color="secondary"
           onClick={handleAnalyze}
           disabled={isAnalyzing}
-          sx={{ borderRadius: 3, fontWeight: 600 }}
+          sx={{ borderRadius: 3, fontWeight: 600, backgroundColor: "#971936" }}
         >
-          נתח מתכון
+          {strings.analyze || "נתח מתכון"}
         </Button>
       </DialogActions>
     </Dialog>

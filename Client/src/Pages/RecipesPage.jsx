@@ -11,9 +11,10 @@ import AddRecipeDialog from "../Components/Recipes/AddRecipeDialog";
 import RecipeListSidebar from "../Components/Recipes/RecipeListSidebar";
 import RecipeDetailsPanel from "../Components/Recipes/RecipeDetailsPanel";
 import RecipeStartDialog from "../Components/Recipes/RecipeStartDialog";
-import ImportRecipeDialog from "../Components/Recipes/Import/ImportRecipeDialog";
+import ImportRecipeDialog from "../Components/Recipes/Import/ImportRecipeDialog.jsx";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
+import mapServerRecipeToForm, { mapImportedRecipeToForm } from "../utils/recipeMappers.js";
 
 import { fetchIngredients, addIngredient } from "../Services/ingredientsService";
 import {
@@ -38,6 +39,20 @@ const [importDialogOpen, setImportDialogOpen] = useState(false);
   // Filter/search state
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+
+const [analyzedRecipe, setAnalyzedRecipe] = useState(null);
+
+const handleAnalyze = (result) => {
+    setAnalyzedRecipe(result);
+    setImportDialogOpen(false);
+    setAddDialogOpen(true);
+};
+
+const handleBackToImport = () => {
+    setAddDialogOpen(false);
+    setImportDialogOpen(true);
+};
+
 
   // Fetch recipes
   const {
@@ -326,9 +341,16 @@ const [importDialogOpen, setImportDialogOpen] = useState(false);
       alert("שגיאה בשמירת מתכון: " + errorMsg);
     }
   };
+const handleEdit = (recipe) => {
+  if (!recipe) return;
+  const mappedRecipe = mapServerRecipeToForm(recipe, ingredientsList);
+  setEditRecipe(mappedRecipe);
+  setAddDialogOpen(true);
+};
+
 
   // מיפוי מתכון לעריכה בדיאלוג
-  const handleEdit = (recipe) => {
+ /* const handleEdit = (recipe) => {
     if (!recipe) return;
 
     const mappedRecipe = {
@@ -394,7 +416,7 @@ const [importDialogOpen, setImportDialogOpen] = useState(false);
 
     setEditRecipe(mappedRecipe);
     setAddDialogOpen(true);
-  };
+  };*/
 
   // מחיקה
   const handleDelete = async (recipe) => {
@@ -526,7 +548,8 @@ const [importDialogOpen, setImportDialogOpen] = useState(false);
     setStartDialogOpen(true);
   }}
   onImported={(recipeDraft) => {
-    setEditRecipe(recipeDraft);
+    const mapped = mapImportedRecipeToForm(recipeDraft);
+    setEditRecipe(mapped);
     setImportDialogOpen(false);
     setAddDialogOpen(true);
   }}

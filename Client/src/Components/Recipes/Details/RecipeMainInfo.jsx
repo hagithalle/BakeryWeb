@@ -10,22 +10,27 @@ export default function RecipeMainInfo({
   onNameChange,
   onDescriptionChange,
   onCategoryChange,
-  onImageChange
+  onImageChange,
+  nameLabel = "שם מתכון",
+  descriptionLabel = "תיאור קצר",
+  categoryLabel = "קטגוריה",
+  uploadLabel = "העלאת תמונה",
+  detailsTitle = "פרטי מתכון"
 }) {
   return (
     <Box sx={{ bgcolor: "#FFF7F2", p: 2, borderRadius: 3 }}>
       <Typography sx={{ fontWeight: 700, color: "#7B5B4B", mb: 2 }}>
-        פרטי מתכון
+        {detailsTitle}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <TextField
-          label="שם מתכון"
+          label={nameLabel}
           value={name}
           onChange={e => onNameChange?.(e.target.value)}
           fullWidth
         />
         <TextField
-          label="תיאור קצר"
+          label={descriptionLabel}
           value={description}
           onChange={e => onDescriptionChange?.(e.target.value)}
           multiline
@@ -34,7 +39,7 @@ export default function RecipeMainInfo({
         />
         <TextField
           select
-          label="קטגוריה"
+          label={categoryLabel}
           value={category}
           onChange={e => onCategoryChange?.(e.target.value)}
           fullWidth
@@ -45,7 +50,7 @@ export default function RecipeMainInfo({
         </TextField>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Button variant="outlined" component="label">
-            העלאת תמונה
+            {uploadLabel}
             <input type="file" hidden accept="image/*" onChange={onImageChange} />
           </Button>
           {imageUrl && (
