@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Server.Services;
 
+
+// Load .env file for environment variables
+BakeryWeb.Server.AI.Client.EnvLoader.LoadEnv();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
