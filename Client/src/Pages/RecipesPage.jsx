@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AddRecipeDialog from "../Components/Recipes/AddRecipeDialog";
 import RecipeListSidebar from "../Components/Recipes/RecipeListSidebar";
 import RecipeDetailsPanel from "../Components/Recipes/RecipeDetailsPanel";
-
+import RecipeStartDialog from "../Components/Recipes/RecipeStartDialog";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 
@@ -31,6 +31,7 @@ export default function RecipesPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editRecipe, setEditRecipe] = useState(null);
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
 
   // Filter/search state
   const [search, setSearch] = useState("");
@@ -407,12 +408,15 @@ export default function RecipesPage() {
   return (
     <Box sx={{ bgcolor: '#FFF7F2', minHeight: '100vh', py: 4 }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto', mb: 4 }}>
-        <PageHeader
-          title="מתכונים"
-          subtitle="ניהול המתכונים שלך"
-          buttonLabel="מתכון חדש"
-          onAdd={() => { setEditRecipe(null); setAddDialogOpen(true); }}
-        />
+       <PageHeader
+  title="מתכונים"
+  subtitle="ניהול המתכונים שלך"
+  buttonLabel="מתכון חדש"
+  onAdd={() => {
+    setEditRecipe(null);
+    setStartDialogOpen(true);
+  }}
+/>
         {/* שורת פילטרים */}
         {!selectedId && (
           <FilterBar
@@ -491,7 +495,30 @@ export default function RecipesPage() {
           </Box>
         </Box>
       )}
+<RecipeStartDialog
+  open={startDialogOpen}
+  onClose={() => setStartDialogOpen(false)}
+  onSelect={(mode) => {
+    setStartDialogOpen(false);
 
+    if (mode === "manual") {
+      // בדיוק מה שעשית עד עכשיו
+      setEditRecipe(null);
+      setAddDialogOpen(true);
+    }
+
+    if (mode === "import") {
+      // כאן בהמשך תפתח ImportDialog
+      // בינתיים אפשר:
+      // setImportDialogOpen(true);
+      alert("ייבוא מתכון מקובץ – בקרוב 🧁");
+    }
+
+    if (mode === "ai") {
+      alert("עזרת AI תגיע בהמשך ✨");
+    }
+  }}
+/>
       {/* דיאלוג הוספה/עריכה */}
       <AddRecipeDialog
         open={addDialogOpen}

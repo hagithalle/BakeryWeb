@@ -42,7 +42,7 @@ export default function SummaryCardItem({
       {horizontal ? (
         <>
           <Box
-            sx={{ justifyContent: 'space-between',
+            sx={{
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-start",

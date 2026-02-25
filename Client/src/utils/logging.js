@@ -1,3 +1,21 @@
+// MultiLogger logs to all loggers
+export class MultiLogger extends ILogger {
+  constructor(loggers) {
+    super();
+    this.loggers = loggers;
+  }
+  log(entry) {
+    this.loggers.forEach(logger => logger.log(entry));
+  }
+}
+
+// Singleton LogManager instance with ConsoleLogger and FileLogger
+const globalLogManager = new LogManager();
+const globalConsoleLogger = new ConsoleLogger();
+const globalFileLogger = new FileLogger('app-log.txt');
+globalLogManager.addLogger(new MultiLogger([globalConsoleLogger, globalFileLogger]));
+
+export const logManager = globalLogManager;
 export class ILogger {
   log(entry) {
     throw new Error('Not implemented');

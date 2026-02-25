@@ -64,7 +64,21 @@ const STRINGS = {
       steps: "שלבים",
       costs: "עלויות"
     },
-    // ...נושאים נוספים
+      recipeStartDialog: {
+        title: "יצירת מתכון חדש",
+        howToStart: "איך תרצי להתחיל?",
+        cancel: "ביטול",
+        options: {
+          manualTitle: "ידני",
+          manualSubtitle: "יצירת מתכון מאפס",
+          importTitle: "ייבוא מתכון",
+          importSubtitle: "העלאת קובץ ואיתור אוטומטי",
+          aiTitle: "עזרת AI",
+          aiSubtitle: "יצירת מתכון לפי תיאור (בקרוב)",
+          comingSoon: "בקרוב"
+        }
+      },
+      // ...נושאים נוספים
   },
   en: {
     direction: "ltr",
@@ -127,7 +141,21 @@ const STRINGS = {
       steps: "Steps",
       costs: "Costs"
     },
-    // ...more sections
+      recipeStartDialog: {
+        title: "Create New Recipe",
+        howToStart: "How would you like to start?",
+        cancel: "Cancel",
+        options: {
+          manualTitle: "Manual",
+          manualSubtitle: "Create a recipe from scratch",
+          importTitle: "Import Recipe",
+          importSubtitle: "Upload a file and auto-detect",
+          aiTitle: "AI Assist",
+          aiSubtitle: "Create a recipe from description (soon)",
+          comingSoon: "Coming Soon"
+        }
+      },
+      // ...more sections
   }
 };
 
