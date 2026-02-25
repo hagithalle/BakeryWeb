@@ -18,10 +18,10 @@ import BuildIcon from '@mui/icons-material/Build';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-import FixedExpensesHeader from './FixedExpenses/FixedExpensesHeader';
-import FixedExpensesSummary from './FixedExpenses/FixedExpensesSummary';
-import FixedExpensesList from './FixedExpenses/FixedExpensesList';
-import AddExpenseDialog from './FixedExpenses/AddExpenseDialog';
+import FixedExpensesHeader from '../Components/FixedExpenses/FixedExpensesHeader';
+import FixedExpensesSummary from '../Components/FixedExpenses/FixedExpensesSummary';
+import FixedExpensesList from '../Components/FixedExpenses/FixedExpensesList';
+import AddExpenseDialog from '../Components/FixedExpenses/AddExpenseDialog';
 
 import AddButton from '../Components/AddButton';
 import FilterBar from '../Components/FilterBar';

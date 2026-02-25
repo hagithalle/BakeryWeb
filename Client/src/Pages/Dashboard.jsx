@@ -17,10 +17,10 @@ import { fetchIngredients } from '../Services/ingredientsService';
 import { getAllRecipes } from '../Services/RecipeService';
 import { fetchProducts } from '../Services/productService';
 import { fetchPackaging } from '../Services/packagingService';
-import CategoryChart from './Dashboard/CategoryChart';
-import IncomeVsExpense from './Dashboard/IncomeVsExpense';
-import QuickActions from './Dashboard/QuickActions';
-import MonthlySummary from './Dashboard/MonthlySummary';
+import CategoryChart from '../Components/Dashboard/CategoryChart';
+import IncomeVsExpense from '../Components/Dashboard/IncomeVsExpense';
+import QuickActions from '../Components/Dashboard/QuickActions';
+import MonthlySummary from '../Components/Dashboard/MonthlySummary';
 
 export default function Dashboard() {
   const { lang } = useLanguage();

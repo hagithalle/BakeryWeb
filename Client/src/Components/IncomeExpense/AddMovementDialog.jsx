@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, RadioGroup, FormControlLabel, Radio } from '@mui/material';
-import BaseDialog from '../../Components/BaseDialog';
+import BaseDialog from '../BaseDialog';
 import ExpensesForm from './ExpensesForm';
 import IncomeForm from './IncomeForm';
 import ReceiptsSection from './ReceiptsSection';

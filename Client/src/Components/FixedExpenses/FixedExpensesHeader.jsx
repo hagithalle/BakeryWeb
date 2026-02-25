@@ -1,5 +1,5 @@
 import React from 'react';
-import PageHeader from '../../Components/Common/PageHeader';
+import PageHeader from '../Common/PageHeader';
 
 export default function FixedExpensesHeader({ onAdd }) {
   return (

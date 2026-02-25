@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import BaseDialog from '../../Components/BaseDialog';
+import BaseDialog from '../BaseDialog';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { useLanguage } from '../../context/LanguageContext';

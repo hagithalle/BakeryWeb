@@ -3,16 +3,16 @@ import React, { useState } from 'react';
 import { Box, IconButton } from '@mui/material';
 import PageHeader from '../Components/Common/PageHeader';
 import FilterBar from '../Components/FilterBar';
-import EmptyState from './IncomeExpense/EmptyState';
+import EmptyState from '../Components/incomeExpense/EmptyState';
 import GenericTable from '../Components/GenericTable';
 
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DescriptionIcon from '@mui/icons-material/Description';
 
-import AddMovementDialog from './IncomeExpense/AddMovementDialog';
-import MovementDetailsDialog from './IncomeExpense/MovementDetailsDialog';
-import SummaryCards from './IncomeExpense/SummaryCards';
+import AddMovementDialog from '../Components/incomeExpense/AddMovementDialog';
+import MovementDetailsDialog from '../Components/incomeExpense/MovementDetailsDialog';
+import SummaryCards from '../Components/incomeExpense/SummaryCards';
 
 export default function IncomeExpense() {
   const [search, setSearch] = useState('');

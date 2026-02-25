@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Grid, Box } from '@mui/material';
-import FixedExpenseCard from '../../Components/FixedExpenses/FixedExpenseCard';
+import FixedExpenseCard from './FixedExpenseCard';
 
 // צבעי קטגוריה קבועים (תואם CATEGORY_ICON_COLOR)
 import { CATEGORY_ICON_COLOR } from '../../utils/categoryMap';

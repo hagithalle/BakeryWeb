@@ -1,7 +1,7 @@
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import SummaryCardRow from '../../Components/SummaryCardRow';
+import SummaryCardRow from '../SummaryCardRow';
 
 export default function SummaryCards({ balance = 0, income = 0, expense = 0 }) {
  const items = [
