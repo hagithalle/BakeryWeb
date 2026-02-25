@@ -325,3 +325,21 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
   logManager.log('>>> updateRecipeWithImage END\n');
   return response.data;
 }
+
+export async function importRecipeFromFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await axios.post(
+    "/api/recipes/import-from-file",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  // כאן data צריך להיות בפורמט שמתאים ל-initialValues של AddRecipeDialog
+  return data;
+}

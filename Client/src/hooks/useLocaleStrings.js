@@ -78,6 +78,26 @@ const STRINGS = {
           comingSoon: "בקרוב"
         }
       },
+      importDialog: {
+        title: "ייבוא מתכון מקובץ",
+        step: "שלב {step} מתוך {total} – העלי קובץ, ואנחנו נזהה עבורך את המתכון",
+        uploadLabel: "גררי קובץ לכאן או לחצי כדי לבחור",
+        uploadHint: "נתמך: PDF, תמונה, DOCX ועוד",
+        analyzing: "מנתחת את הקובץ... זה עלול לקחת כמה שניות",
+        cancel: "ביטול",
+        analyze: "נתח מתכון",
+        errorNoFile: "בחרי קובץ קודם 😊",
+        errorImport: "אירעה שגיאה בניתוח הקובץ",
+        fileLabel: "{name} ({size} KB)",
+      },
+      importProgressBar: {
+        analyzing: "מנתחת את הקובץ... זה עלול לקחת כמה שניות"
+      },
+      importFileArea: {
+        uploadLabel: "גררי קובץ לכאן או לחצי כדי לבחור",
+        uploadHint: "נתמך: PDF, תמונה, DOCX ועוד",
+        fileLabel: "{name} ({size} KB)"
+      },
       // ...נושאים נוספים
   },
   en: {
@@ -154,6 +174,26 @@ const STRINGS = {
           aiSubtitle: "Create a recipe from description (soon)",
           comingSoon: "Coming Soon"
         }
+      },
+      importDialog: {
+        title: "Import Recipe from File",
+        step: "Step {step} of {total} – Upload a file and we'll detect the recipe for you",
+        uploadLabel: "Drag file here or click to select",
+        uploadHint: "Supported: PDF, image, DOCX, more",
+        analyzing: "Analyzing file... This may take a few seconds",
+        cancel: "Cancel",
+        analyze: "Analyze Recipe",
+        errorNoFile: "Please select a file first 😊",
+        errorImport: "An error occurred while analyzing the file",
+        fileLabel: "{name} ({size} KB)",
+      },
+      importProgressBar: {
+        analyzing: "Analyzing file... This may take a few seconds"
+      },
+      importFileArea: {
+        uploadLabel: "Drag file here or click to select",
+        uploadHint: "Supported: PDF, image, DOCX, more",
+        fileLabel: "{name} ({size} KB)"
       },
       // ...more sections
   }

@@ -13,12 +13,14 @@ export default function OptionList({ onSelect }) {
   const strings = useLocaleStrings(lang);
   const opts = strings.recipeStartDialog.options;
   return (
-    <Stack direction="row" spacing={2.5}>
+    <Stack direction="row" spacing={2.5} sx={{ px: 2, py: 1 }}>
       <StartOptionCard
         icon={<MenuBookIcon />}
         title={opts.manualTitle}
         subtitle={opts.manualSubtitle}
         onClick={() => onSelect("manual")}
+         sx={{ width: "100%", maxWidth: 260 }}
+     
       />
 
       <StartOptionCard
@@ -26,6 +28,7 @@ export default function OptionList({ onSelect }) {
         title={opts.importTitle}
         subtitle={opts.importSubtitle}
         onClick={() => onSelect("import")}
+         sx={{ width: "100%", maxWidth: 260 }}
       />
 
       <StartOptionCard
@@ -35,6 +38,8 @@ export default function OptionList({ onSelect }) {
         disabled
         badge={opts.comingSoon}
         onClick={() => onSelect("ai")}
+         sx={{ width: "100%", maxWidth: 260 }}
+   
       />
     </Stack>
   );

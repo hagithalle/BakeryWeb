@@ -26,13 +26,13 @@ export default function RecipeStartDialog({ open, onClose, onSelect }) {
 
   // Wrap onClose to log
   const handleClose = () => {
-    logManager.logInfo('RecipeStartDialog', 'handleClose', 'User closed dialog');
+    logManager.logSuccess('RecipeStartDialog', 'handleClose', 'User closed dialog');
     onClose && onClose();
   };
 
   // Wrap onSelect to log
   const handleSelect = (option) => {
-    logManager.logInfo('RecipeStartDialog', 'handleSelect', `User selected option: ${JSON.stringify(option)}`);
+    logManager.logSuccess('RecipeStartDialog', 'handleSelect', `User selected option: ${JSON.stringify(option)}`);
     onSelect && onSelect(option);
   };
 

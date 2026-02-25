@@ -11,6 +11,7 @@ import AddRecipeDialog from "../Components/Recipes/AddRecipeDialog";
 import RecipeListSidebar from "../Components/Recipes/RecipeListSidebar";
 import RecipeDetailsPanel from "../Components/Recipes/RecipeDetailsPanel";
 import RecipeStartDialog from "../Components/Recipes/RecipeStartDialog";
+import ImportRecipeDialog from "../Components/Recipes/Import/ImportRecipeDialog";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 
@@ -32,6 +33,7 @@ export default function RecipesPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editRecipe, setEditRecipe] = useState(null);
   const [startDialogOpen, setStartDialogOpen] = useState(false);
+const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Filter/search state
   const [search, setSearch] = useState("");
@@ -502,27 +504,42 @@ export default function RecipesPage() {
     setStartDialogOpen(false);
 
     if (mode === "manual") {
-      // בדיוק מה שעשית עד עכשיו
       setEditRecipe(null);
       setAddDialogOpen(true);
     }
 
     if (mode === "import") {
-      // כאן בהמשך תפתח ImportDialog
-      // בינתיים אפשר:
-      // setImportDialogOpen(true);
-      alert("ייבוא מתכון מקובץ – בקרוב 🧁");
+      setImportDialogOpen(true);
     }
 
     if (mode === "ai") {
+      // לעתיד
       alert("עזרת AI תגיע בהמשך ✨");
     }
   }}
 />
+
+<ImportRecipeDialog
+  open={importDialogOpen}
+  onClose={() => {
+    setImportDialogOpen(false);
+    setStartDialogOpen(true);
+  }}
+  onImported={(recipeDraft) => {
+    setEditRecipe(recipeDraft);
+    setImportDialogOpen(false);
+    setAddDialogOpen(true);
+  }}
+/>
+
       {/* דיאלוג הוספה/עריכה */}
       <AddRecipeDialog
         open={addDialogOpen}
-        onClose={() => { setAddDialogOpen(false); setEditRecipe(null); }}
+        onClose={() => {
+          setAddDialogOpen(false);
+          setEditRecipe(null);
+          setStartDialogOpen(true);
+        }}
         onSave={handleSave}
         ingredientsList={ingredientsList}
         loadingIngredients={ingredientsLoading}
