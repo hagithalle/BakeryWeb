@@ -32,6 +32,25 @@ namespace BakeryWeb.Server.Services
         private readonly List<LogEntry> _logs = new List<LogEntry>();
         private readonly List<ILogger> _loggers = new List<ILogger>();
 
+        public LogManager(Microsoft.Extensions.Configuration.IConfiguration configuration)
+        {
+            var logOutputs = configuration.GetSection("Logging:LogOutputs").Get<string[]>() ?? new[] { "Console" };
+            foreach (var output in logOutputs)
+            {
+                switch (output.ToLower())
+                {
+                    case "console":
+                        _loggers.Add(new ConsoleLogger());
+                        break;
+                    case "file":
+                        var logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.log");
+                        _loggers.Add(new FileLogger(logFilePath));
+                        break;
+                    // ניתן להוסיף כאן סוגי לוגרים נוספים בקלות
+                }
+            }
+        }
+
         public void AddLogger(ILogger logger)
         {
             _loggers.Add(logger);

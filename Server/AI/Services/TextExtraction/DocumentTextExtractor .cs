@@ -97,5 +97,21 @@ namespace BakeryWeb.Server.AI.Services.TextExtraction
                 return string.Empty;
             }
         }
+        public async Task<string> GetRawHtmlAsync(string url)
+{
+    try
+    {
+        _logManager.Log(LogType.Info, nameof(DocumentTextExtractor), nameof(GetRawHtmlAsync),
+            $"Fetching raw HTML from URL: {url}");
+        return await _httpClient.GetStringAsync(url);
+    }
+    catch (Exception ex)
+    {
+        _logManager.Log(LogType.Error, nameof(DocumentTextExtractor), nameof(GetRawHtmlAsync),
+            $"Error fetching HTML: {ex.Message}");
+        return string.Empty;
+    }
+}
+
     }
 }

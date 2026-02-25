@@ -1,3 +1,4 @@
+using BakeryWeb.Server.AI.Services.TextExtraction;
 
 using Server.Data;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using BakeryWeb.Server.AI;
 using BakeryWeb.Server.AI.Tasks;
 using BakeryWeb.Server.AI.Prompts;
 using BakeryWeb.Server.AI.Services;
+using BakeryWeb.Server.AI.Services.Structured;
 
 
 // Load .env file for environment variables
@@ -42,7 +44,9 @@ builder.Services.AddCors(options =>
 });
 
 // Register application services
-builder.Services.AddSingleton<BakeryWeb.Server.Services.LogManager>();
+builder.Services.AddScoped<IDocumentTextExtractor, DocumentTextExtractor>();
+builder.Services.AddSingleton<BakeryWeb.Server.Services.LogManager>(sp =>
+    new BakeryWeb.Server.Services.LogManager(sp.GetRequiredService<IConfiguration>()));
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IPackagingService, PackagingService>();
 builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();
@@ -61,6 +65,8 @@ builder.Services.AddScoped<TextRecipeImportService>();
 builder.Services.AddScoped<UrlRecipeImportService>();
 builder.Services.AddScoped<FileRecipeImportService>();
 builder.Services.AddScoped<ImageRecipeImportService>();
+builder.Services.AddScoped<RecipeStructuredParser>();
+builder.Services.AddScoped<RecipeImportService>();
 //end AI
 
 var app = builder.Build();

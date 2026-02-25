@@ -45,12 +45,20 @@ namespace BakeryWeb.Server.Controllers
             if (string.IsNullOrWhiteSpace(request.Url))
                 return BadRequest("יש לספק כתובת URL");
 
-            var result = await _importService.ImportFromUrlAsync(request.Url);
+            try
+            {
+                var result = await _importService.ImportFromUrlAsync(request.Url);
 
-            if (result == null)
-                return BadRequest("לא הצלחנו לחלץ מתכון מהכתובת");
+                if (result == null)
+                    return BadRequest("לא הצלחנו לחלץ מתכון מהכתובת");
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception)
+            {
+                // לא להציג שגיאה טכנית ללקוח
+                return StatusCode(500, "אירעה שגיאה בעת עיבוד הבקשה. נסה שוב או פנה לתמיכה.");
+            }
         }
 
         /// <summary>

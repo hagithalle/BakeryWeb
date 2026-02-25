@@ -10,11 +10,11 @@ namespace BakeryWeb.Server.Services
 
     public class LogEntry
     {
-        public LogType Type { get; set; }
-        public string Source { get; set; }
-        public string Function { get; set; }
-        public string Message { get; set; }
-        public DateTime Timestamp { get; set; }
+        public required LogType Type { get; set; }
+        public required string Source { get; set; }
+        public required string Function { get; set; }
+        public required string Message { get; set; }
+        public required DateTime Timestamp { get; set; }
     }
 
     public interface ILogger

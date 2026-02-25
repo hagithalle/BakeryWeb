@@ -1,5 +1,8 @@
-public class RecipeStepDto
+namespace BakeryWeb.Server.AI.Dtos
 {
-    public int Order { get; set; }
-    public string Description { get; set; }
+    public class RecipeStepDto
+    {
+        public int Order { get; set; }                    // 1, 2, 3...
+        public required string Description { get; set; } = string.Empty;
+    }
 }

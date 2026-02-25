@@ -20,6 +20,12 @@ import ImportFileArea from "./ImportFileArea";
 
 import { useLanguage } from "../../../context/LanguageContext.jsx";
 import useLocaleStrings from "../../../hooks/useLocaleStrings.js";
+import {
+  importRecipeFromFile,
+  importRecipeFromUrl,
+  importRecipeFromText,
+  importRecipeFromImage, // אם תשתמשי בזה
+} from "../../../Services/recipeImportService";
 
 
 export default function ImportRecipeDialog({
@@ -54,75 +60,101 @@ export default function ImportRecipeDialog({
     onClose();
   };
 
-  const handleAnalyze = async () => {
-    try {
-      setError("");
-      setSuccessMessage("");
+ const handleAnalyze = async () => {
+  try {
+    setError("");
 
-      if (source === "file" && !file) {
-        setError(strings.errorNoFile || "בחרי קובץ קודם 🙂");
-        return;
-      }
-      if (source === "url" && !url.trim()) {
-        setError(strings.errorNoFile || "הכניסי כתובת URL תקינה 🙂");
-        return;
-      }
-      if (source === "text" && !rawText.trim()) {
-        setError(strings.errorNoFile || "הדביקי טקסט של מתכון 🙂");
-        return;
-      }
-
-      setIsAnalyzing(true);
-      console.log("🔍 מתחילה לנתח מתכון ממקור:", source);
-
-      let recipeDraft;
-
-      // 🧠 פה את מחברת ל־API שלך
-      if (source === "file") {
-        // recipeDraft = await importRecipeFromFile(file);
-        console.log("📁 מנסה לייבא מתכון מקובץ");
-      } else if (source === "url") {
-        // recipeDraft = await importRecipeFromUrl(url);
-        console.log("🌐 מנסה לייבא מתכון מ-URL");
-      } else if (source === "text") {
-        // recipeDraft = await importRecipeFromText(rawText);
-        console.log("📝 מנסה לייבא מתכון מטקסט");
-      }
-
-      // בינתיים לדוגמה – שנראה איך זה זורם:
-      recipeDraft = recipeDraft || {
-        name: "Imported recipe",
-        description: "",
-        category: "עוגות",
-        recipeType: 2,
-        imageUrl: null,
-        yieldAmount: 1,
-        outputUnitType: 0,
-        bakeTime: 0,
-        prepTime: 0,
-        temperature: 0,
-        ingredients: [],
-        steps: [],
-        baseRecipes: [],
-      };
-
-      setSuccessMessage(strings.successMessage || "המתכון נותח בהצלחה! 🎉");
-      console.log("✅ המתכון נותח בהצלחה");
-      onImported && onImported(recipeDraft);
-      setTimeout(() => {
-        resetState();
-        onClose();
-      }, 1200);
-    } catch (err) {
-      console.error("❌ אירעה שגיאה בניתוח המתכון:", err);
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "אירעה שגיאה בניתוח המתכון"
-      );
-      setIsAnalyzing(false);
+    switch (source) {
+      case "file":
+        if (!file) {
+          setError("בחרי קובץ קודם 🙂");
+          return;
+        }
+        break;
+      case "url":
+        if (!url.trim()) {
+          setError("הכניסי כתובת URL תקינה 🙂");
+          return;
+        }
+        break;
+      case "text":
+        if (!rawText.trim()) {
+          setError("הדביקי טקסט של מתכון 🙂");
+          return;
+        }
+        break;
+      case "image":
+        if (!file) {
+          setError("בחרי תמונה קודם 🙂");
+          return;
+        }
+        break;
+      default:
+        break;
     }
-  };
+
+    setIsAnalyzing(true);
+
+    let recipeDraft;
+
+    switch (source) {
+      case "file":
+        recipeDraft = await importRecipeFromFile(file);
+        console.log(JSON.stringify({
+          type: "IMPORT_RECIPE",
+          source: "file",
+          fileName: file?.name,
+          status: recipeDraft ? "success" : "fail",
+          result: recipeDraft
+        }, null, 2));
+        break;
+      case "url":
+        recipeDraft = await importRecipeFromUrl(url.trim());
+        console.log(JSON.stringify({
+          type: "IMPORT_RECIPE",
+          source: "url",
+          url: url.trim(),
+          status: recipeDraft ? "success" : "fail",
+          result: recipeDraft
+        }, null, 2));
+        break;
+      case "text":
+        recipeDraft = await importRecipeFromText(rawText);
+        console.log(JSON.stringify({
+          type: "IMPORT_RECIPE",
+          source: "text",
+          textLength: rawText?.length,
+          status: recipeDraft ? "success" : "fail",
+          result: recipeDraft
+        }, null, 2));
+        break;
+      case "image":
+        recipeDraft = await importRecipeFromImage(file);
+        console.log(JSON.stringify({
+          type: "IMPORT_RECIPE",
+          source: "image",
+          fileName: file?.name,
+          status: recipeDraft ? "success" : "fail",
+          result: recipeDraft
+        }, null, 2));
+        break;
+      default:
+        break;
+    }
+
+    // כאן recipeDraft זה RecipeDto מהשרת
+    onImported && onImported(recipeDraft);
+
+    resetState();
+    onClose();
+  } catch (err) {
+    console.error("❌ Error importing recipe:", err);
+    setError(
+      err?.message || "אירעה שגיאה בניתוח המתכון"
+    );
+    setIsAnalyzing(false);
+  }
+};
 
   return (
     <Dialog
@@ -159,9 +191,11 @@ export default function ImportRecipeDialog({
         <ImportSourceSelector source={source} onChange={setSource} />
 
         {/* קלט בהתאם למקור */}
-        {source === "file" && (
+
+        {(source === "file" || source === "image") && (
           <ImportFileArea
             file={file}
+            label={source === "image" ? "גררי תמונה לכאן או לחצי כדי לבחור" : "גררי קובץ לכאן או לחצי כדי לבחור"}
             onFileChange={(f) => {
               setFile(f);
               setError("");

@@ -8,6 +8,7 @@ export default function ImportFileArea({
   onFileChange,
   isAnalyzing,
   error,
+  label = "גררי קובץ לכאן או לחצי כדי לבחור",
 }) {
   const handleClick = () => {
     if (isAnalyzing) return;
@@ -30,7 +31,7 @@ export default function ImportFileArea({
       >
         <CloudUploadIcon sx={{ fontSize: 42, color: "#C98929", mb: 1 }} />
         <Typography sx={{ fontWeight: 600, color: "#9B5A25", mb: 0.5 }}>
-          גררי קובץ לכאן או לחצי כדי לבחור
+          {label}
         </Typography>
         <Typography variant="body2" sx={{ color: "#B07D62" }}>
           נתמך: PDF, תמונה, DOCX ועוד
