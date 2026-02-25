@@ -36,7 +36,9 @@ namespace BakeryWeb.Server.AI.Services.TextExtraction
                         sb.AppendLine(t);
                 }
 
-                return sb.ToString();
+                var result = sb.ToString();
+                _logManager.Log(LogType.Info, nameof(DocumentTextExtractor), nameof(FromUrlAsync), $"Extracted text from URL: {url}\nOutput: {result.Substring(0, Math.Min(result.Length, 500))}");
+                return result;
             }
             catch (Exception ex)
             {
@@ -56,7 +58,9 @@ namespace BakeryWeb.Server.AI.Services.TextExtraction
                 using var ms = new MemoryStream();
                 await file.CopyToAsync(ms);
                 // TODO: אם זה PDF / DOCX – כאן בהמשך תכניסי קריאה ל־PDF parser
-                return Encoding.UTF8.GetString(ms.ToArray());
+                var result = Encoding.UTF8.GetString(ms.ToArray());
+                _logManager.Log(LogType.Info, nameof(DocumentTextExtractor), nameof(FromFileAsync), $"Extracted text from file: {file.FileName}\nOutput: {result.Substring(0, Math.Min(result.Length, 500))}");
+                return result;
             }
             catch (Exception ex)
             {
@@ -82,7 +86,9 @@ namespace BakeryWeb.Server.AI.Services.TextExtraction
                 using var pix = Tesseract.Pix.LoadFromMemory(ms.ToArray());
                 using var page = engine.Process(pix);
                 var text = page.GetText();
-                return text ?? string.Empty;
+                var output = text ?? string.Empty;
+                _logManager.Log(LogType.Info, nameof(DocumentTextExtractor), nameof(FromImageAsync), $"Extracted text from image: {image.FileName}\nOutput: {output.Substring(0, Math.Min(output.Length, 500))}");
+                return output;
             }
             catch (Exception ex)
             {
