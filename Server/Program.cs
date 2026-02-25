@@ -1,7 +1,12 @@
+
 using Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Server.Services;
+using BakeryWeb.Server.AI;
+using BakeryWeb.Server.AI.Tasks;
+using BakeryWeb.Server.AI.Prompts;
+using BakeryWeb.Server.AI.Services;
 
 
 // Load .env file for environment variables
@@ -45,6 +50,18 @@ builder.Services.AddScoped<ILaborSettingsService, LaborSettingsService>();
 builder.Services.AddScoped<CostCalculatorService>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<RecipeAiExtractionService>();
+
+// AI
+builder.Services.AddHttpClient<BakeryWeb.Server.AI.Client.AiClient>();
+builder.Services.AddScoped<AiTaskRunner>();
+builder.Services.AddScoped<RecipeAiExtractionService>();
+
+builder.Services.AddScoped<TextRecipeImportService>();
+builder.Services.AddScoped<UrlRecipeImportService>();
+builder.Services.AddScoped<FileRecipeImportService>();
+builder.Services.AddScoped<ImageRecipeImportService>();
+//end AI
 
 var app = builder.Build();
 
@@ -198,6 +215,21 @@ app.MapGet("/", () => "Server is running");
 
 app.Run();
 
+internal class UrlRecipeImportService
+{
+}
+
+internal class ImageRecipeImportService
+{
+}
+
+internal class FileRecipeImportService
+{
+}
+
+internal class TextRecipeImportService
+{
+}
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
