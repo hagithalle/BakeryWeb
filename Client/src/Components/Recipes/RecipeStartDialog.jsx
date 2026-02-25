@@ -5,6 +5,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 
 
+import React from "react";
 import OptionList from "./OptionList";
 import { useLanguage } from '../../context/LanguageContext';
 import useLocaleStrings from '../../hooks/useLocaleStrings';
