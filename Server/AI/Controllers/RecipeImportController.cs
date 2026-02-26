@@ -1,4 +1,5 @@
 using BakeryWeb.Server.AI.Dtos;
+using BakeryWeb.Server.AI.Exceptions;
 using BakeryWeb.Server.AI.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,15 +26,26 @@ namespace BakeryWeb.Server.Controllers
         [HttpPost("text")]
         public async Task<ActionResult<RecipeDto>> ImportFromText([FromBody] ImportTextRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Text))
-                return BadRequest("יש לספק טקסט לניתוח");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Text))
+                    return BadRequest("יש לספק טקסט לניתוח");
 
-            var result = await _importService.ImportFromTextAsync(request.Text);
+                var result = await _importService.ImportFromTextAsync(request.Text);
 
-            if (result == null)
-                return BadRequest("לא הצלחנו לחלץ מתכון מהטקסט");
+                if (result == null)
+                    return BadRequest("לא הצלחנו לחלץ מתכון מהטקסט");
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (AiApiKeyMissingException)
+            {
+                return StatusCode(500, "חסר מפתח AI בשרת. נא להגדיר אותו או לפנות לתמיכה.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "אירעה שגיאה, נא לבדוק הגדרות שרת או לפנות לתמיכה.");
+            }
         }
 
         /// <summary>
@@ -42,11 +54,11 @@ namespace BakeryWeb.Server.Controllers
         [HttpPost("url")]
         public async Task<ActionResult<RecipeDto>> ImportFromUrl([FromBody] ImportUrlRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Url))
-                return BadRequest("יש לספק כתובת URL");
-
             try
             {
+                if (string.IsNullOrWhiteSpace(request.Url))
+                    return BadRequest("יש לספק כתובת URL");
+
                 var result = await _importService.ImportFromUrlAsync(request.Url);
 
                 if (result == null)
@@ -54,10 +66,13 @@ namespace BakeryWeb.Server.Controllers
 
                 return Ok(result);
             }
+            catch (AiApiKeyMissingException)
+            {
+                return StatusCode(500, "חסר מפתח AI בשרת. נא להגדיר אותו או לפנות לתמיכה.");
+            }
             catch (Exception)
             {
-                // לא להציג שגיאה טכנית ללקוח
-                return StatusCode(500, "אירעה שגיאה בעת עיבוד הבקשה. נסה שוב או פנה לתמיכה.");
+                return StatusCode(500, "אירעה שגיאה, נא לבדוק הגדרות שרת או לפנות לתמיכה.");
             }
         }
 
@@ -68,15 +83,26 @@ namespace BakeryWeb.Server.Controllers
         [RequestSizeLimit(20_000_000)] // אופציונלי: עד 20MB
         public async Task<ActionResult<RecipeDto>> ImportFromFile([FromForm] IFormFile file)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("יש להעלות קובץ");
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest("יש להעלות קובץ");
 
-            var result = await _importService.ImportFromFileAsync(file);
+                var result = await _importService.ImportFromFileAsync(file);
 
-            if (result == null)
-                return BadRequest("לא הצלחנו לחלץ מתכון מהקובץ");
+                if (result == null)
+                    return BadRequest("לא הצלחנו לחלץ מתכון מהקובץ");
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (AiApiKeyMissingException)
+            {
+                return StatusCode(500, "חסר מפתח AI בשרת. נא להגדיר אותו או לפנות לתמיכה.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "אירעה שגיאה, נא לבדוק הגדרות שרת או לפנות לתמיכה.");
+            }
         }
 
         /// <summary>
@@ -86,15 +112,26 @@ namespace BakeryWeb.Server.Controllers
         [RequestSizeLimit(20_000_000)]
         public async Task<ActionResult<RecipeDto>> ImportFromImage([FromForm] IFormFile image)
         {
-            if (image == null || image.Length == 0)
-                return BadRequest("יש להעלות תמונה");
+            try
+            {
+                if (image == null || image.Length == 0)
+                    return BadRequest("יש להעלות תמונה");
 
-            var result = await _importService.ImportFromImageAsync(image);
+                var result = await _importService.ImportFromImageAsync(image);
 
-            if (result == null)
-                return BadRequest("לא הצלחנו לחלץ טקסט מהתמונה");
+                if (result == null)
+                    return BadRequest("לא הצלחנו לחלץ טקסט מהתמונה");
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (AiApiKeyMissingException)
+            {
+                return StatusCode(500, "חסר מפתח AI בשרת. נא להגדיר אותו או לפנות לתמיכה.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "אירעה שגיאה, נא לבדוק הגדרות שרת או לפנות לתמיכה.");
+            }
         }
     }
 }

@@ -12,7 +12,9 @@ using BakeryWeb.Server.AI.Services.Structured;
 
 
 // Load .env file for environment variables
-BakeryWeb.Server.AI.Client.EnvLoader.LoadEnv();
+BakeryWeb.Server.AI.Client.EnvLoader.LoadEnv(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+Console.WriteLine("AI_API_KEY=" + Environment.GetEnvironmentVariable("AI_API_KEY"));
+Console.WriteLine("AI_API_KEY=" + Environment.GetEnvironmentVariable("AI_API_KEY"));
 
 var builder = WebApplication.CreateBuilder(args);
 

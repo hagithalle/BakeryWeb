@@ -54,36 +54,40 @@ export default function RecipeStepsSection({ steps = [], onStepsChange }) {
           <AddIcon />
         </IconButton>
       </Box>
-      {steps.map((step, idx) => (
-        <Paper key={idx} sx={{ p: 1.5, mb: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-          {editingIdx === idx ? (
-            <>
-              <TextField
-                fullWidth
-                value={editingText}
-                onChange={(e) => setEditingText(e.target.value)}
-                size="small"
-              />
-              <IconButton onClick={() => handleSaveEdit(idx)} sx={{ color: "green" }}>
-                <AddIcon />
-              </IconButton>
-              <IconButton onClick={handleCancelEdit} sx={{ color: "#D32F2F" }}>
-                <CloseIcon />
-              </IconButton>
-            </>
-          ) : (
-            <>
-              <Typography sx={{ flex: 1 }}>{idx + 1}. {step}</Typography>
-              <IconButton onClick={() => handleStartEdit(idx)} sx={{ color: "#5D4037" }}>
-                ✎
-              </IconButton>
-              <IconButton onClick={() => handleRemoveStep(idx)} sx={{ color: "#D32F2F" }}>
-                <CloseIcon />
-              </IconButton>
-            </>
-          )}
-        </Paper>
-      ))}
+      {steps.map((step, idx) => {
+        // Support both array of strings and array of objects
+        const stepText = typeof step === "string" ? step : step.description || JSON.stringify(step);
+        return (
+          <Paper key={idx} sx={{ p: 1.5, mb: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+            {editingIdx === idx ? (
+              <>
+                <TextField
+                  fullWidth
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  size="small"
+                />
+                <IconButton onClick={() => handleSaveEdit(idx)} sx={{ color: "green" }}>
+                  <AddIcon />
+                </IconButton>
+                <IconButton onClick={handleCancelEdit} sx={{ color: "#D32F2F" }}>
+                  <CloseIcon />
+                </IconButton>
+              </>
+            ) : (
+              <>
+                <Typography sx={{ flex: 1 }}>{idx + 1}. {stepText}</Typography>
+                <IconButton onClick={() => handleStartEdit(idx)} sx={{ color: "#5D4037" }}>
+                  ✎
+                </IconButton>
+                <IconButton onClick={() => handleRemoveStep(idx)} sx={{ color: "#D32F2F" }}>
+                  <CloseIcon />
+                </IconButton>
+              </>
+            )}
+          </Paper>
+        );
+      })}
     </Box>
   );
 }

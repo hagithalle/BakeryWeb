@@ -5,7 +5,15 @@ const BASE_URL = "/api/recipes/import";
 async function handleResponse(res) {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || "Import failed");
+    // Detect technical error (stacktrace, exception, etc.)
+    const isTechnical =
+      !text ||
+      text.length > 200 ||
+      /Exception|System\.|at |Microsoft\./.test(text);
+    if (isTechnical) {
+      throw new Error("אירעה שגיאה בשרת. נא לבדוק הגדרות או לפנות לתמיכה.");
+    }
+    throw new Error(text || "אירעה שגיאה בייבוא המתכון");
   }
   return res.json();
 }

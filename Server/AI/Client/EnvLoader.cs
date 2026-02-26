@@ -8,7 +8,11 @@ namespace BakeryWeb.Server.AI.Client
         public static void LoadEnv(string? envPath = null)
         {
             envPath ??= Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, ".env");
-            if (!File.Exists(envPath)) return;
+            Console.WriteLine($"[EnvLoader] Loading .env from: {envPath}");
+            if (!File.Exists(envPath)) {
+                Console.WriteLine($"[EnvLoader] .env file not found at: {envPath}");
+                return;
+            }
             foreach (var line in File.ReadAllLines(envPath))
             {
                 var trimmed = line.Trim();
@@ -18,6 +22,8 @@ namespace BakeryWeb.Server.AI.Client
                 var key = trimmed.Substring(0, idx).Trim();
                 var value = trimmed.Substring(idx + 1).Trim();
                 Environment.SetEnvironmentVariable(key, value);
+                if (key == "AI_API_KEY")
+                    Console.WriteLine($"[EnvLoader] Set AI_API_KEY: {value}");
             }
         }
     }

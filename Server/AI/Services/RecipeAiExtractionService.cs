@@ -54,7 +54,19 @@ namespace BakeryWeb.Server.AI.Services
             _logManager.Log(LogType.Info, nameof(RecipeAiExtractionService), nameof(ExtractFromTextAsync), $"Received AI response: {responseJson.Substring(0, Math.Min(responseJson.Length, 500))}");
             try
             {
-                var dto = JsonSerializer.Deserialize<RecipeDto>(responseJson, JsonOptions);
+                // Parse OpenAI response and extract the recipe JSON from choices[0].message.content
+                using var doc = JsonDocument.Parse(responseJson);
+                var content = doc.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    _logManager.Log(LogType.Error, nameof(RecipeAiExtractionService), nameof(ExtractFromTextAsync), "AI response content is empty");
+                    return null;
+                }
+                var dto = JsonSerializer.Deserialize<RecipeDto>(content, JsonOptions);
                 _logManager.Log(LogType.Info, nameof(RecipeAiExtractionService), nameof(ExtractFromTextAsync), $"Parsed RecipeDto: {System.Text.Json.JsonSerializer.Serialize(dto, JsonOptions).Substring(0, 500)}");
                 return dto;
             }
