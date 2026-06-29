@@ -45,7 +45,9 @@ export default function RecipeMainInfo({
           fullWidth
         >
           {categories.map(cat => (
-            <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+            <MenuItem key={cat.value || cat} value={cat.value || cat}>
+              {cat.label || cat}
+            </MenuItem>
           ))}
         </TextField>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

@@ -9,8 +9,7 @@ import AddButton from '../Components/AddButton';
 import AddExpenseDialog from '../Components/FixedExpenses/AddExpenseDialog';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper as MuiPaper, Chip, IconButton, Snackbar, Alert } from '@mui/material';
 import FixedExpensesPage from './FixedExpensesPage';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+
 import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../Services/fixedExpenseService';
 import { getLaborSettings } from '../Services/laborSettingsService';
 

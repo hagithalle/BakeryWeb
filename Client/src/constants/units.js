@@ -11,3 +11,17 @@ export const units = [
   { value: 9, label: "Tablespoon" },
   { value: 10, label: "Cup" }
 ];
+
+// Hebrew labels for display
+export const unitLabels = {
+  1: "קילוגרם",
+  2: "גרם",
+  3: "ליטר",
+  4: 'מ"ל',
+  5: "יחידה",
+  6: "תריסר",
+  7: "חבילה",
+  8: "כפית",
+  9: "כף",
+  10: "כוס"
+};

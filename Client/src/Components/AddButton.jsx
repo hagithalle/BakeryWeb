@@ -1,38 +1,78 @@
 import React from 'react';
-import { Button } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { Button, Box } from '@mui/material';
 
-/**
- * Unified Add Button Component
- * Used across all pages for consistent design: "הוסף חומר גלם", "מוצר חדש", "מתכון חדש", etc.
- * 
- * @param {function} onClick - Click handler
- * @param {React.ReactNode} children - Button text
- * @param {object} props - Additional MUI Button props
- */
-export default function AddButton({ onClick, children, ...props }) {
+export default function AddButton({
+  label,
+  icon,
+  onClick,
+  disabled = false,
+  sx = {},
+}) {
+  if (!label) return null;
+
   return (
     <Button
-      variant="contained"
-      startIcon={<AddIcon sx={{ mr: 1 }} />}
       onClick={onClick}
+      disabled={disabled}
+      disableElevation
       sx={{
-        backgroundColor: '#C98929',
-        color: 'white',
-        borderRadius: 2,
-        px: 3,
-        fontWeight: 600,
-        display: 'flex',
+        height: 68,
+        px: 4.2,
+        minWidth: 290,
+        borderRadius: '999px',
+
+        background: '#FFF8F2',
+        color: '#9B1F3A',
+
+        display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 1,
+        flexDirection: 'row',
+        gap: 2.2,
+
+        fontWeight: 700,
+        fontSize: '18px',
+        lineHeight: 1,
+        whiteSpace: 'nowrap',
+
+        boxShadow: '0 10px 24px rgba(120, 70, 45, 0.08)',
+        transition: 'all .25s ease',
+        textTransform: 'none',
+
         '&:hover': {
-          backgroundColor: '#9B5A25'
-        }
+          background: '#FDF0E5',
+          transform: 'translateY(-2px)',
+          boxShadow: '0 14px 28px rgba(120, 70, 45, 0.14)',
+        },
+
+        '&:disabled': {
+          opacity: 0.55,
+          color: '#9B1F3A',
+        },
+
+        ...sx,
       }}
-      {...props}
     >
-      {children}
+      <Box component="span" sx={{ fontWeight: 700 }}>
+        {label}
+      </Box>
+      
+      {icon && (
+        <Box
+          component="img"
+          src={icon}
+          alt=""
+          sx={{
+            width: 54,
+            height: 54,
+            objectFit: 'contain',
+            flexShrink: 0,
+            display: 'block',
+          }}
+        />
+      )}
+
+      
     </Button>
   );
 }

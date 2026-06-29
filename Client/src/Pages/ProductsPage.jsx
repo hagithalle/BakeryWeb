@@ -16,15 +16,18 @@ import {
   Alert,
 } from "@mui/material";
 
-import SearchIcon from "@mui/icons-material/Search";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
+import searchIconSvg from "../assets/icons/actions/search-icon.svg";
+import editIconSvg   from "../assets/icons/actions/edit-icon.svg";
+import deleteIconSvg from "../assets/icons/actions/delete-icon.svg";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import PageHeader from "../Components/Common/PageHeader";
+import PageContainer from "../Components/Common/PageContainer";
 import FilterBar from "../Components/FilterBar";
+import productsHeaderIcon from "../assets/decor/page-headers/products-header-icon.svg";
+import addProductIcon from "../assets/icons/actions/add-new-product.svg";
 import AddProductDialog from "../Components/AddProductDialog";
 
 import {
@@ -350,17 +353,17 @@ export default function ProductsPage() {
 
   // ================== RENDER ==================
   return (
-    <Box sx={{ backgroundColor: "transparent", minHeight: "100vh" }}>
+    <PageContainer>
       {!isFormMode ? (
         // ===== תצוגת רשימת מוצרים =====
         <>
           <PageHeader
             title={strings.sidebar?.products || "מוצרים"}
-            subtitle={
-              strings.product?.subtitle || "ניהול מוצרים ואריזות למכירה"
-            }
-            buttonLabel={strings.product?.add || "הוסף מוצר"}
-            onAdd={() => {
+            subtitle={strings.product?.subtitle || "ניהול מוצרים ואריזות למכירה"}
+            illustration={productsHeaderIcon}
+            actionLabel={strings.product?.add || "הוסף מוצר"}
+            actionIcon={addProductIcon}
+            onActionClick={() => {
               setSelectedProduct(null);
               setIsFormMode(true);
             }}
@@ -553,7 +556,7 @@ export default function ProductsPage() {
                               }}
                               title="ערוך"
                             >
-                              <EditIcon fontSize="small" />
+                              <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                             </IconButton>
 
                             <IconButton
@@ -571,7 +574,7 @@ export default function ProductsPage() {
                               }}
                               title="מחק"
                             >
-                              <DeleteIcon fontSize="small" />
+                              <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                             </IconButton>
                           </Box>
                         </Box>
@@ -842,7 +845,7 @@ export default function ProductsPage() {
                             }}
                             title="הרחב"
                           >
-                            <EditIcon fontSize="small" />
+                            <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                           </IconButton>
                           <IconButton
                             onClick={(e) => {
@@ -859,7 +862,7 @@ export default function ProductsPage() {
                             }}
                             title="מחיקה"
                           >
-                            <DeleteIcon fontSize="small" />
+                            <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                           </IconButton>
                         </Box>
                       </Box>
@@ -889,6 +892,6 @@ export default function ProductsPage() {
           strings={strings}
         />
       )}
-    </Box>
+    </PageContainer>
   );
 }

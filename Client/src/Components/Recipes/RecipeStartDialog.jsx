@@ -52,12 +52,12 @@ export default function RecipeStartDialog({ open, onClose, onSelect }) {
         </IconButton>
       </Box>
 
-      <DialogTitle sx={{ textAlign: "center", fontWeight: 700, color: "#971936" }}>
+      <DialogTitle sx={{ textAlign: "center", fontWeight: 700, color: "#FFF8F3", backgroundColor:  "#971936", height:"10%"}}>
         {strings.recipeStartDialog.title}
       </DialogTitle>
 
       <DialogContent>
-        <Typography sx={{ textAlign: "center", mb: 3, color: "#9B5A25" }}>
+        <Typography sx={{ textAlign: "center", mb: 3, color: "#FFF8F3", marginTop: 2 }}>
           {strings.recipeStartDialog.howToStart}
         </Typography>
 

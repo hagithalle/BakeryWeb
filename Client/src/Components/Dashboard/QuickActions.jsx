@@ -1,53 +1,110 @@
 import React from 'react';
-import { Paper, Typography, Grid, Button, Box } from '@mui/material';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import { Paper, Typography, Box } from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from 'react-router-dom';
+
+import addRecipeIcon  from '../../assets/icons/actions/add-new-recipe.svg';
+import addProductIcon from '../../assets/icons/actions/add-new-product.svg';
+
+const ACTION_CARDS = [
+  {
+    label: 'מתכון חדש',
+    icon: addRecipeIcon,
+    bg: 'linear-gradient(135deg, #F5DEB3 0%, #E8C99A 100%)',
+    iconBg: 'rgba(255,255,255,0.55)',
+    labelColor: '#9B5A25',
+    border: '#E8D5C4',
+    path: '/recipes',
+  },
+  {
+    label: 'מוצר חדש',
+    icon: addProductIcon,
+    bg: 'linear-gradient(135deg, #FFCDD2 0%, #FFAAB0 100%)',
+    iconBg: 'rgba(255,255,255,0.55)',
+    labelColor: '#A63D40',
+    border: '#F5D0D0',
+    path: '/products',
+  },
+];
 
 const QuickActions = ({ strings }) => {
   const navigate = useNavigate();
+
   return (
-    <Paper elevation={2} sx={{ p: 2, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-      <Typography variant="subtitle1" color="primary" sx={{ mb: 2, textAlign: 'center' }}>{strings.dashboard?.quickActions || 'פעולות מהירות'}</Typography>
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 2 }}>
-          <Button
-            variant="contained"
-            sx={{ bgcolor: '#ffe5e0', color: '#7c5c3b', borderRadius: 3, flexDirection: 'column', py: 2, px: 4, boxShadow: 3, minWidth: 140, minHeight: 120, mx: 1, fontWeight: 'bold', flex: 1 }}
-            onClick={() => navigate('/products')}
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.5,
+        borderRadius: '20px',
+        border: '1px solid #F5EDE8',
+        boxShadow: '0 4px 20px rgba(166,61,64,0.07)',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Title */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, mb: 2.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#A63D40' }}>
+          {strings.dashboard?.quickActions || 'פעולות מהירות'}
+        </Typography>
+        <FavoriteIcon sx={{ fontSize: 18, color: '#E891B0' }} />
+      </Box>
+
+      {/* Action cards */}
+      <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
+        {ACTION_CARDS.map((card) => (
+          <Box
+            key={card.label}
+            onClick={() => navigate(card.path)}
+            sx={{
+              flex: 1,
+              borderRadius: '16px',
+              background: card.bg,
+              border: `1px solid ${card.border}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              py: 3,
+              px: 2,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-3px)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+              },
+            }}
           >
-            <InventoryIcon sx={{ fontSize: 40, mb: 1 }} />
-            {strings.dashboard?.newProduct || 'מוצר חדש'}
-          </Button>
-          <Button
-            variant="contained"
-            sx={{ bgcolor: '#f7e9d7', color: '#7c5c3b', borderRadius: 3, flexDirection: 'column', py: 2, px: 4, boxShadow: 3, minWidth: 140, minHeight: 120, mx: 1, fontWeight: 'bold', flex: 1 }}
-            onClick={() => navigate('/recipes')}
-          >
-            <MenuBookIcon sx={{ fontSize: 40, mb: 1 }} />
-            {strings.dashboard?.newRecipe || 'מתכון חדש'}
-          </Button>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-          <Button
-            variant="contained"
-            sx={{ bgcolor: '#e9e3dc', color: '#7c5c3b', borderRadius: 3, flexDirection: 'column', py: 2, px: 4, boxShadow: 3, minWidth: 140, minHeight: 120, mx: 1, fontWeight: 'bold', flex: 1 }}
-            onClick={() => navigate('/costs')}
-          >
-            <AttachMoneyIcon sx={{ fontSize: 40, mb: 1 }} />
-            {strings.dashboard?.newExpense || 'הוצאה חדשה'}
-          </Button>
-          <Button
-            variant="contained"
-            sx={{ bgcolor: '#e0ffe5', color: '#7c5c3b', borderRadius: 3, flexDirection: 'column', py: 2, px: 4, boxShadow: 3, minWidth: 140, minHeight: 120, mx: 1, fontWeight: 'bold', flex: 1 }}
-            onClick={() => navigate('/costs')}
-          >
-            <TrendingUpIcon sx={{ fontSize: 40, mb: 1 }} />
-            {strings.dashboard?.newIncome || 'הכנסה חדשה'}
-          </Button>
-        </Box>
+            {/* Icon circle */}
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                bgcolor: card.iconBg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              }}
+            >
+              <Box
+                component="img"
+                src={card.icon}
+                alt={card.label}
+                sx={{ width: 44, height: 44, objectFit: 'contain' }}
+              />
+            </Box>
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 700, color: card.labelColor, textAlign: 'center' }}
+            >
+              {card.label}
+            </Typography>
+          </Box>
+        ))}
       </Box>
     </Paper>
   );

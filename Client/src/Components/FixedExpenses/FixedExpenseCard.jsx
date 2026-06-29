@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Paper, Box, Typography, IconButton } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import editIconSvg   from '../../assets/icons/actions/edit-icon.svg';
+import deleteIconSvg from '../../assets/icons/actions/delete-icon.svg';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import BoltIcon from '@mui/icons-material/Bolt';
 import HomeIcon from '@mui/icons-material/Home';
@@ -45,10 +45,10 @@ export default function FixedExpenseCard({ expense, onEdit, onDelete }) {
         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{title}</Typography>
         <Box sx={{ flexGrow: 1 }} />
         <IconButton size="small" onClick={onEdit} sx={{ ml: 1 }} aria-label="ערוך">
-          <EditIcon fontSize="small" />
+          <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
         </IconButton>
         <IconButton size="small" onClick={onDelete} aria-label="מחק">
-          <DeleteIcon fontSize="small" />
+          <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
         </IconButton>
       </Box>
       <Typography variant="body2" sx={{ color: '#7c5c3b', mb: 0.5 }}>{categoryLabel}</Typography>

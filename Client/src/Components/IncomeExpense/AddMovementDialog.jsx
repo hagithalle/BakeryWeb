@@ -5,8 +5,12 @@ import ExpensesForm from './ExpensesForm';
 import IncomeForm from './IncomeForm';
 import ReceiptsSection from './ReceiptsSection';
 
-export default function AddMovementDialog({ open, onClose, onSave }) {
-  const [addType, setAddType] = useState('expense');
+export default function AddMovementDialog({ open, onClose, onSave, initialType = 'expense' }) {
+  const [addType, setAddType] = useState(initialType);
+
+  React.useEffect(() => {
+    if (open) setAddType(initialType);
+  }, [open, initialType]);
   const [addForm, setAddForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     category: '',

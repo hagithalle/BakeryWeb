@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Box, Typography, IconButton } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
+import editIconSvg from '../../assets/icons/actions/edit-icon.svg';
 import BraImg from '../../assets/images/Bra.jpg';
 import RecipeImage from "./RecipeImage";
 import RecipeInfoChips from "./RecipeInfoChips";
@@ -154,7 +154,7 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
               {recipe.name}
             </Typography>
             <IconButton color="primary" onClick={onEdit} sx={{ ml: 1 }}>
-              <EditIcon />
+              <Box component="img" src={editIconSvg} alt="" sx={{ width: 18, height: 18, objectFit: 'contain' }} />
             </IconButton>
           </Box>
           <Typography variant="body1" sx={{ mb: 2, color: '#5D4037', lineHeight: 1.7 }}>

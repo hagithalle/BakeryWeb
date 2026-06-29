@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Box, Typography, IconButton, Chip, Tooltip, MenuItem } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';

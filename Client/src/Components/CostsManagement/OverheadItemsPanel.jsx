@@ -22,8 +22,8 @@ import {
 } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import editIconSvg   from '../../assets/icons/actions/edit-icon.svg';
+import deleteIconSvg from '../../assets/icons/actions/delete-icon.svg';
 import {
   getAllOverheadItems,
   createOverheadItem,
@@ -242,14 +242,14 @@ export default function OverheadItemsPanel() {
                       onClick={() => handleOpenDialog(item)}
                       sx={{ color: '#5D4037', mr: 1 }}
                     >
-                      <EditIcon />
+                      <Box component="img" src={editIconSvg} alt="" sx={{ width: 18, height: 18, objectFit: 'contain' }} />
                     </IconButton>
                     <IconButton
                       size="small"
                       onClick={() => handleDelete(item)}
                       sx={{ color: '#D32F2F' }}
                     >
-                      <DeleteIcon />
+                      <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 18, height: 18, objectFit: 'contain' }} />
                     </IconButton>
                   </TableCell>
                 </TableRow>

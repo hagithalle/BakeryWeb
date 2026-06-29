@@ -2,7 +2,7 @@ import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box, Typography } from "@mui/material";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-export default function IngredientDialog({ open, onClose, onSave, categories, units, strings, initialValues, showPriceWarning = false, disableEnforceFocus, disableRestoreFocus }) {
+export default function IngredientDialog({ open, onClose, onSave, categories, units, strings, initialValues, showPriceWarning = false, disableEnforceFocus, disableRestoreFocus, titleBgColor = '#FFF7F2', titleColor = '#7B5B4B' }) {
   const [name, setName] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [unit, setUnit] = React.useState("");
@@ -78,7 +78,19 @@ export default function IngredientDialog({ open, onClose, onSave, categories, un
       disableEnforceFocus={disableEnforceFocus}
       disableRestoreFocus={disableRestoreFocus}
     >
-      <DialogTitle sx={{ color: '#7B5B4B', fontWeight: 700, fontSize: 26, textAlign: 'center', pb: 0, pt: 2 }}>
+      <DialogTitle
+        sx={{
+          color: titleColor,
+          background: titleBgColor,
+          fontWeight: 700,
+          fontSize: 26,
+          textAlign: 'center',
+          pb: 0,
+          pt: 2,
+          borderTopLeftRadius: 8,
+          borderTopRightRadius: 8
+        }}
+      >
         {title}
       </DialogTitle>
       <DialogContent sx={{ bgcolor: '#FFF7F2', borderRadius: 3, p: 3, pt: 1 }}>

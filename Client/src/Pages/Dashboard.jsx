@@ -1,15 +1,19 @@
-import SummaryCardRow from '../Components/SummaryCardRow';
-// Dashboard.jsx
 import React, { useEffect, useState } from 'react';
-import { Box } from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import AllInboxIcon from '@mui/icons-material/AllInbox';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { Box, Chip } from '@mui/material';
 import CakeIcon from '@mui/icons-material/Cake';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import CheckBoxOutlinedIcon from '@mui/icons-material/CheckBoxOutlined';
+import SearchIcon from '@mui/icons-material/Search';
+
+import itemsIconUrl       from '../icons/items.svg';
+import packagingIconUrl   from '../icons/packaging.svg';
+import recipesIconUrl     from '../icons/מתכונים.svg';
+import integrationIconUrl from '../icons/integration.svg';
+import manyIconUrl        from '../icons/many.svg';
 
 import PageHeader from '../Components/Common/PageHeader';
+import dashboardHeaderIcon from '../assets/decor/page-headers/dashboard-header-icon.svg';
+
+import SummaryCardRow from '../Components/SummaryCardRow';
 import { useLanguage } from '../context/LanguageContext';
 import useLocaleStrings from '../hooks/useLocaleStrings';
 
@@ -22,6 +26,7 @@ import IncomeVsExpense from '../Components/Dashboard/IncomeVsExpense';
 import QuickActions from '../Components/Dashboard/QuickActions';
 import MonthlySummary from '../Components/Dashboard/MonthlySummary';
 
+
 export default function Dashboard() {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
@@ -31,7 +36,6 @@ export default function Dashboard() {
     recipes: 0,
     products: 0,
     packaging: 0,
-    // כרגע אין לך רווח מהשרת, אז זה placeholder
     profit: 0,
   });
 
@@ -43,7 +47,6 @@ export default function Dashboard() {
         fetchProducts(),
         fetchPackaging(),
       ]);
-
       setCounts(prev => ({
         ...prev,
         ingredients: ingredients.length,
@@ -52,110 +55,113 @@ export default function Dashboard() {
         packaging: packaging.length,
       }));
     }
-
     fetchData();
   }, []);
 
-  // 🌟 Summary cards items array
-  const items = [
+  const summaryItems = [
     {
-      icon: Inventory2Icon,
+      iconSrc: itemsIconUrl,
       title: strings.dashboard?.products || 'מוצרים',
-      value: counts.products ?? 0,
-      iconColor: '#ffffff',
+      value: counts.products,
+      subtitle: 'מוצרים פעילים',
+      valueColor: '#A63D40',
+      sx: { flex: '1 1 160px', minWidth: '140px' },
     },
     {
-      icon: AllInboxIcon,
+      iconSrc: packagingIconUrl,
       title: strings.dashboard?.packaging || 'אריזות',
-      value: counts.packaging ?? 0,
-      iconColor: '#ffffff',
+      value: counts.packaging,
+      subtitle: 'פריטים במלאי',
+      valueColor: '#E65100',
+      sx: { flex: '1 1 160px', minWidth: '140px' },
     },
     {
-      icon: MenuBookIcon,
+      iconSrc: recipesIconUrl,
       title: strings.dashboard?.recipes || 'מתכונים',
-      value: counts.recipes ?? 0,
-      iconColor: '#ffffff',
+      value: counts.recipes,
+      subtitle: 'מתכונים פעילים',
+      valueColor: '#9B5A25',
+      sx: { flex: '1 1 160px', minWidth: '140px' },
     },
     {
-      icon: CakeIcon,
+      iconSrc: integrationIconUrl,
       title: strings.dashboard?.ingredients || 'חומרי גלם',
-      value: counts.ingredients ?? 0,
-      iconColor: '#ffffff',
+      value: counts.ingredients,
+      subtitle: 'פריטים במערכת',
+      valueColor: '#B7795A',
+      sx: { flex: '1 1 160px', minWidth: '140px' },
     },
     {
-      icon: AttachMoneyIcon,
+      iconSrc: manyIconUrl,
       title: strings.dashboard?.profit || 'רווח נקי',
-      value: counts.profit ?? 0,
-      iconColor: '#ffffff',
-      valueColor: 'success.main',
+      value: counts.profit,
+      subtitle: 'החודש',
       currency: '₪',
+      valueColor: '#880E4F',
+      sx: { flex: '1 1 160px', minWidth: '140px' },
     },
   ];
 
   return (
-    <Box
-      sx={{
-        p: 3,
-        minHeight: '100vh',
-        direction: strings.direction,
-        overflow: 'hidden',
-        boxSizing: 'border-box',
-      }}
-    >
-      <Box
-        sx={{
-          width: '100%',
-          maxWidth: '1400px',
-          mx: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-        }}
-      >
-        {/* Header */}
-        <PageHeader
-          title={strings.dashboard?.title || 'שלום!'}
-          subtitle={strings.dashboard?.subtitle || 'תמונה סקירה של המאפיה שלך'}
-          icon={DashboardIcon}
+    <Box sx={{ direction: strings.direction }}>
+      <Box sx={{ width: '100%', maxWidth: 1200, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+        {/* ── Hero header ── */}
+        <Box>
+          <PageHeader
+            title="שלום חגית! 🩷"
+            subtitle="היום יום נפלא לאפייה 🧁"
+            illustration={dashboardHeaderIcon}
+            centered
+          />
+          {/* Quick-stat chips */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, flexWrap: 'wrap', mt: -1, mb: 1 }}>
+            <Chip
+              icon={<CakeIcon sx={{ fontSize: 16 }} />}
+              label={`${counts.products} מוצרים פעילים`}
+              sx={{ bgcolor: 'white', color: '#9B5A25', border: '1px solid #E8D5C4', fontWeight: 600, px: 0.5 }}
+            />
+            <Chip
+              icon={<CheckBoxOutlinedIcon sx={{ fontSize: 16 }} />}
+              label={`${counts.recipes} מתכונים`}
+              sx={{ bgcolor: 'white', color: '#9B5A25', border: '1px solid #E8D5C4', fontWeight: 600, px: 0.5 }}
+            />
+            <Chip
+              icon={<SearchIcon sx={{ fontSize: 16 }} />}
+              label={`${counts.ingredients} חומרי גלם`}
+              sx={{ bgcolor: 'white', color: '#9B5A25', border: '1px solid #E8D5C4', fontWeight: 600, px: 0.5 }}
+            />
+          </Box>
+        </Box>
+
+        {/* ── 5 Summary cards ── */}
+        <SummaryCardRow
+          horizontal
+          gap={2}
+          sx={{ mb: 0, margin: 0, justifyContent: 'flex-start' }}
+          items={summaryItems}
         />
 
-        {/* Summary Cards Row */}
-        <SummaryCardRow items={items} />
-
-        {/* Second row: two blocks */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 3,
-          }}
-        >
-          <Box sx={{ flex: 1, minWidth: 360 }}>
-            <IncomeVsExpense strings={strings} />
-          </Box>
-
-          <Box sx={{ flex: 1, minWidth: 360 }}>
+        {/* ── Middle row: Category chart + Income vs Expense ── */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          <Box sx={{ flex: 1, minWidth: 300 }}>
             <CategoryChart strings={strings} />
           </Box>
+          <Box sx={{ flex: 1, minWidth: 300 }}>
+            <IncomeVsExpense strings={strings} />
+          </Box>
         </Box>
 
-        {/* Third row: two blocks */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          <Box sx={{ flex: 1, minWidth: 360 }}>
-            <MonthlySummary strings={strings} />
-          </Box>
-
-          <Box sx={{ flex: 1, minWidth: 360 }}>
+        {/* ── Bottom row: Quick actions + Monthly summary ── */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, pb: 3 }}>
+          <Box sx={{ flex: 1, minWidth: 300 }}>
             <QuickActions strings={strings} />
           </Box>
+          <Box sx={{ flex: 1, minWidth: 300 }}>
+            <MonthlySummary strings={strings} />
+          </Box>
         </Box>
+
       </Box>
     </Box>
   );

@@ -21,13 +21,13 @@ import {
   Paper
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
+import deleteIconSvg from '../assets/icons/actions/delete-icon.svg';
+import editIconSvg   from '../assets/icons/actions/edit-icon.svg';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
-import EditIcon from '@mui/icons-material/Edit';
 import BaseDialog from "./BaseDialog";
 import PackagingDialog from "./PackagingDialog";
 import { UnitTypeLabels } from "../utils/unitEnums";
@@ -654,7 +654,7 @@ export default function AddProductDialog({
                 <Button
                   onClick={handleRemoveImage}
                   size="small"
-                  startIcon={<DeleteIcon />}
+                  startIcon={<Box component="img" src={deleteIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />}
                   color="error"
                 >
                   הסר תמונה
@@ -1012,7 +1012,7 @@ export default function AddProductDialog({
                           );
                         })()}
                         <IconButton onClick={() => handleStartEditPackage(idx)} sx={{ color: '#5D4037' }}>
-                          <EditIcon fontSize="small" />
+                          <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                         </IconButton>
                         <IconButton onClick={() => handleRemovePackageItem(idx)} sx={{ color: '#D32F2F' }}>
                           <CloseIcon />
@@ -1250,7 +1250,7 @@ export default function AddProductDialog({
                         {item.name} - {item.quantity} יחידות (₪{(item.cost * item.quantity).toFixed(2)})
                       </Typography>
                       <IconButton onClick={() => handleStartEditPackaging(idx)} sx={{ color: '#5D4037' }}>
-                        <EditIcon fontSize="small" />
+                        <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                       </IconButton>
                       <IconButton onClick={() => handleRemovePackaging(idx)} sx={{ color: '#D32F2F' }}>
                         <CloseIcon />

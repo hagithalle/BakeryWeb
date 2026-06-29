@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from "react";
-import { Box, TextField } from "@mui/material";
+import { Box } from "@mui/material";
 import GenericTable from "../Components/GenericTable";
 import PackagingDialog from "../Components/PackagingDialog";
-import AddButton from "../Components/AddButton";
 import FilterBar from "../Components/FilterBar";
 import PageHeader from '../Components/Common/PageHeader';
+import PageContainer from '../Components/Common/PageContainer';
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPackaging, addPackaging, deletePackaging, editPackaging } from '../Services/packagingService';
+import packagingIllustration from '../assets/decor/page-headers/packaging-header-icon.svg';
+import addPackagingIcon from '../assets/icons/actions/add-packaging.svg';
 
 export default function PackagingPage() {
   const { lang } = useLanguage();
@@ -22,13 +24,13 @@ export default function PackagingPage() {
     queryKey: ['packaging'],
     queryFn: fetchPackaging
   });
-  
+
   const columns = [
-    { field: "name", headerName: strings.sidebar?.packaging || "שם" },
-    { field: "cost", headerName: strings.packaging?.cost || "עלות" },
+    { field: "name",       headerName: strings.sidebar?.packaging || "שם" },
+    { field: "cost",       headerName: strings.packaging?.cost    || "עלות" },
     { field: "stockUnits", headerName: strings.packaging?.stockUnits || "יחידות במלאי" }
   ];
-  
+
   const filteredRows = useMemo(() => {
     return rows.filter(row => row.name.includes(search));
   }, [search, rows]);
@@ -48,59 +50,65 @@ export default function PackagingPage() {
     onSuccess: () => queryClient.invalidateQueries(['packaging'])
   });
 
+  if (isLoading) return <div>טוען...</div>;
+  if (error)     return <div>שגיאה בטעינת נתונים</div>;
+
   return (
     <Box>
-      <PageHeader
-        title={strings.sidebar?.packaging || "אריזות"}
-        subtitle={strings.packaging?.subtitle || "ניהול מוצרי אריזה"}
-        buttonLabel={strings.packaging?.add || "הוסף מוצר אריזה"}
-        onAdd={() => {
-          setSelectedPackaging(null);
-          setDialogOpen(true);
-        }}
-      />
+      <PageContainer>
+        <PageHeader
+          title={strings.sidebar?.packaging || "מוצרי אריזה"}
+          subtitle={strings.packaging?.subtitle || "ניהול מוצרי אריזה"}
+          illustration={packagingIllustration}
+          actionLabel={strings.packaging?.add || "הוסף מוצר אריזה"}
+          actionIcon={addPackagingIcon}
+          onActionClick={() => {
+            setSelectedPackaging(null);
+            setDialogOpen(true);
+          }}
+        />
 
-      {/* Search Section */}
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        searchLabel={strings.filter?.search || "חפש לפי שם..."}
-      />
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchLabel={strings.filter?.search || "חפש לפי שם..."}
+        />
 
-      {/* Table */}
-      <GenericTable
-        columns={columns}
-        rows={filteredRows}
-        direction={strings.direction}
-        actions={["edit", "delete"]}
-        onEdit={row => {
-          setSelectedPackaging(row);
-          setDialogOpen(true);
-        }}
-        onDelete={row => {
-          if (window.confirm("האם למחוק את " + row.name + "?")) {
-            deleteMutation.mutate(row.id);
-          }
-        }}
-      />
-      <PackagingDialog
-        open={dialogOpen}
-        onClose={() => {
-          setDialogOpen(false);
-          setSelectedPackaging(null);
-        }}
-        onSave={pkg => {
-          if (selectedPackaging) {
-            editMutation.mutate({ ...selectedPackaging, ...pkg });
-          } else {
-            mutation.mutate(pkg);
-          }
-          setDialogOpen(false);
-          setSelectedPackaging(null);
-        }}
-        strings={strings}
-        initialValues={selectedPackaging}
-      />
+        <GenericTable
+          columns={columns}
+          rows={filteredRows}
+          direction={strings.direction}
+          actions={["edit", "delete"]}
+          onEdit={row => {
+            setSelectedPackaging(row);
+            setDialogOpen(true);
+          }}
+          onDelete={row => {
+            if (window.confirm("האם למחוק את " + row.name + "?")) {
+              deleteMutation.mutate(row.id);
+            }
+          }}
+        />
+
+        <PackagingDialog
+          open={dialogOpen}
+          onClose={() => {
+            setDialogOpen(false);
+            setSelectedPackaging(null);
+          }}
+          onSave={pkg => {
+            if (selectedPackaging) {
+              editMutation.mutate({ ...selectedPackaging, ...pkg });
+            } else {
+              mutation.mutate(pkg);
+            }
+            setDialogOpen(false);
+            setSelectedPackaging(null);
+          }}
+          strings={strings}
+          initialValues={selectedPackaging}
+        />
+      </PageContainer>
     </Box>
   );
 }

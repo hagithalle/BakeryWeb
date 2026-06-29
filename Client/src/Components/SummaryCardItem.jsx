@@ -1,134 +1,106 @@
-// SummaryCardItem.jsx
 import React from "react";
 import { Paper, Typography, Box } from "@mui/material";
 
+function IconRenderer({ Icon, iconSrc, iconColor, size = 48 }) {
+  if (iconSrc) {
+    return (
+      <Box
+        component="img"
+        src={iconSrc}
+        alt=""
+        sx={{ width: size, height: size, objectFit: "contain", flexShrink: 0 }}
+      />
+    );
+  }
+  if (Icon) {
+    return <Icon sx={{ fontSize: size * 0.65, color: iconColor, flexShrink: 0 }} />;
+  }
+  return null;
+}
+
 export default function SummaryCardItem({
   icon: Icon,
+  iconSrc,
   title,
   value,
-  valueColor = "#3b3b3b",
-  iconColor = "#ffffff",
+  subtitle,
+  valueColor = "#3D2B1F",
+  iconColor = "#9B5A25",
   bgColor = "white",
-  iconBgColor = "linear-gradient(135deg, #ff7664 0%, #ff4b5c 100%)",
-  iconShadow = "0 10px 20px rgba(0,0,0,0.07)",   // 🔹 צל גנרי שניתן לשינוי
+  // kept in signature so callers don't break, but not rendered
+  iconBgColor,
+  iconShadow,
   currency = "",
   horizontal = false,
   ...paperProps
 }) {
+  const hasIcon = Boolean(Icon || iconSrc);
+
   return (
     <Paper
-      elevation={3}
+      elevation={0}
       {...paperProps}
       sx={{
         p: 0,
-        borderRadius: 3,
+        borderRadius: "20px",
         minHeight: 90,
-        minWidth: 260,
-        maxWidth: 340,
-        boxShadow: "0 10px 25px rgba(0,0,0,0.06)",
+        boxShadow: "0 4px 20px rgba(166, 61, 64, 0.08)",
+        border: "1px solid #F5EDE8",
         display: "flex",
         flexDirection: horizontal ? "row" : "column",
         alignItems: "center",
         justifyContent: horizontal ? "space-between" : "center",
-        fontWeight: "bold",
         bgcolor: bgColor,
         textAlign: horizontal ? "right" : "center",
         direction: "rtl",
-        px: horizontal ? 2.5 : 2,
-        py: horizontal ? 2 : 2.5,
+        px: horizontal ? 2 : 2,
+        py: horizontal ? 1.5 : 2.5,
+        overflow: "hidden",
         ...(paperProps.sx || {}),
       }}
     >
       {horizontal ? (
         <>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              justifyContent: "center",
-              gap: 0.5,
-              flex: 1,
-            }}
-          >
-            <Typography
-              variant="subtitle2"
-              sx={{
-                color: "#7c5c3b",
-                fontWeight: 400,
-                fontSize: 14,
-              }}
-            >
+          {/* Text */}
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.2, flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" sx={{ color: "#9B5A25", fontWeight: 500, fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>
               {title}
             </Typography>
-
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                fontSize: 22,
-                lineHeight: 1.2,
-                color: valueColor,
-              }}
-            >
-              {currency}
-              {value}
+            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: 20, sm: 24 }, lineHeight: 1.1, color: valueColor }}>
+              {currency}{value}
             </Typography>
+            {subtitle && (
+              <Typography variant="caption" sx={{ color: "#C4A88A", fontSize: 11, whiteSpace: "nowrap" }}>
+                {subtitle}
+              </Typography>
+            )}
           </Box>
 
-         
-        {Icon && (
-  <Box
-    sx={{
-      background: iconBgColor,
-      borderRadius: 3,
-      width: 56,
-      height: 56,
-      display: "flex",
-      alignItems: "center",     // <— מרכז אנכי
-      justifyContent: "center", // <— מרכז אופקי
-      boxShadow: iconShadow,
-      ml: 3,
-      flexShrink: 0,
-    }}
-  >
-    <Icon sx={{ fontSize: 30, color: iconColor }} />
-  </Box>
-)}
-        </>
-      ) : (
-        // מצב אנכי – גנרי
-        <>
-          {Icon && (
-            <Box
-              sx={{
-                background: iconBgColor,
-                borderRadius: 3,
-                width: 56,
-                height: 56,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: iconShadow,
-                mb: 1.5,
-              }}
-            >
-              <Icon sx={{ fontSize: 30, color: iconColor }} />
+          {/* Icon — no background box */}
+          {hasIcon && (
+            <Box sx={{ ml: 1.5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IconRenderer Icon={Icon} iconSrc={iconSrc} iconColor={iconColor} size={120} />
             </Box>
           )}
-          <Typography
-            variant="subtitle2"
-            sx={{ color: "#ffffff", fontWeight: 400, mb: 0.5 }}
-          >
+        </>
+      ) : (
+        <>
+          {hasIcon && (
+            <Box sx={{ mb: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IconRenderer Icon={Icon} iconSrc={iconSrc} iconColor={iconColor} size={120} />
+            </Box>
+          )}
+          <Typography variant="subtitle2" sx={{ color: "#9B5A25", fontWeight: 500, mb: 0.5 }}>
             {title}
           </Typography>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 700, color: valueColor }}
-          >
-            {currency}
-            {value}
+          <Typography variant="h6" sx={{ fontWeight: 800, color: valueColor }}>
+            {currency}{value}
           </Typography>
+          {subtitle && (
+            <Typography variant="caption" sx={{ color: "#C4A88A", mt: 0.3 }}>
+              {subtitle}
+            </Typography>
+          )}
         </>
       )}
     </Paper>

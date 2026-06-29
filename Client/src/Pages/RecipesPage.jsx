@@ -3,6 +3,8 @@ import { Box, Grid } from "@mui/material";
 import RecipeCard from "../Components/Recipes/RecipeCard";
 import BraImage from "../assets/images/Bra.jpg";
 import PageHeader from "../Components/Common/PageHeader";
+import recipesHeaderIcon from "../assets/decor/page-headers/recipe-header-icon.svg";
+import addRecipeIcon from "../assets/icons/actions/add-new-recipe.svg";
 import FilterBar from "../Components/FilterBar";
 // שים לב: ה-sidebar משתמש ב-RecipesFilterBar, כאן נשאר FilterBar הרגיל
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,7 +37,7 @@ export default function RecipesPage() {
   const [editRecipe, setEditRecipe] = useState(null);
   const [startDialogOpen, setStartDialogOpen] = useState(false);
 const [importDialogOpen, setImportDialogOpen] = useState(false);
-
+const [missingIngredients, setMissingIngredients] = useState([]);
   // Filter/search state
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -348,75 +350,24 @@ const handleEdit = (recipe) => {
   setAddDialogOpen(true);
 };
 
+const handleImported = (draft) => {
+  const { matched, missing } = splitImportedIngredients(
+    draft.ingredients,
+    ingredientsList // מהשרת
+  );
 
-  // מיפוי מתכון לעריכה בדיאלוג
- /* const handleEdit = (recipe) => {
-    if (!recipe) return;
+  setImportedDraft({
+    ...draft,
+    ingredients: matched, // רק מה שמצאנו כבר במערכת
+  });
 
-    const mappedRecipe = {
-      ...recipe,
-      yieldAmount: recipe.outputUnits || recipe.OutputUnits || 1,
-      outputUnitType: recipe.outputUnitType ?? recipe.OutputUnitType ?? 0,
-      baseRecipes: (recipe.baseRecipes || recipe.BaseRecipes || []).map(
-        (br) => ({
-          baseRecipeId: br.baseRecipeId || br.BaseRecipeId,
-          name: br.baseRecipe?.name || br.BaseRecipe?.name || "",
-          quantity: br.quantity || br.Quantity || 1,
-          unit: br.unit ?? br.Unit ?? 5,
-        })
-      ),
-      ingredients:
-        recipe.ingredients || recipe.Ingredients || []
-          // מניעת כפילויות
-          .filter((ri, idx, arr) => {
-            const currentId =
-              ri.ingredient?.id ||
-              ri.Ingredient?.id ||
-              ri.ingredientId ||
-              ri.IngredientId;
-            const firstIndex = arr.findIndex((x) => {
-              const xId =
-                x.ingredient?.id ||
-                x.Ingredient?.id ||
-                x.ingredientId ||
-                x.IngredientId;
-              return xId === currentId;
-            });
-            return firstIndex === idx;
-          })
-          .map((ri) => {
-            const ingId =
-              ri.ingredient?.id ||
-              ri.Ingredient?.id ||
-              ri.ingredientId ||
-              ri.IngredientId;
-            const fullIngredient =
-              ingredientsList.find((i) => i.id === ingId) || {};
+  setMissingIngredients(missing); // לפתרון בדיאלוג החוסרים
+  setImportDialogOpen(false);
+  setAddDialogOpen(true);
+};
 
-            return {
-              ingredientId: ingId,
-              name:
-                fullIngredient.name ||
-                fullIngredient.ingredientName ||
-                ri.ingredient?.name ||
-                ri.Ingredient?.name ||
-                "",
-              amount: ri.quantity || ri.Quantity || 0,
-              unit: ri.unit ?? ri.Unit ?? 2,
-            };
-          }),
-      steps:
-        (recipe.steps || recipe.Steps || [])
-          .sort(
-            (a, b) =>
-              (a.order || a.Order || 0) - (b.order || b.Order || 0)
-          )
-          .map((s) => s.description || s.Description || ""),
-    };
 
-    setEditRecipe(mappedRecipe);
-    setAddDialogOpen(true);
-  };*/
+
 
   // מחיקה
   const handleDelete = async (recipe) => {
@@ -432,15 +383,17 @@ const handleEdit = (recipe) => {
   return (
     <Box sx={{ bgcolor: '#FFF7F2', minHeight: '100vh', py: 4 }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto', mb: 4 }}>
-       <PageHeader
-  title="מתכונים"
-  subtitle="ניהול המתכונים שלך"
-  buttonLabel="מתכון חדש"
-  onAdd={() => {
-    setEditRecipe(null);
-    setStartDialogOpen(true);
-  }}
-/>
+        <PageHeader
+          title="מתכונים"
+          subtitle="ניהול המתכונים שלך"
+          illustration={recipesHeaderIcon}
+          actionLabel="מתכון חדש"
+          actionIcon={addRecipeIcon}
+          onActionClick={() => {
+            setEditRecipe(null);
+            setStartDialogOpen(true);
+          }}
+        />
         {/* שורת פילטרים */}
         {!selectedId && (
           <FilterBar

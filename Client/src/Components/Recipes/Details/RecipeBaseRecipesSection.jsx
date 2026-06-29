@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, TextField, MenuItem, IconButton, Button, Collapse, Alert } from "@mui/material";
-import DeleteIcon from '@mui/icons-material/Delete';
+import deleteIconSvg from '../../../assets/icons/actions/delete-icon.svg';
 import AddIcon from '@mui/icons-material/Add';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import { UnitTypeOptions } from "../../../utils/unitEnums";
@@ -243,7 +243,7 @@ export default function RecipeBaseRecipesSection({
                 }}
                 title="הסר מתכון"
               >
-                <DeleteIcon />
+                <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 18, height: 18, objectFit: 'contain' }} />
               </IconButton>
             </Box>
           ))}

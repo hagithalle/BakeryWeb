@@ -3,7 +3,7 @@ import { Box, Button, TextField, InputAdornment, IconButton, Card, CardContent, 
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
-import DeleteIcon from '@mui/icons-material/Delete';
+import deleteIconSvg from '../../assets/icons/actions/delete-icon.svg';
 
 function getFileIcon(file) {
   if (file.type?.includes('pdf') || file.name?.toLowerCase().endsWith('.pdf')) return <PictureAsPdfIcon sx={{ color: '#bfa47a', mr: 1 }} />;
@@ -93,7 +93,7 @@ export default function ReceiptsSection({ receipts, setReceipts, receiptUrl, set
               </Typography>
             </CardContent>
             <IconButton size="small" onClick={() => setReceipts(prev => prev.filter((_, i) => i !== idx))}>
-              <DeleteIcon fontSize="small" />
+              <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
             </IconButton>
           </Card>
         ))}

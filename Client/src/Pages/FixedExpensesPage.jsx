@@ -15,8 +15,8 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import BoltIcon from '@mui/icons-material/Bolt';
 import ShieldIcon from '@mui/icons-material/Shield';
 import BuildIcon from '@mui/icons-material/Build';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import editIconSvg   from '../assets/icons/actions/edit-icon.svg';
+import deleteIconSvg from '../assets/icons/actions/delete-icon.svg';
 
 import FixedExpensesHeader from '../Components/FixedExpenses/FixedExpensesHeader';
 import FixedExpensesSummary from '../Components/FixedExpenses/FixedExpensesSummary';
@@ -425,14 +425,14 @@ export default function FixedExpensesPage() {
                     onClick={() => handleEditExpense(row)}
                     aria-label="ערוך"
                   >
-                    <EditIcon fontSize="small" />
+                    <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                   </IconButton>
                   <IconButton
                     size="small"
                     onClick={() => handleDeleteExpense(row)}
                     aria-label="מחק"
                   >
-                    <DeleteIcon fontSize="small" />
+                    <Box component="img" src={deleteIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />
                   </IconButton>
                 </>
               ),

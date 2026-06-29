@@ -38,8 +38,8 @@ export default function TopBar() {
       <AppBar
         position="static"
         elevation={0}
-        sx={{ 
-          bgcolor: '#FFF8F3',
+        sx={{
+          bgcolor: 'transparent',
           boxShadow: 'none',
           pt: 2
         }}
