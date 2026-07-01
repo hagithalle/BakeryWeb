@@ -7,11 +7,12 @@ import IngredientDialog from "../Components/IngredientDialog";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 
-import IngredientsSummary from '../Components/Ingredients/IngredientsSummary';
-import IngredientsFilters from '../Components/Ingredients/IngredientsFilters';
-import IngredientsTable from '../Components/Ingredients/IngredientsTable';
-import IngredientsEmptyState from '../Components/Ingredients/IngredientsEmptyState';
+import IngredientsSummary from '../Components/Ingredients/IngredientsSummary.jsx';
+import IngredientsFilters from "../Components/Ingredients/IngredientsFilters.jsx";
 import IngredientsMobileList from "../Components/Ingredients/IngredientsMobileList.jsx";
+import IngredientsSummary from "../Components/Ingredients/IngredientsSummary.jsx";
+import IngredientsTable from "../Components/Ingredients/IngredientsTable.jsx";
+import IngredientsEmptyState from "../Components/Ingredients/IngredientsEmptyState.jsx";
 
 import ingredientsHeaderIcon from '../assets/decor/page-headers/ingredients-header-icon.svg';
 import addIntegrationIcon from '../assets/icons/actions/add-integration.svg';
