@@ -7,7 +7,6 @@ import IngredientDialog from "../Components/IngredientDialog";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 
-import IngredientsSummary from '../Components/Ingredients/IngredientsSummary.jsx';
 import IngredientsFilters from "../Components/Ingredients/IngredientsFilters.jsx";
 import IngredientsMobileList from "../Components/Ingredients/IngredientsMobileList.jsx";
 import IngredientsSummary from "../Components/Ingredients/IngredientsSummary.jsx";
