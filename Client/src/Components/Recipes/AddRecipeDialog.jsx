@@ -1,15 +1,8 @@
 // src/Components/Recipes/AddRecipeDialog.jsx
 import React, { useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  Chip,
-} from "@mui/material";
+import { Button, Box, Typography, Chip } from "@mui/material";
+import SoftDialog from "../ui/SoftDialog";
+import { primaryBtnSx, secondaryBtnSx } from "../ui/dialogStyles";
 
 import RecipeMainInfo from "./Details/RecipeMainInfo";
 import RecipeTypeSelector from "./Details/RecipeTypeSelector";
@@ -237,42 +230,40 @@ export default function AddRecipeDialog({
     setMissingDialogOpen(false);
   };
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth dir="rtl">
-      <DialogTitle sx={{ fontWeight: 700, color: "#5D4037", pb: 1 }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            justifyContent: "space-between",
-          }}
+  const recipeActions = (
+    <Box sx={{ display: 'flex', gap: 1.5, width: '100%', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+      {isImported && !!onBackToImport && (
+        <Button onClick={onBackToImport} sx={secondaryBtnSx}>← חזרה לייבוא</Button>
+      )}
+      <Box sx={{ display: 'flex', gap: 1.5, mr: 'auto' }}>
+        <Button
+          onClick={() => { if (window?.logEvent) window.logEvent("recipe_cancel"); onClose(); }}
+          sx={secondaryBtnSx}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {strings?.addRecipeDialog?.dialogTitle || title}
-          </Typography>
+          {strings?.addRecipeDialog?.cancel || "ביטול"}
+        </Button>
+        <Button onClick={handleSaveClick} sx={primaryBtnSx}>
+          {initialValues?.id
+            ? (strings?.addRecipeDialog?.saveChanges || "שמור שינויים")
+            : (strings?.addRecipeDialog?.createRecipe || "צור מתכון")}
+        </Button>
+      </Box>
+    </Box>
+  );
 
-          {isImported && !!onBackToImport && (
-            <Button
-              variant="text"
-              onClick={onBackToImport}
-              sx={{ color: "#971936", fontWeight: 600 }}
-            >
-              ← חזרה לייבוא
-            </Button>
-          )}
-        </Box>
-      </DialogTitle>
-
-      <DialogContent
-        sx={{
-          bgcolor: "#FFF7F2",
-          borderRadius: 3,
-          p: 4,
-          minWidth: 600,
-        }}
-      >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+  return (
+    <>
+    <SoftDialog
+      open={open}
+      onClose={onClose}
+      title={strings?.addRecipeDialog?.dialogTitle || title}
+      maxWidth="md"
+      dir="rtl"
+      showActions
+      actions={recipeActions}
+      contentSx={{ maxHeight: '70vh', minWidth: { sm: 600 } }}
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {isImported && (
             <Chip
               icon={<CloudUploadIcon />}
@@ -434,75 +425,33 @@ export default function AddRecipeDialog({
             steps={steps}
             onStepsChange={setSteps}
           />
-        </Box>
-      </DialogContent>
+      </Box>
+    </SoftDialog>
 
-      <DialogActions
-        sx={{
-          bgcolor: "#F9E3D6",
-          borderBottomLeftRadius: 12,
-          borderBottomRightRadius: 12,
-          p: 2,
-          justifyContent: "space-between",
-        }}
-      >
-        <Button
-          onClick={() => {
-            if (window && window.logEvent) window.logEvent("recipe_cancel");
-            onClose();
-          }}
-          sx={{
-            borderRadius: 3,
-            fontWeight: 600,
-            color: "#5D4037",
-            borderColor: "#D4A574",
-          }}
-        >
-          {strings?.addRecipeDialog?.cancel || "ביטול"}
-        </Button>
-        <Button
-          onClick={handleSaveClick}
-          variant="contained"
-          color="primary"
-          sx={{
-            borderRadius: 3,
-            fontWeight: 600,
-            bgcolor: "#5D4037",
-            ":hover": { bgcolor: "#4E342E" },
-          }}
-        >
-          {initialValues && initialValues.id
-            ? strings?.addRecipeDialog?.saveChanges || "שמור שינויים"
-            : strings?.addRecipeDialog?.createRecipe || "צור מתכון"}
-        </Button>
-      </DialogActions>
+    {/* דיאלוג לטיפול בחומרי גלם חסרים */}
+    <MissingIngredientsDialog
+      open={missingDialogOpen}
+      onClose={() => setMissingDialogOpen(false)}
+      missing={missingDetailed}
+      ingredientsList={ingredientsList}
+      onResolved={handleMissingResolved}
+      onAddNewIngredient={handleAddNewIngredient}
+    />
 
-      {/* דיאלוג לטיפול בחומרי גלם חסרים */}
-      <MissingIngredientsDialog
-        open={missingDialogOpen}
-        onClose={() => setMissingDialogOpen(false)}
-        missing={missingDetailed}
-        ingredientsList={ingredientsList}
-        onResolved={handleMissingResolved}
-        onAddNewIngredient={handleAddNewIngredient}
-      />
-
-      {/* דיאלוג הוספת חומר גלם חדש */}
-      <IngredientDialog
-        open={ingredientDialogOpen}
-        onClose={() => {
-          setIngredientDialogOpen(false);
-          setNewIngredientInitial(null);
-          setPendingMissing(null);
-        }}
-        onSave={handleSaveNewIngredient}
-        categories={categories}
-        units={defaultUnits}
-        strings={strings}
-        initialValues={newIngredientInitial}
-        titleBgColor="#7B5B4B"
-        titleColor="#fff"
-      />
-    </Dialog>
+    {/* דיאלוג הוספת חומר גלם חדש */}
+    <IngredientDialog
+      open={ingredientDialogOpen}
+      onClose={() => {
+        setIngredientDialogOpen(false);
+        setNewIngredientInitial(null);
+        setPendingMissing(null);
+      }}
+      onSave={handleSaveNewIngredient}
+      categories={categories}
+      units={defaultUnits}
+      strings={strings}
+      initialValues={newIngredientInitial}
+    />
+  </>
   );
 }

@@ -1,14 +1,16 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
+import { TextField, MenuItem, Box, Button } from '@mui/material';
+import SoftDialog from '../ui/SoftDialog';
+import FormSection from '../ui/FormSection';
+import { fieldSx, primaryBtnSx, secondaryBtnSx } from '../ui/dialogStyles';
+import financeIcon from '../../assets/decor/page-headers/finance-header-icon.svg';
 
-// קטגוריות קבועות (int enum, תואם backend)
 const expenseCategories = [
-  { value: 0, label: 'הוצאות תפעול' }, // Operational
-  { value: 1, label: 'שכירות' },       // Rent
-  { value: 2, label: 'רואה חשבון' },    // Accountant
-  { value: 3, label: 'ביטוח' },        // Insurance
-  { value: 4, label: 'שונות' },        // Other
+  { value: 0, label: 'הוצאות תפעול' },
+  { value: 1, label: 'שכירות' },
+  { value: 2, label: 'רואה חשבון' },
+  { value: 3, label: 'ביטוח' },
+  { value: 4, label: 'שונות' },
 ];
 
 const expenseTypes = [
@@ -17,9 +19,6 @@ const expenseTypes = [
 ];
 
 export default function AddExpenseDialog({ open, onClose, onSave, initialData }) {
-
-
-  // Helper to convert label to value if needed
   const getTypeValue = (type) => {
     if (typeof type === 'number') return type;
     if (type === 'הוצאה קבועה') return 1;
@@ -27,20 +26,15 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
     return 1;
   };
 
-  // Helper to convert category to int value
   const getCategoryValue = (cat) => {
     if (typeof cat === 'number') return cat;
     const found = expenseCategories.find((c) => c.label === cat);
-    return found ? found.value : 4; // default Other
+    return found ? found.value : 4;
   };
 
   const getInitialForm = (data) => {
     if (!data) return { title: '', category: 0, amount: '', type: 1 };
-    return {
-      ...data,
-      type: getTypeValue(data.type),
-      category: getCategoryValue(data.category)
-    };
+    return { ...data, type: getTypeValue(data.type), category: getCategoryValue(data.category) };
   };
 
   const [form, setForm] = useState(getInitialForm(initialData));
@@ -63,15 +57,22 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth dir="rtl">
-      <DialogTitle>{initialData ? 'עריכת הוצאה' : 'הוספת הוצאה חדשה'}</DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+    <SoftDialog
+      open={open}
+      onClose={onClose}
+      title={initialData ? 'עריכת הוצאה' : 'הוספת הוצאה חדשה'}
+      maxWidth="xs"
+      dir="rtl"
+      showActions={false}
+    >
+      <FormSection icon={financeIcon}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             label="שם ההוצאה"
             value={form.title}
             onChange={handleChange('title')}
             fullWidth
+            sx={fieldSx}
           />
           <TextField
             select
@@ -79,11 +80,10 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
             value={form.category}
             onChange={handleChange('category')}
             fullWidth
+            sx={fieldSx}
           >
             {expenseCategories.map((cat) => (
-              <MenuItem key={cat.value} value={cat.value}>
-                {cat.label}
-              </MenuItem>
+              <MenuItem key={cat.value} value={cat.value}>{cat.label}</MenuItem>
             ))}
           </TextField>
           <TextField
@@ -92,6 +92,7 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
             value={form.amount}
             onChange={handleChange('amount')}
             fullWidth
+            sx={fieldSx}
           />
           <TextField
             select
@@ -99,21 +100,21 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
             value={form.type}
             onChange={handleChange('type')}
             fullWidth
+            sx={fieldSx}
           >
             {expenseTypes.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
+              <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
             ))}
           </TextField>
         </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>ביטול</Button>
-        <Button variant="contained" onClick={handleSave}>
+      </FormSection>
+
+      <Box sx={{ display: 'flex', gap: 1.5, mt: 2.5, justifyContent: 'flex-end' }}>
+        <Button onClick={onClose} sx={secondaryBtnSx}>ביטול</Button>
+        <Button onClick={handleSave} disabled={!form.title || !form.amount} sx={primaryBtnSx}>
           {initialData ? 'שמור' : 'הוסף'}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </SoftDialog>
   );
 }

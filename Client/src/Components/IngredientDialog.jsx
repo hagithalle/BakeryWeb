@@ -1,8 +1,18 @@
 import React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box, Typography } from "@mui/material";
+import { TextField, MenuItem, Box, Typography } from "@mui/material";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SoftDialog from "./ui/SoftDialog";
+import FormSection from "./ui/FormSection";
+import { fieldSx, primaryBtnSx, secondaryBtnSx } from "./ui/dialogStyles";
+import { Button } from "@mui/material";
 
-export default function IngredientDialog({ open, onClose, onSave, categories, units, strings, initialValues, showPriceWarning = false, disableEnforceFocus, disableRestoreFocus, titleBgColor = '#FFF7F2', titleColor = '#7B5B4B' }) {
+import ingredientsIcon from "../assets/decor/page-headers/ingredients-header-icon.svg";
+
+export default function IngredientDialog({
+  open, onClose, onSave, categories, units, strings,
+  initialValues, showPriceWarning = false,
+  disableEnforceFocus, disableRestoreFocus,
+}) {
   const [name, setName] = React.useState("");
   const [category, setCategory] = React.useState("");
   const [unit, setUnit] = React.useState("");
@@ -22,8 +32,8 @@ export default function IngredientDialog({ open, onClose, onSave, categories, un
     } else {
       setName("");
       setCategory(categories?.[0]?.value ? String(categories[0].value) : "");
-      setUnit("1");  // ברירת מחדל: Kilogram
-      setStockUnit("1");  // ברירת מחדל: Kilogram
+      setUnit("1");
+      setStockUnit("1");
       setPricePerKg("");
       setStockQuantity("");
     }
@@ -38,7 +48,7 @@ export default function IngredientDialog({ open, onClose, onSave, categories, un
         unit: parseInt(unit),
         pricePerKg: parseFloat(pricePerKg) || 0,
         stockQuantity: parseInt(stockQuantity) || 0,
-        stockUnit: parseInt(stockUnit || unit || "1")
+        stockUnit: parseInt(stockUnit || unit || "1"),
       };
       if (initialValues && initialValues.id) {
         await onSave({ id: initialValues.id, ...ingredient });
@@ -46,192 +56,137 @@ export default function IngredientDialog({ open, onClose, onSave, categories, un
         await onSave(ingredient);
       }
       setIsSaving(false);
-      setName("");
-      setCategory("");
-      setUnit("");
-      setPricePerKg("");
-      setStockQuantity("");
-      setStockUnit("");
+      setName(""); setCategory(""); setUnit("");
+      setPricePerKg(""); setStockQuantity(""); setStockUnit("");
     }
   };
 
   const handleClose = () => {
-    setName("");
-    setCategory("");
-    setUnit("");
-    setPricePerKg("");
-    setStockQuantity("");
-    setStockUnit("");
+    setName(""); setCategory(""); setUnit("");
+    setPricePerKg(""); setStockQuantity(""); setStockUnit("");
     onClose();
   };
 
-  const isEdit = initialValues && initialValues.id;
-  const title = isEdit ? (strings.ingredient?.edit || "ערוך חומר גלם") : (strings.ingredient?.add || "הוסף חומר גלם חדש");
+  const isEdit = !!(initialValues && initialValues.id);
+  const title = isEdit
+    ? (strings?.ingredient?.edit || "ערוך חומר גלם")
+    : (strings?.ingredient?.add || "הוסף חומר גלם חדש");
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="xs" 
-      fullWidth 
-      dir={strings.direction || "rtl"}
+    <SoftDialog
+      open={open}
+      onClose={handleClose}
+      title={title}
+      maxWidth="xs"
+      dir={strings?.direction || "rtl"}
       disableEnforceFocus={disableEnforceFocus}
       disableRestoreFocus={disableRestoreFocus}
+      showActions={false}
     >
-      <DialogTitle
-        sx={{
-          color: titleColor,
-          background: titleBgColor,
-          fontWeight: 700,
-          fontSize: 26,
-          textAlign: 'center',
-          pb: 0,
-          pt: 2,
-          borderTopLeftRadius: 8,
-          borderTopRightRadius: 8
-        }}
-      >
-        {title}
-      </DialogTitle>
-      <DialogContent sx={{ bgcolor: '#FFF7F2', borderRadius: 3, p: 3, pt: 1 }}>
-        <Box sx={{ mt: 1 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <FormSection icon={ingredientsIcon}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label={strings?.sidebar?.ingredients || "שם חומר הגלם"}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            fullWidth
+            placeholder="לדוגמה: קמח כוסמין"
+            sx={fieldSx}
+          />
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
-              label={strings.sidebar?.ingredients || "שם חומר הגלם"}
-              value={name}
-              onChange={e => setName(e.target.value)}
+              select
+              label={strings?.filter?.category || "קטגוריה"}
+              value={category}
+              onChange={e => setCategory(e.target.value)}
               fullWidth
-              placeholder="לדוגמה: קמח כוסמין"
-              sx={{ bgcolor: '#fff', borderRadius: 3 }}
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                select
-                label={strings.filter?.category || "קטגוריה"}
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                fullWidth
-                sx={{ bgcolor: '#fff', borderRadius: 3 }}
-              >
-                {categories?.map(cat => (
-                  <MenuItem key={cat.value} value={cat.value}>
-                    {strings.ingredient?.categoryValues?.[cat.label] || cat.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label={strings.product?.unit || "יחידת מידה"}
-                value={unit}
-                onChange={e => setUnit(e.target.value)}
-                fullWidth
-                sx={{ bgcolor: '#fff', borderRadius: 3 }}
-              >
-                {units?.map(u => (
-                  <MenuItem key={u.value} value={u.value}>
-                    {strings.ingredient?.unitValues?.[u.label] || u.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-            {!isEdit && (
-              <>
-                <TextField
-                  label={strings.ingredient?.pricePerKg || "מחיר לקילוגרם (₪)"}
-                  value={pricePerKg}
-                  onChange={e => setPricePerKg(e.target.value)}
-                  type="number"
-                  fullWidth
-                  sx={{ bgcolor: '#fff', borderRadius: 3 }}
-                />
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    label={strings.ingredient?.stockQuantity || "כמות במלאי"}
-                    value={stockQuantity}
-                    onChange={e => setStockQuantity(e.target.value)}
-                    type="number"
-                    fullWidth
-                    sx={{ bgcolor: '#fff', borderRadius: 3 }}
-                  />
-                  <TextField
-                    select
-                    label={strings.ingredient?.stockUnit || "יחידת מלאי"}
-                    value={stockUnit}
-                    onChange={e => setStockUnit(e.target.value)}
-                    fullWidth
-                    sx={{ bgcolor: '#fff', borderRadius: 3 }}
-                  >
-                    {units?.map(u => (
-                      <MenuItem key={u.value} value={u.value}>
-                        {strings.ingredient?.unitValues?.[u.label] || u.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Box>
-              </>
-            )}
-            {isEdit && (
-              <>
-                <TextField
-                  label={strings.ingredient?.pricePerKg || "מחיר לק\"ג"}
-                  value={pricePerKg}
-                  onChange={e => setPricePerKg(e.target.value)}
-                  type="number"
-                  fullWidth
-                />
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    label={strings.ingredient?.stockQuantity || "כמות במלאי"}
-                    value={stockQuantity}
-                    onChange={e => setStockQuantity(e.target.value)}
-                    type="number"
-                    fullWidth
-                  />
-                  <TextField
-                    select
-                    label={strings.ingredient?.stockUnit || "יחידת מלאי"}
-                    value={stockUnit}
-                    onChange={e => setStockUnit(e.target.value)}
-                    fullWidth
-                  >
-                    {units?.map(u => (
-                      <MenuItem key={u.value} value={u.value}>
-                        {strings.ingredient?.unitValues?.[u.label] || u.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Box>
-              </>
-            )}
+              sx={fieldSx}
+            >
+              {categories?.map(cat => (
+                <MenuItem key={cat.value} value={cat.value}>
+                  {strings?.ingredient?.categoryValues?.[cat.label] || cat.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label={strings?.product?.unit || "יחידת מידה"}
+              value={unit}
+              onChange={e => setUnit(e.target.value)}
+              fullWidth
+              sx={fieldSx}
+            >
+              {units?.map(u => (
+                <MenuItem key={u.value} value={u.value}>
+                  {strings?.ingredient?.unitValues?.[u.label] || u.label}
+                </MenuItem>
+              ))}
+            </TextField>
           </Box>
+
+          <TextField
+            label={strings?.ingredient?.pricePerKg || "מחיר לק\"ג (₪)"}
+            value={pricePerKg}
+            onChange={e => setPricePerKg(e.target.value)}
+            type="number"
+            fullWidth
+            sx={fieldSx}
+          />
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              label={strings?.ingredient?.stockQuantity || "כמות במלאי"}
+              value={stockQuantity}
+              onChange={e => setStockQuantity(e.target.value)}
+              type="number"
+              fullWidth
+              sx={fieldSx}
+            />
+            <TextField
+              select
+              label={strings?.ingredient?.stockUnit || "יחידת מלאי"}
+              value={stockUnit}
+              onChange={e => setStockUnit(e.target.value)}
+              fullWidth
+              sx={fieldSx}
+            >
+              {units?.map(u => (
+                <MenuItem key={u.value} value={u.value}>
+                  {strings?.ingredient?.unitValues?.[u.label] || u.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
           {showPriceWarning && !isEdit && (
-            <Box sx={{ bgcolor: '#FFF3E0', color: '#A1887F', borderRadius: 2, p: 1.5, fontSize: 15, display: 'flex', alignItems: 'center', gap: 1, mt: 2, mb: 1 }}>
-              <InfoOutlinedIcon sx={{ fontSize: 20, color: '#A1887F', mr: 0.5 }} />
-              חומר הגלם יתווסף עם מחיר 0. תוכלי לעדכן את המחיר לאחר מכן בדף חומרי הגלם.
+            <Box sx={{ bgcolor: 'rgba(255,243,224,0.85)', border: '1px solid #F0D5A0', color: '#8A5E4A', borderRadius: '14px', p: 1.5, fontSize: 14, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <InfoOutlinedIcon sx={{ fontSize: 18, color: '#C98929', flexShrink: 0 }} />
+              חומר הגלם יתווסף עם מחיר 0. תוכלי לעדכן לאחר מכן בדף חומרי הגלם.
             </Box>
           )}
         </Box>
-      </DialogContent>
-      <DialogActions sx={{ bgcolor: '#FFF7F2', p: 2, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, flexDirection: 'column', gap: 1 }}>
-        <Button 
-          onClick={handleSave} 
-          variant="contained" 
-          color="primary" 
-          fullWidth 
+      </FormSection>
+
+      {/* Actions inside content area */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2.5 }}>
+        <Button
+          onClick={handleSave}
           disabled={isSaving || !name}
-          sx={{ borderRadius: 3, fontWeight: 600, bgcolor: '#7B5B4B', ':hover': { bgcolor: '#5D4037' }, mb: 1, fontSize: 18, py: 1.2 }}
+          fullWidth
+          sx={{ ...primaryBtnSx, borderRadius: '14px', py: 1.3, fontSize: '16px' }}
         >
-          {isSaving ? "שומר..." : (isEdit ? (strings.ingredient?.edit || "עדכן") : (strings.ingredient?.add || "הוסף"))}
+          {isSaving ? "שומר..." : (isEdit ? (strings?.ingredient?.edit || "עדכן") : (strings?.ingredient?.add || "הוסף"))}
         </Button>
-        <Button 
-          onClick={handleClose} 
-          disabled={isSaving} 
-          fullWidth 
-          sx={{ borderRadius: 3, fontWeight: 600, color: '#7B5B4B', bgcolor: 'transparent', border: 'none', boxShadow: 'none', fontSize: 18 }}
+        <Button
+          onClick={handleClose}
+          disabled={isSaving}
+          fullWidth
+          sx={{ ...secondaryBtnSx, borderRadius: '14px', py: 1.1, fontSize: '15px' }}
         >
-          {strings.product?.cancel || "ביטול"}
+          {strings?.product?.cancel || "ביטול"}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </SoftDialog>
   );
 }
