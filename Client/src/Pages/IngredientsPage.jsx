@@ -11,7 +11,7 @@ import IngredientsSummary from '../Components/Ingredients/IngredientsSummary';
 import IngredientsFilters from '../Components/Ingredients/IngredientsFilters';
 import IngredientsTable from '../Components/Ingredients/IngredientsTable';
 import IngredientsEmptyState from '../Components/Ingredients/IngredientsEmptyState';
-import IngredientsMobileList from '../Components/Ingredients/IngredientsMobileList';
+import IngredientsMobileList from "../Components/Ingredients/IngredientsMobileList.jsx";
 
 import ingredientsHeaderIcon from '../assets/decor/page-headers/ingredients-header-icon.svg';
 import addIntegrationIcon from '../assets/icons/actions/add-integration.svg';
