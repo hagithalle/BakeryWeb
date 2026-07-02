@@ -136,6 +136,17 @@ try
             ALTER TABLE ""LaborSettings"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
             ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
             ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
+
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ProductType"" integer NOT NULL DEFAULT 0;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""SaleUnitType"" integer NOT NULL DEFAULT 0;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""UnitConversionRate"" integer NOT NULL DEFAULT 1;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""PackagingId"" integer NULL;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""PackagingTimeMinutes"" integer NULL;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" text NULL;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Description"" text NULL;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Category"" text NULL;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ProfitMarginPercent"" numeric NOT NULL DEFAULT 0;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ManualSellingPrice"" numeric NULL;
         ";
         
         using (var command = dbConnection.CreateCommand())
