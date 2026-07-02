@@ -275,7 +275,7 @@ export default function FixedExpensesPage() {
     monthlyHours === 0 ? 0 : totalOverhead / monthlyHours;
 
   return (
-    <Box sx={{ p: 3, bgcolor: '#ffffff', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, bgcolor: '#ffffff', minHeight: '100vh' }}>
       {/* כותרת ודשבורד */}
       <FixedExpensesHeader onAdd={handleAddExpense} />
       <FixedExpensesSummary expenses={expenses} />

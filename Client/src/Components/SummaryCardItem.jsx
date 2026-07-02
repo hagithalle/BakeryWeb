@@ -32,6 +32,7 @@ export default function SummaryCardItem({
   iconShadow,
   currency = "",
   horizontal = false,
+  iconSize,
   ...paperProps
 }) {
   const hasIcon = Boolean(Icon || iconSrc);
@@ -78,8 +79,8 @@ export default function SummaryCardItem({
 
           {/* Icon — no background box */}
           {hasIcon && (
-            <Box sx={{ ml: 1.5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IconRenderer Icon={Icon} iconSrc={iconSrc} iconColor={iconColor} size={120} />
+            <Box sx={{ ml: 1, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IconRenderer Icon={Icon} iconSrc={iconSrc} iconColor={iconColor} size={iconSize ?? 56} />
             </Box>
           )}
         </>
@@ -87,7 +88,7 @@ export default function SummaryCardItem({
         <>
           {hasIcon && (
             <Box sx={{ mb: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IconRenderer Icon={Icon} iconSrc={iconSrc} iconColor={iconColor} size={120} />
+              <IconRenderer Icon={Icon} iconSrc={iconSrc} iconColor={iconColor} size={iconSize ?? 56} />
             </Box>
           )}
           <Typography variant="subtitle2" sx={{ color: "#9B5A25", fontWeight: 500, mb: 0.5 }}>

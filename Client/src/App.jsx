@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Dashboard from "./Pages/Dashboard.jsx";
 import MainLayout from "./Components/Layout/MainLayout";
@@ -10,6 +11,7 @@ import IncomeExpense from "./Pages/IncomeExpense.jsx";
 import FixedExpensesPage from './Pages/FixedExpensesPage.jsx';
 import RecipesPage from './Pages/RecipesPage.jsx';
 import LoginPage from './Pages/LoginPage.jsx';
+import SsoCallbackPage from './Pages/SsoCallbackPage.jsx';
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -18,6 +20,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/sso-callback" element={<SsoCallbackPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -43,9 +46,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ClerkProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import SummaryCardItem from "./SummaryCardItem";
 
 export default function SummaryCardRow({
@@ -9,6 +9,8 @@ export default function SummaryCardRow({
   gap = 2,
   sx = {},
 }) {
+  const isMobile = useMediaQuery('(max-width:768px)');
+
   return (
     <Box
       sx={{
@@ -24,9 +26,10 @@ export default function SummaryCardRow({
         <SummaryCardItem
           key={idx}
           horizontal={horizontal}
+          iconSize={isMobile ? 44 : 64}
           sx={{
-            flex: "1 1 150px",
-            minWidth: "140px",
+            flex: "1 1 120px",
+            minWidth: isMobile ? "100px" : "140px",
             maxWidth: "none",
             ...(item.sx || {}),
           }}

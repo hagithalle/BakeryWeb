@@ -147,6 +147,9 @@ try
             ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Category"" text NULL;
             ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ProfitMarginPercent"" numeric NOT NULL DEFAULT 0;
             ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ManualSellingPrice"" numeric NULL;
+
+            ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""ClerkId"" text NULL;
+            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_ClerkId"" ON ""Users"" (""ClerkId"") WHERE ""ClerkId"" IS NOT NULL;
         ";
         
         using (var command = dbConnection.CreateCommand())

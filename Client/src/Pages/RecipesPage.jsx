@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Box, Grid } from "@mui/material";
+import { Box, Grid, useMediaQuery } from "@mui/material";
 import RecipeCard from "../Components/Recipes/RecipeCard";
 import BraImage from "../assets/images/Bra.jpg";
 import PageHeader from "../Components/Common/PageHeader";
@@ -33,6 +33,7 @@ export default function RecipesPage() {
   const { lang } = useLanguage();
   const strings = useLocaleStrings(lang);
   const queryClient = useQueryClient();
+  const isMobile = useMediaQuery('(max-width:768px)');
 
   const [selectedId, setSelectedId] = useState(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -388,8 +389,8 @@ const handleImported = (draft) => {
   if (recipesError) return <PageError onRetry={refetchRecipes} />;
 
   return (
-    <Box sx={{ bgcolor: '#FFF7F2', minHeight: '100vh', py: 4 }}>
-      <Box sx={{ maxWidth: 1200, mx: 'auto', mb: 4 }}>
+    <Box sx={{ bgcolor: '#FFF7F2', minHeight: '100vh', py: { xs: 2, md: 4 } }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', mb: { xs: 2, md: 4 }, px: { xs: 1, md: 0 } }}>
         <PageHeader
           title="מתכונים"
           subtitle="ניהול המתכונים שלך"
@@ -421,7 +422,7 @@ const handleImported = (draft) => {
 
       {/* מצב ללא מתכון נבחר: גריד כרטיסים */}
       {!selectedId && (
-        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 1, md: 0 } }}>
           <Grid container spacing={3}>
             {(filteredRows || []).map((recipe) => {
               // הוסף תמונה לבראוניז בלבד
@@ -445,29 +446,45 @@ const handleImported = (draft) => {
           maxWidth: 1400,
           mx: 'auto',
           display: 'grid',
-          gridTemplateColumns: '1fr 2fr',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr',
           gap: 3,
           alignItems: 'stretch',
-          height: '100vh',
-          minHeight: '100vh',
+          height: isMobile ? 'auto' : '100vh',
+          minHeight: isMobile ? 'auto' : '100vh',
         }}>
-          {/* פאנל רשימת מתכונים */}
-          <Box sx={{ minWidth: 320, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <RecipeListSidebar
-              recipes={rows}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onAdd={() => { setEditRecipe(null); setAddDialogOpen(true); }}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              filter=""
-              onFilterChange={() => {}}
-              onBack={() => setSelectedId(null)}
-              strings={strings}
-            />
-          </Box>
+          {/* פאנל רשימת מתכונים - hidden on mobile */}
+          {!isMobile && (
+            <Box sx={{ minWidth: 320, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+              <RecipeListSidebar
+                recipes={rows}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onAdd={() => { setEditRecipe(null); setAddDialogOpen(true); }}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                filter=""
+                onFilterChange={() => {}}
+                onBack={() => setSelectedId(null)}
+                strings={strings}
+              />
+            </Box>
+          )}
           {/* פאנל פרטי מתכון */}
-          <Box sx={{ minWidth: 0, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ minWidth: 0, height: isMobile ? 'auto' : '100vh', display: 'flex', flexDirection: 'column' }}>
+            {isMobile && (
+              <Box
+                component="button"
+                onClick={() => setSelectedId(null)}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#9B1F3A', fontWeight: 700, fontSize: 15,
+                  mb: 2, p: 0,
+                }}
+              >
+                ← חזרה למתכונים
+              </Box>
+            )}
             <RecipeDetailsPanel
               recipe={fullSelectedRecipe}
               onEdit={() => { if (fullSelectedRecipe) handleEdit(fullSelectedRecipe); }}

@@ -39,14 +39,14 @@ const CARDS = [
 
 export default function IngredientsSummary({ stats }) {
   const isMobile = useMediaQuery('(max-width:768px)');
-  const iconSize  = isMobile ? 100 : 130;
+  const iconSize  = isMobile ? 60 : 130;
 
   return (
     <Box
       sx={{
         display: 'grid',
         gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-        gap: '18px',
+        gap: { xs: '10px', md: '18px' },
         mb: 3,
         direction: 'rtl',
       }}
@@ -60,8 +60,8 @@ export default function IngredientsSummary({ stats }) {
             background: '#FFFDF9',
             border: '1px solid #F1DDD3',
             boxShadow: '0 4px 20px rgba(120, 70, 45, 0.08)',
-            p: { xs: '16px 18px', md: '20px 24px' },
-            minHeight: 110,
+            p: { xs: '12px 10px', md: '20px 24px' },
+            minHeight: { xs: 90, md: 110 },
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',

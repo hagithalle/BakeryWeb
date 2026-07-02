@@ -66,6 +66,63 @@ namespace Server.Controllers
             });
         }
 
+        [HttpPost("clerk-sync")]
+        public async Task<IActionResult> ClerkSync()
+        {
+            var clerkToken = Request.Headers["X-Clerk-Token"].FirstOrDefault();
+            if (string.IsNullOrEmpty(clerkToken))
+                return BadRequest("Clerk token missing");
+
+            // Decode JWT to extract user info (Clerk signs with RS256)
+            JwtSecurityToken jwt;
+            try
+            {
+                jwt = new JwtSecurityTokenHandler().ReadJwtToken(clerkToken);
+            }
+            catch
+            {
+                return BadRequest("Invalid Clerk token");
+            }
+
+            var clerkId = jwt.Subject;
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            var name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value
+                    ?? jwt.Claims.FirstOrDefault(c => c.Type == "fullName")?.Value
+                    ?? email?.Split('@')[0];
+
+            if (string.IsNullOrEmpty(clerkId) || string.IsNullOrEmpty(email))
+                return BadRequest("Missing required claims in token");
+
+            // Find by ClerkId, then by email (for users who registered with email before)
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ClerkId == clerkId);
+            if (user == null)
+            {
+                user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower());
+                if (user != null)
+                {
+                    user.ClerkId = clerkId;
+                }
+                else
+                {
+                    user = new User
+                    {
+                        ClerkId = clerkId,
+                        Email = email.ToLower(),
+                        Name = name ?? email,
+                        PasswordHash = string.Empty,
+                    };
+                    _context.Users.Add(user);
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new AuthResponse
+            {
+                Token = GenerateToken(user),
+                User = ToDto(user),
+            });
+        }
+
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> Me()

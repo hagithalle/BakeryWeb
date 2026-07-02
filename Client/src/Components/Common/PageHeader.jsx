@@ -190,6 +190,7 @@ export default function PageHeader({
                     objectFit: 'contain',
                     flexShrink: 0,
                     filter: 'drop-shadow(0 8px 16px rgba(120,70,45,0.18))',
+                    display: { xs: 'none', md: 'block' },
                   }}
                 />
               )}

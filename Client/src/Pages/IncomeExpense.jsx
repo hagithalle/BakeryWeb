@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, useMediaQuery } from '@mui/material';
 import PageHeader from '../Components/Common/PageHeader';
 import PageContainer from '../Components/Common/PageContainer';
 import FilterBar from '../Components/FilterBar';
@@ -20,6 +20,7 @@ import incomeIcon from '../assets/decor/income-icon.svg';
 import expenseIcon from '../assets/decor/expense-icon.svg';
 
 export default function IncomeExpense() {
+  const isMobile = useMediaQuery('(max-width:768px)');
   const [search, setSearch] = useState('');
   const [movements, setMovements] = useState([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -100,16 +101,16 @@ export default function IncomeExpense() {
   const currentColumns = filteredMovements[0]?.type === 'income' ? incomeColumns : expenseColumns;
 
   const actionButtons = (
-    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+    <Box sx={{ display: 'flex', gap: { xs: 1, md: 1.5 }, flexWrap: 'wrap', justifyContent: 'center' }}>
       <AddButton
         label="הוסף הכנסה"
         icon={incomeIcon}
         onClick={() => openAdd('income')}
         sx={{
-          minWidth: 180,
-          height: 56,
-          px: 3,
-          fontSize: '16px',
+          minWidth: { xs: 'auto', md: 180 },
+          height: { xs: 46, md: 56 },
+          px: { xs: 1.5, md: 3 },
+          fontSize: { xs: '13px', md: '16px' },
           background: '#E8F5E9',
           color: '#1A7A47',
           '&:hover': { background: '#D0EDD7', transform: 'translateY(-2px)', boxShadow: '0 10px 24px rgba(26,122,71,0.15)' },
@@ -120,10 +121,10 @@ export default function IncomeExpense() {
         icon={expenseIcon}
         onClick={() => openAdd('expense')}
         sx={{
-          minWidth: 180,
-          height: 56,
-          px: 3,
-          fontSize: '16px',
+          minWidth: { xs: 'auto', md: 180 },
+          height: { xs: 46, md: 56 },
+          px: { xs: 1.5, md: 3 },
+          fontSize: { xs: '13px', md: '16px' },
           background: '#FCE5E5',
           color: '#C0392B',
           '&:hover': { background: '#F9CFCF', transform: 'translateY(-2px)', boxShadow: '0 10px 24px rgba(192,57,43,0.15)' },
@@ -138,8 +139,13 @@ export default function IncomeExpense() {
         title="הכנסות והוצאות"
         subtitle="ניהול התנועות הכספיות שלך"
         illustration={financeHeaderIcon}
-        actionNode={actionButtons}
+        actionNode={isMobile ? undefined : actionButtons}
       />
+
+      {/* On mobile: action buttons below header */}
+      {isMobile && (
+        <Box sx={{ mb: 2 }}>{actionButtons}</Box>
+      )}
 
       <SummaryCards
         balance={filteredMovements.reduce((s, m) => s + (m.type === 'income' ? m.amount : -m.amount), 0)}

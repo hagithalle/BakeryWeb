@@ -6,8 +6,8 @@ export default function FixedExpensesHeader({ onAdd }) {
     <PageHeader
       title="הוצאות קבועות"
       subtitle="ניהול העלויות החודשיות"
-      buttonLabel="הוצאה חדשה"
-      onAdd={onAdd}
+      actionLabel="הוצאה חדשה"
+      onActionClick={onAdd}
     />
   );
 }

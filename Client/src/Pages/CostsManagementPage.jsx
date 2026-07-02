@@ -135,14 +135,18 @@ export default function CostsManagementPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       {/* טאבים */}
       <Paper sx={{ mb: 3 }}>
-        <Tabs 
-          value={currentTab} 
+        <Tabs
+          value={currentTab}
           onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             '& .MuiTab-root': {
               fontWeight: 600,
-              fontSize: '1rem',
+              fontSize: { xs: '0.82rem', md: '1rem' },
               color: '#9B5A25',
+              minWidth: { xs: 120, md: 'auto' },
               '&.Mui-selected': {
                 color: '#971936'
               }

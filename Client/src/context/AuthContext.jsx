@@ -30,6 +30,24 @@ export function AuthProvider({ children }) {
     setUser(user);
   }, []);
 
+  const loginWithClerk = useCallback(async (clerkToken) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.post('/api/auth/clerk-sync', {}, {
+        headers: { 'X-Clerk-Token': clerkToken },
+      });
+      saveSession(data.token, data.user);
+      return { ok: true };
+    } catch (err) {
+      const msg = err.response?.data || 'שגיאה בכניסה עם Google';
+      setError(msg);
+      return { ok: false, error: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, [saveSession]);
+
   const login = useCallback(async (email, password) => {
     setLoading(true);
     setError(null);
@@ -86,7 +104,7 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout, updateProfile, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, loginWithClerk, register, logout, updateProfile, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,6 +6,7 @@ namespace Server.Models
         public string Email { get; set; } = null!;
         public string PasswordHash { get; set; } = null!;
         public string Name { get; set; } = string.Empty;
+        public string? ClerkId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

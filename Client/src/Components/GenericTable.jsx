@@ -34,7 +34,7 @@ export default function GenericTable({
         direction,
         bgcolor: "#FEFEFE",
         border: "1px solid #F5EDE8",
-        overflow: "hidden",
+        overflowX: "auto",
       }}
     >
       <Table>

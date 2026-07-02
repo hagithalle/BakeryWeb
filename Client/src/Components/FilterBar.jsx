@@ -54,7 +54,7 @@ export default function FilterBar({
           size="small"
           sx={{
             flexGrow: 1,
-            minWidth: 180,
+            minWidth: { xs: 120, md: 180 },
             backgroundColor: "#F9F5F1",
             borderRadius: "12px",
             "& .MuiOutlinedInput-root": {
@@ -76,7 +76,7 @@ export default function FilterBar({
           <FormControl
             key={idx}
             size="small"
-            sx={{ minWidth: 160, maxWidth: 200, flexShrink: 0 }}
+            sx={{ minWidth: { xs: 120, md: 160 }, maxWidth: 200, flexShrink: 0 }}
           >
             <Select
               value={filter.value}

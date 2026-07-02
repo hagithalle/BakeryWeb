@@ -195,7 +195,7 @@ export default function IngredientsPage() {
   if (error || catError) return <PageError onRetry={() => { refetch(); refetchCat(); }} />;
 
   return (
-    <Box sx={{ position: "relative" }}>
+    <Box sx={{ position: "relative", overflow: "hidden" }}>
       {/* Subtle decorative background blobs */}
       <Box
         aria-hidden
