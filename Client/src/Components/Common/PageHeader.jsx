@@ -67,7 +67,7 @@ export default function PageHeader({
           px: { xs: 3, md: 5 },
           py: { xs: 3, md: 4 },
           pb: { xs: 4.5, md: 5 },
-          minHeight: { xs: centered ? 160 : (hasAction ? 230 : 180), md: 180 },
+          minHeight: { xs: centered ? 140 : (hasAction ? 110 : 100), md: 180 },
         }}
       >
         {centered ? (
@@ -157,14 +157,14 @@ export default function PageHeader({
             )}
           </Box>
         ) : (
-          /* ── Default layout: title+icon right | button left ── */
+          /* ── Default layout: title+icon right | button left ── always row ── */
           <Box
             sx={{
               display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
+              flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: { xs: 3, md: 4 },
+              gap: { xs: 1.5, md: 4 },
             }}
           >
             {/* Right side: illustration + title */}
@@ -173,10 +173,9 @@ export default function PageHeader({
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' },
-                gap: { xs: 2, md: 3 },
-                width: { xs: '100%', md: 'auto' },
+                gap: { xs: 1.5, md: 3 },
                 textAlign: 'right',
+                minWidth: 0,
               }}
             >
               {illustration && (
@@ -186,7 +185,7 @@ export default function PageHeader({
                   alt=""
                   loading="lazy"
                   sx={{
-                    width: { xs: 88, md: 145 },
+                    width: { xs: 64, md: 145 },
                     height: 'auto',
                     objectFit: 'contain',
                     flexShrink: 0,
@@ -195,11 +194,11 @@ export default function PageHeader({
                 />
               )}
 
-              <Box>
+              <Box sx={{ minWidth: 0 }}>
                 <Typography
                   component="h1"
                   sx={{
-                    fontSize: { xs: 30, md: 46 },
+                    fontSize: { xs: 22, md: 46 },
                     fontWeight: 800,
                     color: '#9B1F3A',
                     lineHeight: 1.1,
@@ -212,10 +211,10 @@ export default function PageHeader({
                 {subtitle && (
                   <Typography
                     sx={{
-                      fontSize: { xs: 14, md: 16 },
+                      fontSize: { xs: 12, md: 16 },
                       color: '#8A5E4A',
-                      mt: 0.7,
-                      lineHeight: 1.5,
+                      mt: 0.5,
+                      lineHeight: 1.4,
                     }}
                   >
                     {subtitle}
@@ -224,21 +223,14 @@ export default function PageHeader({
               </Box>
             </Box>
 
-            {/* Left side: action area */}
+            {/* Left side: action */}
             {hasAction && (
-              <Box
-                sx={{
-                  width: { xs: '100%', md: 'auto' },
-                  display: 'flex',
-                  justifyContent: { xs: 'center', md: 'flex-start' },
-                }}
-              >
+              <Box sx={{ flexShrink: 0 }}>
                 {actionNode ?? (
                   <AddButton
                     label={actionLabel}
                     icon={actionIcon}
                     onClick={onActionClick}
-                    sx={{ minWidth: { xs: 220, md: 'auto' } }}
                   />
                 )}
               </Box>

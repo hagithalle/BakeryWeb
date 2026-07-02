@@ -16,9 +16,9 @@ export default function AddButton({
       disabled={disabled}
       disableElevation
       sx={{
-        height: 68,
-        px: 4.2,
-        minWidth: 290,
+        height: { xs: 46, md: 68 },
+        px: { xs: 1.5, md: 4.2 },
+        minWidth: { xs: 'auto', md: 290 },
         borderRadius: '999px',
 
         background: '#FFF8F2',
@@ -28,10 +28,10 @@ export default function AddButton({
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
-        gap: 2.2,
+        gap: { xs: 0.75, md: 2.2 },
 
         fontWeight: 700,
-        fontSize: '18px',
+        fontSize: { xs: '13px', md: '18px' },
         lineHeight: 1,
         whiteSpace: 'nowrap',
 
@@ -64,8 +64,8 @@ export default function AddButton({
           alt=""
           loading="lazy"
           sx={{
-            width: 54,
-            height: 54,
+            width: { xs: 30, md: 54 },
+            height: { xs: 30, md: 54 },
             objectFit: 'contain',
             flexShrink: 0,
             display: 'block',
