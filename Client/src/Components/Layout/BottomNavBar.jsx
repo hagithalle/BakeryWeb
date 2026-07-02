@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import HomeIcon from '@mui/icons-material/Home';
-import CakeIcon from '@mui/icons-material/Cake';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import GrainIcon from '@mui/icons-material/Grain';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import { Home, ChefHat, BookOpen, Wheat, MoreHorizontal } from 'lucide-react';
 import MoreDrawer from './MoreDrawer';
 
+const ICON_SIZE = 22;
+
 const TABS = [
-  { label: 'בית',       path: '/dashboard',  icon: <HomeIcon /> },
-  { label: 'מוצרים',    path: '/products',   icon: <CakeIcon /> },
-  { label: 'מתכונים',   path: '/recipes',    icon: <MenuBookIcon /> },
-  { label: 'חומרי גלם', path: '/ingredients',icon: <GrainIcon /> },
-  { label: 'עוד',       path: null,          icon: <MoreHorizIcon /> },
+  { label: 'בית',       path: '/dashboard',   icon: <Home        size={ICON_SIZE} strokeWidth={1.8} /> },
+  { label: 'מוצרים',    path: '/products',    icon: <ChefHat     size={ICON_SIZE} strokeWidth={1.8} /> },
+  { label: 'מתכונים',   path: '/recipes',     icon: <BookOpen    size={ICON_SIZE} strokeWidth={1.8} /> },
+  { label: 'חומרי גלם', path: '/ingredients', icon: <Wheat       size={ICON_SIZE} strokeWidth={1.8} /> },
+  { label: 'עוד',       path: null,           icon: <MoreHorizontal size={ICON_SIZE} strokeWidth={1.8} /> },
 ];
 
 export default function BottomNavBar() {
@@ -25,11 +23,8 @@ export default function BottomNavBar() {
 
   const handleChange = (_, idx) => {
     const tab = TABS[idx];
-    if (!tab.path) {
-      setDrawerOpen(true);
-    } else {
-      navigate(tab.path);
-    }
+    if (!tab.path) setDrawerOpen(true);
+    else navigate(tab.path);
   };
 
   return (
@@ -56,6 +51,7 @@ export default function BottomNavBar() {
               color: '#C4A88A',
               minWidth: 0,
               gap: 0.3,
+              '& svg': { color: 'inherit' },
             },
             '& .MuiBottomNavigationAction-root.Mui-selected': {
               color: '#9B1F3A',
