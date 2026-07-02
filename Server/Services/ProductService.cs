@@ -1,15 +1,9 @@
+using BakeryWeb.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Server.Controllers;
 using Server.Data;
 using Server.Models;
-using BakeryWeb.Server.Services;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Server.Services
 {
@@ -19,10 +13,11 @@ namespace Server.Services
         private readonly BakeryDbContext _db;
         private readonly CostCalculatorService _costCalculator;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _http;
         private readonly decimal _vatRate;
         private readonly string _uploadPath;
 
-        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager)
+        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager, IHttpContextAccessor http)
         {
             _db = db;
             _costCalculator = costCalculator;
@@ -30,24 +25,28 @@ namespace Server.Services
             _vatRate = configuration.GetValue<decimal>("PricingSettings:VatRate", 0.17m);
             _uploadPath = configuration.GetValue<string>("FileUpload:Path") ?? "Uploads/Products";
             _logManager = logManager;
+            _http = http;
         }
+
+        private int? UserId =>
+            int.TryParse(_http.HttpContext?.User.FindFirst("userId")?.Value, out var id) ? id : null;
 
         public async Task<Product> CreateAsync(CreateProductRequest request)
         {
-            // יצירת המוצר החדש
             var product = new Product
             {
                 Name = request.Name,
                 Description = request.Description,
                 ProductType = (ProductType)request.ProductType,
-                Category = request.Category,  // ✅ שמירת קטגוריה
+                Category = request.Category,
                 RecipeId = request.RecipeId,
-                UnitConversionRate = request.RecipeUnits,  // מפה RecipeUnits → UnitConversionRate
+                UnitConversionRate = request.RecipeUnits,
                 SaleUnitType = (UnitType)request.SaleUnitType,
                 PackagingId = request.PackagingId,
                 PackagingTimeMinutes = request.PackagingTimeMinutes,
                 ProfitMarginPercent = request.ProfitMarginPercent,
-                ManualSellingPrice = request.ManualSellingPrice
+                ManualSellingPrice = request.ManualSellingPrice,
+                UserId = UserId,
             };
 
             // שמירת תמונה אם יש
@@ -142,7 +141,9 @@ namespace Server.Services
 
         public async Task<IEnumerable<Product>> GetAllAsync()
         {
+            var uid = UserId;
             var products = await _db.Products
+                .Where(p => p.UserId == null || p.UserId == uid)
                 .Include(p => p.Recipe)
                     .ThenInclude(r => r.Ingredients)
                         .ThenInclude(ri => ri.Ingredient)

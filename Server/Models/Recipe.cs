@@ -43,6 +43,8 @@ namespace Server.Models
         // סוג מתכון: חלבי/בשרי/פרווה
         public RecipeType RecipeType { get; set; } = RecipeType.Parve;
 
+        public int? UserId { get; set; }
+
         // שדות עלויות - לא נשמרים בDB, מחושבים בזמן קריאה
         [NotMapped]
         public decimal IngredientsCost { get; set; }

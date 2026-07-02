@@ -4,10 +4,14 @@ import {
     ListItemText,
     Box,
     Typography,
+    IconButton,
+    Tooltip,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import useLocaleStrings from "../../hooks/useLocaleStrings";
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../../context/AuthContext';
 
 import logoUrl              from '../../assets/images/logo.png';
 import dashboardIconUrl      from '../../assets/icons/sidebar/dashboard-icon.svg';
@@ -22,6 +26,7 @@ export default function Sidebar({ lang = "he" }) {
     const navigate = useNavigate();
     const location = useLocation();
     const strings = useLocaleStrings(lang);
+    const { user, logout } = useAuth();
 
     const menuItems = [
         { label: "דשבורד",                       path: "/dashboard",      svgSrc: dashboardIconUrl },
@@ -147,24 +152,45 @@ export default function Sidebar({ lang = "he" }) {
                 })}
             </List>
 
-            {/* Bottom badge */}
+            {/* User + logout */}
             <Box sx={{
                 p: 2,
                 borderTop: '1px solid #F0E4DB',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 1,
                 flexDirection: 'column',
+                gap: 1.5,
                 background: 'linear-gradient(180deg, transparent 0%, #FDF6F2 100%)',
             }}>
-                <BakeryDiningIcon sx={{ color: '#C98929', fontSize: 32 }} />
-                <Typography variant="body2" sx={{ color: '#9B5A25', textAlign: 'center', fontWeight: 600, lineHeight: 1.4 }}>
-                    {strings.sidebar?.successMessage || "בהצלחה במאפייה!"}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#C98929', textAlign: 'center', fontWeight: 700 }}>
-                    {strings.sidebar?.goodDay || "יום טוב"} 🎂
-                </Typography>
+                {/* User row */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#7A3B2E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {user?.name || user?.email || ''}
+                        </Typography>
+                        {user?.name && (
+                            <Typography sx={{ fontSize: 11, color: '#B08070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {user.email}
+                            </Typography>
+                        )}
+                    </Box>
+                    <Tooltip title="התנתקות" placement="top">
+                        <IconButton
+                            onClick={logout}
+                            size="small"
+                            sx={{ color: '#C98929', flexShrink: 0, '&:hover': { color: '#9B1F3A', bgcolor: '#FDE8E8' } }}
+                        >
+                            <LogoutIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+                {/* Bakery tagline */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                    <BakeryDiningIcon sx={{ color: '#C98929', fontSize: 18 }} />
+                    <Typography variant="caption" sx={{ color: '#9B5A25', fontWeight: 600 }}>
+                        {strings.sidebar?.successMessage || "בהצלחה במאפייה!"}
+                    </Typography>
+                </Box>
             </Box>
         </Box>
     );

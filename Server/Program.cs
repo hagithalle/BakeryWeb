@@ -9,6 +9,9 @@ using BakeryWeb.Server.AI.Tasks;
 using BakeryWeb.Server.AI.Prompts;
 using BakeryWeb.Server.AI.Services;
 using BakeryWeb.Server.AI.Services.Structured;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 
 // Load .env file for environment variables
@@ -33,6 +36,23 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         // No enum converter needed: default is int
     });
+
+// Add JWT Authentication
+var jwtSecret = builder.Configuration["JWT_SECRET"] ?? "bakery-default-secret-change-in-production-32chars!";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        };
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
 
 // Add CORS - allow frontend (localhost dev + Vercel production)
 var corsOrigins = builder.Configuration["CORS_ORIGINS"]
@@ -101,6 +121,21 @@ try
             ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Description"" text NULL;
             ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""PrepTime"" integer NULL;
             ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Temperature"" integer NULL;
+
+            CREATE TABLE IF NOT EXISTS ""Users"" (
+                ""Id"" serial PRIMARY KEY,
+                ""Email"" text NOT NULL UNIQUE,
+                ""PasswordHash"" text NOT NULL,
+                ""Name"" text NOT NULL DEFAULT '',
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );
+
+            ALTER TABLE ""Ingredients"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
+            ALTER TABLE ""Packagings"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
+            ALTER TABLE ""OverheadItems"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
+            ALTER TABLE ""LaborSettings"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
+            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
         ";
         
         using (var command = dbConnection.CreateCommand())
@@ -201,6 +236,9 @@ app.UseHttpsRedirection();
 
 // Use CORS policy
 app.UseCors("AllowFrontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Serve static files from Uploads folder
 app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions

@@ -50,8 +50,9 @@ namespace Server.Models
         // אחוז רווח רצוי (0.15 = 15%)
         public decimal ProfitMarginPercent { get; set; } = 0;
 
-        // מחיר מכירה ידני (אופציונלי - אם מוגדר, לא מחשבים אוטומטית)
         public decimal? ManualSellingPrice { get; set; }
+
+        public int? UserId { get; set; }
 
         // שדות עלויות - לא נשמרים בDB, מחושבים בזמן קריאה
         [NotMapped]

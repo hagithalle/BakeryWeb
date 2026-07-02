@@ -28,9 +28,10 @@ namespace Server.Models
         // עלות חודשית ממוצעת
         public decimal MonthlyCost { get; set; }
 
-        public bool IsActive { get; set; } = true; // שתוכלי לכבות דברים זמנית
+        public bool IsActive { get; set; } = true;
 
-        // סוג הוצאה: עקיפה או קבועה
         public OverheadType Type { get; set; } = OverheadType.עקיפה;
+
+        public int? UserId { get; set; }
     }
 }

@@ -2,50 +2,48 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BakeryWeb.Server.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
-using BakeryWeb.Server.Services;
 
 namespace Server.Services
 {
-    /// <summary>
-    /// Service that provides CRUD operations for <see cref="Ingredient"/> entities.
-    /// </summary>
     public class IngredientService : IIngredientService
     {
         private readonly BakeryDbContext _context;
         private readonly LogManager _logManager;
-        public IngredientService(BakeryDbContext context, LogManager logManager)
+        private readonly IHttpContextAccessor _http;
+
+        public IngredientService(BakeryDbContext context, LogManager logManager, IHttpContextAccessor http)
         {
             _context = context;
             _logManager = logManager;
+            _http = http;
         }
 
-        /// <summary>
-        /// Returns all ingredients ordered by name.
-        /// </summary>
+        private int? UserId =>
+            int.TryParse(_http.HttpContext?.User.FindFirst("userId")?.Value, out var id) ? id : null;
+
         public async Task<List<Ingredient>> GetAllAsync()
         {
+            var uid = UserId;
             return await _context.Ingredients
+                .Where(i => i.UserId == null || i.UserId == uid)
                 .OrderBy(i => i.Name)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Retrieves a single ingredient by id or null if not found.
-        /// </summary>
         public async Task<Ingredient?> GetByIdAsync(int id)
         {
-            return await _context.Ingredients.FindAsync(id);
+            var uid = UserId;
+            return await _context.Ingredients
+                .FirstOrDefaultAsync(i => i.Id == id && (i.UserId == null || i.UserId == uid));
         }
 
-        /// <summary>
-        /// Creates a new ingredient and saves it to the database.
-        /// </summary>
         public async Task<Ingredient> CreateAsync(Ingredient ingredient)
         {
-            // Log the ingredient object before saving
+            ingredient.UserId = UserId;
             _logManager.LogSuccess(nameof(IngredientService), nameof(CreateAsync), $"קיבלתי אובייקט: {System.Text.Json.JsonSerializer.Serialize(ingredient)}");
             try
             {

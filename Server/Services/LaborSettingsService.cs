@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
@@ -8,24 +8,33 @@ namespace Server.Services
     public class LaborSettingsService : ILaborSettingsService
     {
         private readonly BakeryDbContext _context;
+        private readonly IHttpContextAccessor _http;
 
-        public LaborSettingsService(BakeryDbContext context)
+        public LaborSettingsService(BakeryDbContext context, IHttpContextAccessor http)
         {
             _context = context;
+            _http = http;
         }
+
+        private int? UserId =>
+            int.TryParse(_http.HttpContext?.User.FindFirst("userId")?.Value, out var id) ? id : null;
 
         public async Task<LaborSettings?> GetAsync()
         {
-            return await _context.LaborSettings.SingleOrDefaultAsync(x => x.Id == 1);
+            var uid = UserId;
+            return await _context.LaborSettings
+                .FirstOrDefaultAsync(x => x.UserId == uid || (uid == null && x.UserId == null));
         }
 
         public async Task<LaborSettings> UpsertAsync(LaborSettings settings)
         {
-            var existing = await _context.LaborSettings.SingleOrDefaultAsync(x => x.Id == 1);
+            var uid = UserId;
+            var existing = await _context.LaborSettings
+                .FirstOrDefaultAsync(x => x.UserId == uid || (uid == null && x.UserId == null));
 
             if (existing == null)
             {
-                settings.Id = 1;
+                settings.UserId = uid;
                 _context.LaborSettings.Add(settings);
             }
             else

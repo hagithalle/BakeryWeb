@@ -13,8 +13,10 @@ namespace Server.Models
         public decimal OtherEmployerCostsPercent { get; set; } // אופציונלי – ביטוח לאומי וכו'
 
         // היקף עבודה
-        public int WorkingDaysPerMonth { get; set; }          // למשל 22
-        public decimal WorkingHoursPerDay { get; set; }       // למשל 6.5
+        public int WorkingDaysPerMonth { get; set; }
+        public decimal WorkingHoursPerDay { get; set; }
+
+        public int? UserId { get; set; }
     }
 }
 

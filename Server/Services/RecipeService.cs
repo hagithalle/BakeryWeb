@@ -1,9 +1,8 @@
+using BakeryWeb.Server.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
-using BakeryWeb.Server.Services;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Server.Services
 {
@@ -12,16 +11,22 @@ namespace Server.Services
         private readonly LogManager _logManager;
         private readonly BakeryDbContext _db;
         private readonly CostCalculatorService _costCalculator;
+        private readonly IHttpContextAccessor _http;
 
-        public RecipeService(BakeryDbContext db, CostCalculatorService costCalculator, LogManager logManager)
+        public RecipeService(BakeryDbContext db, CostCalculatorService costCalculator, LogManager logManager, IHttpContextAccessor http)
         {
             _db = db;
             _costCalculator = costCalculator;
             _logManager = logManager;
+            _http = http;
         }
+
+        private int? UserId =>
+            int.TryParse(_http.HttpContext?.User.FindFirst("userId")?.Value, out var id) ? id : null;
 
         public async Task<Recipe> CreateAsync(Recipe recipe)
         {
+            recipe.UserId = UserId;
             _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"START");
             _logManager.LogSuccess(nameof(RecipeService), nameof(CreateAsync), $"Recipe: Name={recipe.Name}, OutputUnits={recipe.OutputUnits}");
             
@@ -103,7 +108,9 @@ namespace Server.Services
         public async Task<IEnumerable<Recipe>> GetAllAsync()
         {
             Console.WriteLine("\n>>> RecipeService.GetAllAsync START");
+            var uid = UserId;
             var recipes = await _db.Recipes
+                .Where(r => r.UserId == null || r.UserId == uid)
                 .Include(r => r.Ingredients)
                 .ThenInclude(ri => ri.Ingredient)
                 .Include(r => r.Steps)
