@@ -1,14 +1,14 @@
-import axios from 'axios';
+import api from './api';
 
 // קבלת כל ההוצאות (עלויות עקיפות)
 export async function getAllExpenses() {
-  const response = await axios.get('/api/overheaditem');
-  return response.data;
+  const response = await api.get('/api/overheaditem');
+  return response.data.$values ?? response.data;
 }
 
 // קבלת הוצאה בודדת
 export async function getExpense(id) {
-  const response = await axios.get(`/api/overheaditem/${id}`);
+  const response = await api.get(`/api/overheaditem/${id}`);
   return response.data;
 }
 
@@ -19,7 +19,7 @@ export async function createExpense(item) {
     ...item,
     type: typeof item.type === 'number' ? item.type : 0,
   });
-  const response = await axios.post('/api/overheaditem', {
+  const response = await api.post('/api/overheaditem', {
     ...item,
     type: typeof item.type === 'number' ? item.type : 0,
   });
@@ -35,7 +35,7 @@ export async function updateExpense(id, item) {
     type: typeof item.type === 'number' ? item.type : 0,
     category: item.category,
   });
-  await axios.put(`/api/overheaditem/${id}`, {
+  await api.put(`/api/overheaditem/${id}`, {
     ...item,
     type: typeof item.type === 'number' ? item.type : 0,
     category: item.category,
@@ -45,5 +45,5 @@ export async function updateExpense(id, item) {
 
 // מחיקת הוצאה
 export async function deleteExpense(id) {
-  await axios.delete(`/api/overheaditem/${id}`);
+  await api.delete(`/api/overheaditem/${id}`);
 }

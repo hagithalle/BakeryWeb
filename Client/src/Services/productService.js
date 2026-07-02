@@ -1,19 +1,19 @@
-import axios from 'axios';
+import api from './api';
 
 const PRODUCTS_API = '/api/products';
 
 export async function fetchProducts() {
-  const response = await axios.get(PRODUCTS_API);
+  const response = await api.get(PRODUCTS_API);
   return response.data;
 }
 
 export async function fetchProduct(id) {
-  const response = await axios.get(`${PRODUCTS_API}/${id}`);
+  const response = await api.get(`${PRODUCTS_API}/${id}`);
   return response.data;
 }
 
 export async function addProduct(product) {
-  const response = await axios.post(PRODUCTS_API, product);
+  const response = await api.post(PRODUCTS_API, product);
   return response.data;
 }
 
@@ -108,7 +108,7 @@ export async function createProductWithImage(product, imageFile) {
   console.log('\n📤 שליחה ל-SERVER: POST /api/products\n');
   
   try {
-    const response = await axios.post(PRODUCTS_API, formData, {
+    const response = await api.post(PRODUCTS_API, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     
@@ -131,16 +131,16 @@ export async function createProductWithImage(product, imageFile) {
 }
 
 export async function editProduct(product) {
-  const response = await axios.put(`${PRODUCTS_API}/${product.id}`, product);
+  const response = await api.put(`${PRODUCTS_API}/${product.id}`, product);
   return response.data;
 }
 
 export async function deleteProduct(id) {
-  const response = await axios.delete(`${PRODUCTS_API}/${id}`);
+  const response = await api.delete(`${PRODUCTS_API}/${id}`);
   return response.data;
 }
 
 export async function recalculateProductPrice(id) {
-  const response = await axios.post(`${PRODUCTS_API}/${id}/recalculate-price`);
+  const response = await api.post(`${PRODUCTS_API}/${id}/recalculate-price`);
   return response.data;
 }

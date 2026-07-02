@@ -62,6 +62,7 @@ export default function AddButton({
           component="img"
           src={icon}
           alt=""
+          loading="lazy"
           sx={{
             width: 54,
             height: 54,

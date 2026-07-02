@@ -5,6 +5,8 @@ import PackagingDialog from "../Components/PackagingDialog";
 import FilterBar from "../Components/FilterBar";
 import PageHeader from '../Components/Common/PageHeader';
 import PageContainer from '../Components/Common/PageContainer';
+import PageLoader from '../Components/Common/PageLoader';
+import PageError from '../Components/Common/PageError';
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +22,7 @@ export default function PackagingPage() {
   const [selectedPackaging, setSelectedPackaging] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: rows = [], isLoading, error } = useQuery({
+  const { data: rows = [], isLoading, error, refetch } = useQuery({
     queryKey: ['packaging'],
     queryFn: fetchPackaging
   });
@@ -50,8 +52,8 @@ export default function PackagingPage() {
     onSuccess: () => queryClient.invalidateQueries(['packaging'])
   });
 
-  if (isLoading) return <div>טוען...</div>;
-  if (error)     return <div>שגיאה בטעינת נתונים</div>;
+  if (isLoading) return <PageLoader />;
+  if (error)     return <PageError onRetry={refetch} />;
 
   return (
     <Box>

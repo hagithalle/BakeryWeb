@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Box, useMediaQuery } from "@mui/material";
 import PageHeader from '../Components/Common/PageHeader';
 import PageContainer from '../Components/Common/PageContainer';
+import PageLoader from '../Components/Common/PageLoader';
+import PageError from '../Components/Common/PageError';
 import IngredientDialog from "../Components/IngredientDialog";
 
 import useLocaleStrings from "../hooks/useLocaleStrings";
@@ -46,7 +48,7 @@ export default function IngredientsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
 
-  const { data: rawCategories = [], isLoading: catLoading, error: catError } = useQuery({
+  const { data: rawCategories = [], isLoading: catLoading, error: catError, refetch: refetchCat } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
   });
@@ -67,7 +69,7 @@ export default function IngredientsPage() {
 
   const queryClient = useQueryClient();
 
-  const { data: rows = [], isLoading, error } = useQuery({
+  const { data: rows = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ingredients'],
     queryFn: fetchIngredients,
   });
@@ -189,8 +191,8 @@ export default function IngredientsPage() {
       });
   }, [search, category, lowStockOnly, rows, strings, units, categories]);
 
-  if (isLoading || catLoading) return <div>טוען...</div>;
-  if (error || catError) return <div>שגיאה בטעינת נתונים</div>;
+  if (isLoading || catLoading) return <PageLoader />;
+  if (error || catError) return <PageError onRetry={() => { refetch(); refetchCat(); }} />;
 
   return (
     <Box sx={{ position: "relative" }}>

@@ -3,6 +3,8 @@ import { Box, Grid } from "@mui/material";
 import RecipeCard from "../Components/Recipes/RecipeCard";
 import BraImage from "../assets/images/Bra.jpg";
 import PageHeader from "../Components/Common/PageHeader";
+import PageLoader from "../Components/Common/PageLoader";
+import PageError from "../Components/Common/PageError";
 import recipesHeaderIcon from "../assets/decor/page-headers/recipe-header-icon.svg";
 import addRecipeIcon from "../assets/icons/actions/add-new-recipe.svg";
 import FilterBar from "../Components/FilterBar";
@@ -60,6 +62,8 @@ const handleBackToImport = () => {
   const {
     data: rows = [],
     isLoading: recipesLoading,
+    isError: recipesError,
+    refetch: refetchRecipes,
   } = useQuery({
     queryKey: ["recipes"],
     queryFn: getAllRecipes,
@@ -379,6 +383,9 @@ const handleImported = (draft) => {
       setSelectedId(null);
     }
   };
+
+  if (recipesLoading) return <PageLoader message="טוענים את המתכונים..." />;
+  if (recipesError) return <PageError onRetry={refetchRecipes} />;
 
   return (
     <Box sx={{ bgcolor: '#FFF7F2', minHeight: '100vh', py: 4 }}>

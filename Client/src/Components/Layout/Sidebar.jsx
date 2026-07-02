@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useLocaleStrings from "../../hooks/useLocaleStrings";
 import BakeryDiningIcon from '@mui/icons-material/BakeryDining';
 
+import logoUrl              from '../../assets/images/logo.png';
 import dashboardIconUrl      from '../../assets/icons/sidebar/dashboard-icon.svg';
 import ingredientsIconUrl    from '../../assets/icons/sidebar/ingredients-icon.svg';
 import packagingIconUrl      from '../../assets/icons/sidebar/packaging-icon.svg';
@@ -61,8 +62,9 @@ export default function Sidebar({ lang = "he" }) {
                 overflow: 'hidden',
             }}>
                 <img
-                    src="/src/assets/images/logo.png"
+                    src={logoUrl}
                     alt="Logo"
+                    loading="lazy"
                     style={{ height: 110, width: 'auto', maxWidth: '90%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
                 />
             </Box>
@@ -116,6 +118,7 @@ export default function Sidebar({ lang = "he" }) {
                                 component="img"
                                 src={item.svgSrc}
                                 alt=""
+                                loading="lazy"
                                 sx={{
                                     width: 32,
                                     height: 32,

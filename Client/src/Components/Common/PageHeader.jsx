@@ -88,6 +88,7 @@ export default function PageHeader({
                 src={illustration}
                 aria-hidden
                 alt=""
+                loading="lazy"
                 sx={{
                   width: { xs: 70, md: 120 },
                   height: 'auto',
@@ -143,6 +144,7 @@ export default function PageHeader({
                 src={illustration}
                 aria-hidden
                 alt=""
+                loading="lazy"
                 sx={{
                   width: { xs: 70, md: 120 },
                   height: 'auto',
@@ -182,6 +184,7 @@ export default function PageHeader({
                   component="img"
                   src={illustration}
                   alt=""
+                  loading="lazy"
                   sx={{
                     width: { xs: 88, md: 145 },
                     height: 'auto',

@@ -25,6 +25,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import PageHeader from "../Components/Common/PageHeader";
 import PageContainer from "../Components/Common/PageContainer";
+import PageLoader from "../Components/Common/PageLoader";
+import PageError from "../Components/Common/PageError";
 import FilterBar from "../Components/FilterBar";
 import productsHeaderIcon from "../assets/decor/page-headers/products-header-icon.svg";
 import addProductIcon from "../assets/icons/actions/add-new-product.svg";
@@ -161,6 +163,7 @@ export default function ProductsPage() {
     data: products = [],
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
@@ -348,8 +351,8 @@ export default function ProductsPage() {
       });
   }, [products, search, categoryFilter, typeFilter]);
 
-  if (isLoading) return <Box sx={{ p: 3 }}>טוען...</Box>;
-  if (error) return <Box sx={{ p: 3 }}>שגיאה בטעינת נתונים</Box>;
+  if (isLoading) return <PageLoader />;
+  if (error) return <PageError onRetry={refetch} />;
 
   // ================== RENDER ==================
   return (

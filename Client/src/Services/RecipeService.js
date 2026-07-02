@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 import { LogManager, ConsoleLogger } from '../utils/logging';
 
 const logManager = new LogManager();
@@ -6,7 +6,7 @@ logManager.addLogger(new ConsoleLogger());
 
 // מחיקת מתכון לפי מזהה
 export async function deleteRecipe(id) {
-  await axios.delete(`/api/recipe/${id}`);
+  await api.delete(`/api/recipe/${id}`);
 }
 
 // יצירת מתכון חדש עם קובץ תמונה
@@ -175,7 +175,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
     logManager.log('\n📤 שליחה ל-SERVER: POST /api/recipe\n');
   
   try {
-    const response = await axios.post('/api/recipe', formData, {
+    const response = await api.post('/api/recipe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     logManager.log('✅ תשובה מהשרת:');
@@ -200,7 +200,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
 // קבלת כל המתכונים מהשרת
 export async function getAllRecipes() {
   logManager.log('getAllRecipes: fetching from server...');
-  const response = await axios.get('/api/recipe');
+  const response = await api.get('/api/recipe');
   logManager.log('getAllRecipes: received ' + response.data.length + ' recipes');
   response.data.forEach((recipe, idx) => {
     logManager.log(`Recipe[${idx}]: id=${recipe.id}, name=${recipe.name}, ingredients=${recipe.ingredients?.length ?? 0}, Ingredients=${recipe.Ingredients?.length ?? 0}`);
@@ -320,7 +320,7 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
   console.log('\n📤 שליחה ל-SERVER: PUT /api/recipe/' + id);
     logManager.log('\n📤 שליחה ל-SERVER: PUT /api/recipe/' + id);
   
-  const response = await axios.put(`/api/recipe/${id}`, formData);
+  const response = await api.put(`/api/recipe/${id}`, formData);
   logManager.log('✅ תשובה מהשרת: ' + JSON.stringify(response.data));
   logManager.log('>>> updateRecipeWithImage END\n');
   return response.data;
@@ -330,7 +330,7 @@ export async function importRecipeFromFile(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const { data } = await axios.post(
+  const { data } = await api.post(
     "/api/recipes/import-from-file",
     formData,
     {

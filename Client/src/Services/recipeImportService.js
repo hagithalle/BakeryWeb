@@ -1,6 +1,6 @@
 // src/Services/recipeImportService.js
 
-const BASE_URL = "/api/recipes/import";
+const BASE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api/recipes/import`;
 
 async function handleResponse(res) {
   if (!res.ok) {
