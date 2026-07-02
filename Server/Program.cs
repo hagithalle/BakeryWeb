@@ -34,12 +34,23 @@ builder.Services.AddControllers()
         // No enum converter needed: default is int
     });
 
-// Add CORS - allow frontend on 5173
+// Add CORS - allow frontend (localhost dev + Vercel production)
+var corsOrigins = builder.Configuration["CORS_ORIGINS"]
+    ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        List<string> origins =
+        [
+            "http://localhost:5173",
+            "https://bakery-web-tawny.vercel.app",
+            ..corsOrigins,
+        ];
+
+        policy.WithOrigins(origins.ToArray())
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
