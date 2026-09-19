@@ -23,7 +23,7 @@ namespace BakeryWeb.Server.AI.Client
                 var value = trimmed.Substring(idx + 1).Trim();
                 Environment.SetEnvironmentVariable(key, value);
                 if (key == "AI_API_KEY")
-                    Console.WriteLine($"[EnvLoader] Set AI_API_KEY: {value}");
+                    Console.WriteLine($"[EnvLoader] AI API key configured: {(string.IsNullOrWhiteSpace(value) ? "no" : "yes")}");
             }
         }
     }

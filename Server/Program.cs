@@ -16,8 +16,7 @@ using System.Text;
 
 // Load .env file for environment variables
 BakeryWeb.Server.AI.Client.EnvLoader.LoadEnv(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
-Console.WriteLine("AI_API_KEY=" + Environment.GetEnvironmentVariable("AI_API_KEY"));
-Console.WriteLine("AI_API_KEY=" + Environment.GetEnvironmentVariable("AI_API_KEY"));
+Console.WriteLine("AI API key configured: " + (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("AI_API_KEY")) ? "no" : "yes"));
 
 var builder = WebApplication.CreateBuilder(args);
 
