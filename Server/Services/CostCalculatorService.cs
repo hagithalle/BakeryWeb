@@ -16,7 +16,8 @@ namespace Server.Services
 
         public decimal GetHourlyLaborCost()
         {
-            var s = _context.LaborSettings.SingleOrDefault(x => x.Id == 1);
+            // The current user's own settings (the query filter limits LaborSettings to their single row)
+            var s = _context.LaborSettings.FirstOrDefault();
             
             // אם אין הגדרות עבודה, החזר 0
             if (s == null)
@@ -33,7 +34,7 @@ namespace Server.Services
 
             public decimal GetHourlyOverheadCost()
             {
-                var s = _context.LaborSettings.SingleOrDefault(x => x.Id == 1);
+                var s = _context.LaborSettings.FirstOrDefault();
             
                 // אם אין הגדרות עבודה, החזר 0
                 if (s == null)

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Server.Auth;
 
 namespace Server.Data
 {
@@ -29,7 +30,8 @@ namespace Server.Data
                 .UseNpgsql(connectionString)
                 .Options;
 
-            return new BakeryDbContext(options);
+            // Tooling works on the whole schema, so it is not limited to one user's rows.
+            return new BakeryDbContext(options, UnscopedCurrentUser.Instance);
         }
     }
 }

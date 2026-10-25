@@ -8,33 +8,25 @@ namespace Server.Services
     public class LaborSettingsService : ILaborSettingsService
     {
         private readonly BakeryDbContext _context;
-        private readonly IHttpContextAccessor _http;
-
-        public LaborSettingsService(BakeryDbContext context, IHttpContextAccessor http)
+        // Every query below is limited to the current user's rows by BakeryDbContext's query filter,
+        // and new rows are stamped with the current user's id when saved.
+        public LaborSettingsService(BakeryDbContext context)
         {
             _context = context;
-            _http = http;
         }
-
-        private int? UserId =>
-            int.TryParse(_http.HttpContext?.User.FindFirst("userId")?.Value, out var id) ? id : null;
 
         public async Task<LaborSettings?> GetAsync()
         {
-            var uid = UserId;
-            return await _context.LaborSettings
-                .FirstOrDefaultAsync(x => x.UserId == uid || (uid == null && x.UserId == null));
+            return await _context.LaborSettings.FirstOrDefaultAsync();
         }
 
         public async Task<LaborSettings> UpsertAsync(LaborSettings settings)
         {
-            var uid = UserId;
-            var existing = await _context.LaborSettings
-                .FirstOrDefaultAsync(x => x.UserId == uid || (uid == null && x.UserId == null));
+            var existing = await _context.LaborSettings.FirstOrDefaultAsync();
 
             if (existing == null)
             {
-                settings.UserId = uid;
+                settings.Id = 0; // one row per user, created on first save
                 _context.LaborSettings.Add(settings);
             }
             else

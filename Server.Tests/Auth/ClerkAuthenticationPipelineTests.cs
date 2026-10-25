@@ -51,7 +51,7 @@ namespace Server.Tests.Auth
             _app.MapControllers();
             // Stand-ins for business endpoints: one protected, one anonymous (as the business endpoints are today).
             _app.MapGet("/test/protected", (ClaimsPrincipal user) => user.FindFirstValue("userId")).RequireAuthorization();
-            _app.MapGet("/test/anonymous", (ClaimsPrincipal user) => user.FindFirstValue("userId") ?? "anonymous");
+            _app.MapGet("/test/anonymous", (ClaimsPrincipal user) => user.FindFirstValue("userId") ?? "anonymous").AllowAnonymous();
 
             await _app.StartAsync();
             _client = _app.GetTestClient();
@@ -270,9 +270,19 @@ namespace Server.Tests.Auth
         [Fact]
         public async Task RemovedPasswordEndpoints_AreGone()
         {
-            Assert.Equal(HttpStatusCode.NotFound, (await _client.PostAsJsonAsync("/api/auth/login", new { email = "a@b.c", password = "x" })).StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, (await _client.PostAsJsonAsync("/api/auth/register", new { email = "a@b.c", password = "x" })).StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, (await _client.PostAsync("/api/auth/clerk-sync", null)).StatusCode);
+            // No endpoint exists for these routes any more...
+            var routes = _app.Services.GetRequiredService<Microsoft.AspNetCore.Routing.EndpointDataSource>().Endpoints
+                .OfType<Microsoft.AspNetCore.Routing.RouteEndpoint>()
+                .Select(e => e.RoutePattern.RawText?.Trim('/').ToLowerInvariant())
+                .ToList();
+            Assert.DoesNotContain("api/auth/login", routes);
+            Assert.DoesNotContain("api/auth/register", routes);
+            Assert.DoesNotContain("api/auth/clerk-sync", routes);
+
+            // ...and requests to them are refused (401 from the secure-by-default policy, before any routing detail leaks).
+            Assert.Equal(HttpStatusCode.Unauthorized, (await _client.PostAsJsonAsync("/api/auth/login", new { email = "a@b.c", password = "x" })).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await _client.PostAsJsonAsync("/api/auth/register", new { email = "a@b.c", password = "x" })).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await _client.PostAsync("/api/auth/clerk-sync", null)).StatusCode);
         }
 
         // ---------- helpers ----------

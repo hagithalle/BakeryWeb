@@ -1,6 +1,6 @@
 namespace Server.Models
 {
-    public class LaborSettings
+    public class LaborSettings : IOwnedEntity
     {
         public int Id { get; set; }          // תמיד יהיה לך רשומה אחת (Id = 1)
 

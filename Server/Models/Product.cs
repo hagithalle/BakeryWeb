@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Server.Models
 {
-    public class Product
+    public class Product : IOwnedEntity
     {
         public int Id { get; set; }
 

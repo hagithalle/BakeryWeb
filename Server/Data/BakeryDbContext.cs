@@ -1,13 +1,27 @@
 using Microsoft.EntityFrameworkCore;
+using Server.Auth;
 using Server.Models;
 
 namespace Server.Data
 {
+    /// <summary>Thrown when code tries to create, change or delete data it does not own.</summary>
+    public sealed class OwnershipViolationException : InvalidOperationException
+    {
+        public OwnershipViolationException(string message) : base(message) { }
+    }
+
     public class BakeryDbContext : DbContext
     {
-        public BakeryDbContext(DbContextOptions<BakeryDbContext> options) : base(options)
+        private readonly ICurrentUser _currentUser;
+
+        public BakeryDbContext(DbContextOptions<BakeryDbContext> options, ICurrentUser currentUser) : base(options)
         {
+            _currentUser = currentUser;
         }
+
+        // Read by the query filters on every query (EF parameterizes these per context instance).
+        private int? CurrentUserId => _currentUser.UserId;
+        private bool IsUnscopedContext => _currentUser.IsUnscoped;
 
         public DbSet<User> Users { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
@@ -166,6 +180,85 @@ namespace Server.Data
             modelBuilder.Entity<OverheadItem>()
                 .Property(o => o.Type)
                 .HasConversion<int>();
+
+            ConfigureTenantFilters(modelBuilder);
+        }
+
+        /// <summary>
+        /// Every query only sees the current user's rows. Rows without an owner (legacy data) match nobody,
+        /// so they stay in the database but are hidden until they are explicitly assigned.
+        /// Child rows are filtered through their owning parent as a second line of defence.
+        /// </summary>
+        private void ConfigureTenantFilters(ModelBuilder modelBuilder)
+        {
+            ApplyOwnerFilter<Ingredient>(modelBuilder);
+            ApplyOwnerFilter<Packaging>(modelBuilder);
+            ApplyOwnerFilter<OverheadItem>(modelBuilder);
+            ApplyOwnerFilter<LaborSettings>(modelBuilder);
+            ApplyOwnerFilter<Recipe>(modelBuilder);
+            ApplyOwnerFilter<Product>(modelBuilder);
+
+            modelBuilder.Entity<RecipeIngredient>().HasQueryFilter(x =>
+                IsUnscopedContext || (x.Recipe!.UserId != null && x.Recipe.UserId == CurrentUserId));
+            modelBuilder.Entity<RecipeStep>().HasQueryFilter(x =>
+                IsUnscopedContext || (x.Recipe!.UserId != null && x.Recipe.UserId == CurrentUserId));
+            modelBuilder.Entity<RecipeItem>().HasQueryFilter(x =>
+                IsUnscopedContext || (x.ComposingRecipe!.UserId != null && x.ComposingRecipe.UserId == CurrentUserId));
+            modelBuilder.Entity<PackageItem>().HasQueryFilter(x =>
+                IsUnscopedContext || (x.Product!.UserId != null && x.Product.UserId == CurrentUserId));
+            modelBuilder.Entity<ProductAdditionalPackaging>().HasQueryFilter(x =>
+                IsUnscopedContext || (x.Product!.UserId != null && x.Product.UserId == CurrentUserId));
+        }
+
+        // "UserId != null" matters: without it, a context with no current user would match ownerless rows.
+        private void ApplyOwnerFilter<T>(ModelBuilder modelBuilder) where T : class, IOwnedEntity =>
+            modelBuilder.Entity<T>().HasQueryFilter(e =>
+                IsUnscopedContext || (e.UserId != null && e.UserId == CurrentUserId));
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            EnforceOwnership();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            EnforceOwnership();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        /// <summary>
+        /// New owned rows always belong to the current user (any client-supplied UserId is overwritten);
+        /// existing rows can only be changed or deleted by their owner, and their owner can never change.
+        /// </summary>
+        private void EnforceOwnership()
+        {
+            if (IsUnscopedContext) return;
+
+            foreach (var entry in ChangeTracker.Entries<IOwnedEntity>())
+            {
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        entry.Entity.UserId = CurrentUserId
+                            ?? throw new OwnershipViolationException("Owned data can only be created by an authenticated user.");
+                        break;
+
+                    case EntityState.Modified:
+                    case EntityState.Deleted:
+                        var owner = entry.Property(nameof(IOwnedEntity.UserId));
+                        var originalOwner = (int?)owner.OriginalValue;
+                        if (originalOwner == null || CurrentUserId == null || originalOwner != CurrentUserId)
+                            throw new OwnershipViolationException("Only the owner can change or delete this record.");
+                        if (entry.State == EntityState.Modified)
+                        {
+                            if (!Equals(owner.CurrentValue, owner.OriginalValue))
+                                throw new OwnershipViolationException("The owner of a record cannot be changed.");
+                            owner.IsModified = false;
+                        }
+                        break;
+                }
+            }
         }
     }
 }

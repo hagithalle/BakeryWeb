@@ -6,7 +6,7 @@ namespace Server.Tests.Auth
     /// Clerk Backend API user objects as returned for the two supported sign-in flows.
     /// The backend treats both the same way: only the primary email's verification status matters.
     /// </summary>
-    internal static class ClerkUserFixtures
+    public static class ClerkUserFixtures
     {
         /// <summary>User created via "Continue with Google" (email verified by the OAuth provider).</summary>
         public static string GoogleUser(string email, string firstName = "Dana", string lastName = "Baker") => $$"""
@@ -42,7 +42,7 @@ namespace Server.Tests.Auth
     }
 
     /// <summary>Fake Clerk Backend API: answers GET users/{id} from a per-user table.</summary>
-    internal sealed class FakeClerkBackendApi : HttpMessageHandler
+    public sealed class FakeClerkBackendApi : HttpMessageHandler
     {
         private readonly Dictionary<string, (HttpStatusCode Status, string Body)> _users = new();
 

@@ -119,10 +119,9 @@ app.UseHttpsRedirection();
 // Use CORS policy
 app.UseCors("AllowFrontend");
 
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Serve static files from Uploads folder
+// Serve uploaded images from the Uploads folder. Deliberately BEFORE authentication/authorization:
+// <img> tags cannot send a bearer token, and the fallback "authenticated user" policy would otherwise
+// apply to these files. Access relies on unguessable file names for now (private storage is planned).
 app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
@@ -130,27 +129,13 @@ app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
     RequestPath = "/uploads"
 });
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-app.MapGet("/", () => "Server is running");
+// Health check: the only endpoint that does not require authentication.
+app.MapGet("/", () => "Server is running").AllowAnonymous();
 
 app.Run();
 
@@ -170,7 +155,5 @@ internal class TextRecipeImportService
 {
 }
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Lets integration tests start the real application (WebApplicationFactory<Program>).
+public partial class Program { }

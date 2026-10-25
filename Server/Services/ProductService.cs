@@ -13,11 +13,10 @@ namespace Server.Services
         private readonly BakeryDbContext _db;
         private readonly CostCalculatorService _costCalculator;
         private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _http;
         private readonly decimal _vatRate;
         private readonly string _uploadPath;
 
-        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager, IHttpContextAccessor http)
+        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager)
         {
             _db = db;
             _costCalculator = costCalculator;
@@ -25,11 +24,7 @@ namespace Server.Services
             _vatRate = configuration.GetValue<decimal>("PricingSettings:VatRate", 0.17m);
             _uploadPath = configuration.GetValue<string>("FileUpload:Path") ?? "Uploads/Products";
             _logManager = logManager;
-            _http = http;
         }
-
-        private int? UserId =>
-            int.TryParse(_http.HttpContext?.User.FindFirst("userId")?.Value, out var id) ? id : null;
 
         public async Task<Product> CreateAsync(CreateProductRequest request)
         {
@@ -46,7 +41,6 @@ namespace Server.Services
                 PackagingTimeMinutes = request.PackagingTimeMinutes,
                 ProfitMarginPercent = request.ProfitMarginPercent,
                 ManualSellingPrice = request.ManualSellingPrice,
-                UserId = UserId,
             };
 
             // שמירת תמונה אם יש
@@ -132,7 +126,7 @@ namespace Server.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var existing = await _db.Products.FindAsync(id);
+            var existing = await _db.Products.FirstOrDefaultAsync(p => p.Id == id);
             if (existing == null) return false;
             _db.Products.Remove(existing);
             await _db.SaveChangesAsync();
@@ -141,9 +135,7 @@ namespace Server.Services
 
         public async Task<IEnumerable<Product>> GetAllAsync()
         {
-            var uid = UserId;
             var products = await _db.Products
-                .Where(p => p.UserId == null || p.UserId == uid)
                 .Include(p => p.Recipe)
                     .ThenInclude(r => r.Ingredients)
                         .ThenInclude(ri => ri.Ingredient)

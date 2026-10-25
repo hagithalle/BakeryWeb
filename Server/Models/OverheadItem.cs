@@ -16,7 +16,7 @@ namespace Server.Models
         Other = 4        // שונות
     }
 
-    public class OverheadItem
+    public class OverheadItem : IOwnedEntity
     {
         public int Id { get; set; }
 

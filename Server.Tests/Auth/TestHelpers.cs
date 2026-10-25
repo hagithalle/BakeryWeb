@@ -32,7 +32,7 @@ namespace Server.Tests.Auth
     }
 
     /// <summary>Simulates Clerk: an RSA key pair that signs session tokens like Clerk does.</summary>
-    internal sealed class FakeClerkIssuer : IDisposable
+    public sealed class FakeClerkIssuer : IDisposable
     {
         private readonly RSA _rsa = RSA.Create(2048);
 
@@ -73,7 +73,7 @@ namespace Server.Tests.Auth
     }
 
     /// <summary>Key provider that serves fixed keys and records forced refreshes.</summary>
-    internal sealed class StaticKeyProvider : IClerkSigningKeyProvider
+    public sealed class StaticKeyProvider : IClerkSigningKeyProvider
     {
         private readonly IReadOnlyList<SecurityKey> _initialKeys;
         private readonly IReadOnlyList<SecurityKey> _refreshedKeys;

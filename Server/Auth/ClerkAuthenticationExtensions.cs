@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Server.Auth
 {
@@ -25,7 +26,18 @@ namespace Server.Auth
 
             services.AddAuthentication(ClerkAuthenticationHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, ClerkAuthenticationHandler>(ClerkAuthenticationHandler.SchemeName, null);
-            services.AddAuthorization();
+
+            // Secure by default: every endpoint requires an authenticated user unless it is explicitly
+            // marked [AllowAnonymous] / .AllowAnonymous(). New endpoints cannot be exposed by accident.
+            services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder(ClerkAuthenticationHandler.SchemeName)
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
+
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
             return services;
         }

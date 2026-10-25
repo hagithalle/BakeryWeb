@@ -11,7 +11,7 @@ namespace Server.Tests.Auth
     {
         private readonly BakeryDbContext _db = new(new DbContextOptionsBuilder<BakeryDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options);
+            .Options, UnscopedCurrentUser.Instance);
 
         private readonly FakeClerkBackendApi _clerkApi = new();
 
