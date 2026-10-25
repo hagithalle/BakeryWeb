@@ -10,8 +10,7 @@ using BakeryWeb.Server.AI.Prompts;
 using BakeryWeb.Server.AI.Services;
 using BakeryWeb.Server.AI.Services.Structured;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Server.Auth;
 
 
 // Load .env file for environment variables
@@ -37,20 +36,30 @@ builder.Services.AddControllers()
     });
 
 // Add JWT Authentication
-var jwtSecret = builder.Configuration["JWT_SECRET"] ?? "bakery-default-secret-change-in-production-32chars!";
+// Fails fast (before the server starts) if JWT_SECRET is missing or weak - there is no fallback secret.
+var jwtSettings = JwtSettings.FromConfiguration(builder.Configuration);
+builder.Services.AddSingleton(jwtSettings);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<TokenService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-        };
+        options.TokenValidationParameters = jwtSettings.CreateValidationParameters();
     });
 builder.Services.AddAuthorization();
+
+// Clerk (Google sign-in) token verification - optional; disabled when no CLERK_* settings are present
+var clerkSettings = ClerkSettings.FromConfiguration(builder.Configuration);
+builder.Services.AddSingleton(clerkSettings);
+builder.Services.AddHttpClient(ClerkJwksKeyProvider.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddSingleton<IClerkSigningKeyProvider, ClerkJwksKeyProvider>();
+builder.Services.AddSingleton<IClerkTokenValidator, ClerkTokenValidator>();
+builder.Services.AddHttpClient<IClerkUserClient, ClerkUserClient>(client =>
+{
+    client.BaseAddress = ClerkUserClient.BackendApiBaseAddress;
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+Console.WriteLine("Clerk sign-in configured: " + (clerkSettings.Enabled ? "yes" : "no"));
 builder.Services.AddHttpContextAccessor();
 
 // Add CORS - allow frontend (localhost dev + Vercel production)

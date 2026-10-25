@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Server.Auth;
 using Server.Data;
 using Server.Models;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace Server.Controllers
 {
@@ -14,13 +12,29 @@ namespace Server.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly BakeryDbContext _context;
-        private readonly IConfiguration _configuration;
+        public const string ClerkTokenHeader = "X-Clerk-Token";
 
-        public AuthController(BakeryDbContext context, IConfiguration configuration)
+        private readonly BakeryDbContext _context;
+        private readonly TokenService _tokenService;
+        private readonly ClerkSettings _clerkSettings;
+        private readonly IClerkTokenValidator _clerkTokenValidator;
+        private readonly IClerkUserClient _clerkUserClient;
+        private readonly ILogger<AuthController> _logger;
+
+        public AuthController(
+            BakeryDbContext context,
+            TokenService tokenService,
+            ClerkSettings clerkSettings,
+            IClerkTokenValidator clerkTokenValidator,
+            IClerkUserClient clerkUserClient,
+            ILogger<AuthController> logger)
         {
             _context = context;
-            _configuration = configuration;
+            _tokenService = tokenService;
+            _clerkSettings = clerkSettings;
+            _clerkTokenValidator = clerkTokenValidator;
+            _clerkUserClient = clerkUserClient;
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -36,7 +50,7 @@ namespace Server.Controllers
             {
                 Email = request.Email.ToLower(),
                 Name = request.Name ?? request.Email.Split('@')[0],
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                PasswordHash = PasswordHashing.Hash(request.Password),
             };
 
             _context.Users.Add(user);
@@ -44,7 +58,7 @@ namespace Server.Controllers
 
             return Ok(new AuthResponse
             {
-                Token = GenerateToken(user),
+                Token = _tokenService.CreateToken(user),
                 User = ToDto(user),
             });
         }
@@ -56,50 +70,68 @@ namespace Server.Controllers
                 return BadRequest("אימייל וסיסמה נדרשים");
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+
+            // Google-only accounts have no password hash. They get the same generic answer as a wrong
+            // password, so the response doesn't reveal which emails are registered or how.
+            if (user == null || !PasswordHashing.Verify(request.Password, user.PasswordHash))
                 return Unauthorized("אימייל או סיסמה שגויים");
 
             return Ok(new AuthResponse
             {
-                Token = GenerateToken(user),
+                Token = _tokenService.CreateToken(user),
                 User = ToDto(user),
             });
         }
 
+        /// <summary>
+        /// Exchanges a verified Clerk session token (Google sign-in) for this server's own JWT.
+        /// An existing account is linked by email only when Clerk reports that email as verified.
+        /// </summary>
         [HttpPost("clerk-sync")]
-        public async Task<IActionResult> ClerkSync()
+        public async Task<IActionResult> ClerkSync(CancellationToken cancellationToken)
         {
-            var clerkToken = Request.Headers["X-Clerk-Token"].FirstOrDefault();
-            if (string.IsNullOrEmpty(clerkToken))
+            if (!_clerkSettings.Enabled)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "כניסה עם Google אינה מוגדרת בשרת");
+
+            var clerkToken = Request.Headers[ClerkTokenHeader].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(clerkToken))
                 return BadRequest("Clerk token missing");
 
-            // Decode JWT to extract user info (Clerk signs with RS256)
-            JwtSecurityToken jwt;
-            try
+            var validation = await _clerkTokenValidator.ValidateAsync(clerkToken, cancellationToken);
+            if (!validation.IsValid)
             {
-                jwt = new JwtSecurityTokenHandler().ReadJwtToken(clerkToken);
-            }
-            catch
-            {
-                return BadRequest("Invalid Clerk token");
+                _logger.LogWarning("Rejected Clerk token: {Reason}", validation.FailureReason);
+                return Unauthorized("Invalid Clerk token");
             }
 
-            var clerkId = jwt.Subject;
-            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
-            var name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value
-                    ?? jwt.Claims.FirstOrDefault(c => c.Type == "fullName")?.Value
-                    ?? email?.Split('@')[0];
+            var clerkId = validation.ClerkUserId!;
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ClerkId == clerkId, cancellationToken);
 
-            if (string.IsNullOrEmpty(clerkId) || string.IsNullOrEmpty(email))
-                return BadRequest("Missing required claims in token");
-
-            // Find by ClerkId, then by email (for users who registered with email before)
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.ClerkId == clerkId);
             if (user == null)
             {
-                user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower());
+                ClerkUserProfile? profile;
+                try
+                {
+                    profile = await _clerkUserClient.GetVerifiedPrimaryEmailAsync(clerkId, cancellationToken);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError("Clerk user lookup failed with status {StatusCode}", ex.StatusCode);
+                    return StatusCode(StatusCodes.Status502BadGateway, "שירות ההתחברות של Google אינו זמין כרגע");
+                }
+
+                if (profile == null)
+                    return StatusCode(StatusCodes.Status403Forbidden, "כתובת האימייל בחשבון Google אינה מאומתת");
+
+                var email = profile.Email.Trim().ToLower();
+                user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+
                 if (user != null)
                 {
+                    // Already linked to a different Clerk identity - never re-link silently.
+                    if (!string.IsNullOrEmpty(user.ClerkId))
+                        return Conflict("חשבון זה כבר מקושר לחשבון Google אחר");
+
                     user.ClerkId = clerkId;
                 }
                 else
@@ -107,18 +139,19 @@ namespace Server.Controllers
                     user = new User
                     {
                         ClerkId = clerkId,
-                        Email = email.ToLower(),
-                        Name = name ?? email,
+                        Email = email,
+                        Name = profile.Name ?? email.Split('@')[0],
                         PasswordHash = string.Empty,
                     };
                     _context.Users.Add(user);
                 }
-                await _context.SaveChangesAsync();
+
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
             return Ok(new AuthResponse
             {
-                Token = GenerateToken(user),
+                Token = _tokenService.CreateToken(user),
                 User = ToDto(user),
             });
         }
@@ -146,37 +179,18 @@ namespace Server.Controllers
 
             if (!string.IsNullOrWhiteSpace(request.NewPassword))
             {
+                if (!PasswordHashing.HasPassword(user.PasswordHash))
+                    return BadRequest("לחשבון זה אין סיסמה - הכניסה מתבצעת עם Google");
+
                 if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
-                    !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+                    !PasswordHashing.Verify(request.CurrentPassword, user.PasswordHash))
                     return BadRequest("סיסמה נוכחית שגויה");
 
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                user.PasswordHash = PasswordHashing.Hash(request.NewPassword);
             }
 
             await _context.SaveChangesAsync();
             return Ok(ToDto(user));
-        }
-
-        private string GenerateToken(User user)
-        {
-            var secret = _configuration["JWT_SECRET"] ?? "bakery-default-secret-change-in-production-32chars!";
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim("userId", user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim("name", user.Name),
-            };
-
-            var token = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(30),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private static UserDto ToDto(User user) => new()
