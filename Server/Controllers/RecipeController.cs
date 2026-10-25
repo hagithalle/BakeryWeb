@@ -68,6 +68,10 @@ namespace Server.Controllers
                 Console.WriteLine($"✅ Saved with ID: {created.Id}");
                 return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
             }
+            catch (InvalidReferenceException ex)
+            {
+                return InvalidReferences(ex);
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ ERROR: {ex.Message}");
@@ -177,6 +181,10 @@ namespace Server.Controllers
                     return NotFound();
                 }
             }
+            catch (InvalidReferenceException ex)
+            {
+                return InvalidReferences(ex);
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"   ❌ Error: {ex.Message}");
@@ -193,6 +201,13 @@ namespace Server.Controllers
             var ok = await _service.DeleteAsync(id);
             return ok ? NoContent() : NotFound();
         }
+
+        // Same response for a missing row and for another user's row: nothing reveals whether it exists.
+        private BadRequestObjectResult InvalidReferences(InvalidReferenceException ex) => BadRequest(new
+        {
+            message = InvalidReferenceException.UserMessage,
+            errors = ex.Fields,
+        });
 
         // "message" is what the recipes page shows in its save-error alert.
         private BadRequestObjectResult InvalidUnits(IReadOnlyList<string> errors) => BadRequest(new

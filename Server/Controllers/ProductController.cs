@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Server.Models;
 using Server.Services;
+using Server.Validation;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,6 +54,10 @@ namespace Server.Controllers
                 var created = await _service.CreateAsync(request);
                 return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
             }
+            catch (InvalidReferenceException ex)
+            {
+                return InvalidReferences(ex);
+            }
             catch (Exception ex)
             {
                 var detail = ex.InnerException?.Message ?? ex.Message;
@@ -80,12 +85,23 @@ namespace Server.Controllers
                 var ok = await _service.UpdateAsync(id, product);
                 return ok ? NoContent() : NotFound();
             }
+            catch (InvalidReferenceException ex)
+            {
+                return InvalidReferences(ex);
+            }
             catch (Exception ex)
             {
                 var detail = ex.InnerException?.Message ?? ex.Message;
                 return BadRequest(new { error = ex.Message, detail });
             }
         }
+
+        // Same response for a missing row and for another user's row: nothing reveals whether it exists.
+        private BadRequestObjectResult InvalidReferences(InvalidReferenceException ex) => BadRequest(new
+        {
+            message = InvalidReferenceException.UserMessage,
+            errors = ex.Fields,
+        });
 
         [HttpPost("{id}/recalculate-price")]
         public async Task<IActionResult> RecalculatePrice(int id)

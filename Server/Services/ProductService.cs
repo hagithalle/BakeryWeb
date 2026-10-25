@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Server.Controllers;
 using Server.Data;
 using Server.Models;
+using Server.Validation;
 
 namespace Server.Services
 {
@@ -13,11 +14,13 @@ namespace Server.Services
         private readonly BakeryDbContext _db;
         private readonly CostCalculatorService _costCalculator;
         private readonly IConfiguration _configuration;
+        private readonly ReferenceValidator _references;
         private readonly decimal _vatRate;
         private readonly string _uploadPath;
 
-        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager)
+        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager, ReferenceValidator references)
         {
+            _references = references;
             _db = db;
             _costCalculator = costCalculator;
             _configuration = configuration;
@@ -28,11 +31,25 @@ namespace Server.Services
 
         public async Task<Product> CreateAsync(CreateProductRequest request)
         {
+            var productType = (ProductType)request.ProductType;
+            var packageItems = productType == ProductType.Package
+                ? request.PackageItems ?? new List<PackageItemRequest>()
+                : new List<PackageItemRequest>();
+            var additionalPackaging = request.AdditionalPackaging ?? new List<AdditionalPackagingRequest>();
+
+            // 1. Every referenced recipe / packaging must belong to the current user - checked before anything is
+            //    written to the database or to disk.
+            await _references.EnsureProductReferencesAsync(
+                request.RecipeId,
+                request.PackagingId,
+                packageItems.Select(i => i.RecipeId).ToList(),
+                additionalPackaging.Select(i => i.PackagingId).ToList());
+
             var product = new Product
             {
                 Name = request.Name,
                 Description = request.Description,
-                ProductType = (ProductType)request.ProductType,
+                ProductType = productType,
                 Category = request.Category,
                 RecipeId = request.RecipeId,
                 UnitConversionRate = request.RecipeUnits,
@@ -41,18 +58,25 @@ namespace Server.Services
                 PackagingTimeMinutes = request.PackagingTimeMinutes,
                 ProfitMarginPercent = request.ProfitMarginPercent,
                 ManualSellingPrice = request.ManualSellingPrice,
+                PackageItems = packageItems
+                    .Select(i => new PackageItem { RecipeId = i.RecipeId, Quantity = i.Quantity })
+                    .ToList(),
+                AdditionalPackaging = additionalPackaging
+                    .Select(i => new ProductAdditionalPackaging { PackagingId = i.PackagingId, Quantity = i.Quantity })
+                    .ToList(),
             };
 
-            // שמירת תמונה אם יש
+            // 2. Image file (only after validation succeeded)
+            string? savedImagePath = null;
             if (request.imageFile != null && request.imageFile.Length > 0)
             {
                 try
                 {
                     var fileName = Guid.NewGuid().ToString() + Path.GetExtension(request.imageFile.FileName);
-                    var filePath = Path.Combine(_uploadPath, fileName);
+                    savedImagePath = Path.Combine(_uploadPath, fileName);
 
                     Directory.CreateDirectory(_uploadPath);
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    using (var stream = new FileStream(savedImagePath, FileMode.Create))
                     {
                         await request.imageFile.CopyToAsync(stream);
                     }
@@ -67,57 +91,19 @@ namespace Server.Services
                 }
             }
 
-            // הוספת המוצר לבסיס הנתונים
+            // 3. Product, box items and extra packaging in ONE save (one transaction): all or nothing.
             _db.Products.Add(product);
-            await _db.SaveChangesAsync();
-            _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Product created with ID: {product.Id}");
-
-            // הוספת פריטי המארז אם זה סוג Package
-            if ((ProductType)request.ProductType == ProductType.Package && request.PackageItems != null && request.PackageItems.Any())
+            try
             {
-                var itemIds = request.PackageItems.Select(item => item.RecipeId).Distinct().ToList();
-                var existingItemIds = await _db.Recipes
-                    .Where(r => itemIds.Contains(r.Id))
-                    .Select(r => r.Id)
-                    .ToListAsync();
-                var missingItemIds = itemIds.Except(existingItemIds).ToList();
-                if (missingItemIds.Count > 0)
-                {
-                    throw new InvalidOperationException($"Package items reference missing recipes: {string.Join(", ", missingItemIds)}");
-                }
-
-                _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Adding {request.PackageItems.Count} package items...");
-                foreach (var item in request.PackageItems)
-                {
-                    var packageItem = new PackageItem
-                    {
-                        ProductId = product.Id,
-                        RecipeId = item.RecipeId,
-                        Quantity = item.Quantity
-                    };
-                    _db.PackageItems.Add(packageItem);
-                    _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"PackageItem: RecipeId={item.RecipeId}, Qty={item.Quantity}");
-                }
                 await _db.SaveChangesAsync();
             }
-
-            // הוספת אריזה נוספת
-            if (request.AdditionalPackaging != null && request.AdditionalPackaging.Any())
+            catch
             {
-                _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"Adding {request.AdditionalPackaging.Count} additional packaging items...");
-                foreach (var item in request.AdditionalPackaging)
-                {
-                    var packaging = new ProductAdditionalPackaging
-                    {
-                        ProductId = product.Id,
-                        PackagingId = item.PackagingId,
-                        Quantity = item.Quantity
-                    };
-                    _db.ProductAdditionalPackagings.Add(packaging);
-                    _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync), $"AdditionalPackaging: PackagingId={item.PackagingId}, Qty={item.Quantity}");
-                }
-                await _db.SaveChangesAsync();
+                if (savedImagePath != null && File.Exists(savedImagePath)) File.Delete(savedImagePath);
+                throw;
             }
+            _logManager.LogSuccess(nameof(ProductService), nameof(CreateAsync),
+                $"Product created with ID: {product.Id} ({product.PackageItems.Count} package items, {product.AdditionalPackaging.Count} extra packaging)");
 
             // חישוב עלויות
             var updatedProduct = await GetByIdAsync(product.Id);
@@ -216,6 +202,13 @@ namespace Server.Services
             
             if (existing == null) return false;
 
+            // Checked before anything is changed: every referenced recipe / packaging must be the user's own.
+            await _references.EnsureProductReferencesAsync(
+                product.RecipeId,
+                product.PackagingId,
+                (product.PackageItems ?? new List<PackageItem>()).Select(i => i.RecipeId).ToList(),
+                (product.AdditionalPackaging ?? new List<ProductAdditionalPackaging>()).Select(i => i.PackagingId).ToList());
+
             // עדכון שדות בסיסיים
             existing.Name = product.Name;
             existing.ProductType = product.ProductType;
@@ -233,21 +226,6 @@ namespace Server.Services
             // עדכון PackageItems אם יש
             if (product.PackageItems != null)
             {
-                var itemIds = product.PackageItems
-                    .Select(item => item.RecipeId)
-                    .Where(id => id > 0)
-                    .Distinct()
-                    .ToList();
-                var existingItemIds = await _db.Recipes
-                    .Where(r => itemIds.Contains(r.Id))
-                    .Select(r => r.Id)
-                    .ToListAsync();
-                var missingItemIds = itemIds.Except(existingItemIds).ToList();
-                if (missingItemIds.Count > 0)
-                {
-                    throw new InvalidOperationException($"Package items reference missing recipes: {string.Join(", ", missingItemIds)}");
-                }
-
                 // מחיקת פריטים ישנים
                 _db.PackageItems.RemoveRange(existing.PackageItems);
                 
