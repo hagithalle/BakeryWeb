@@ -393,20 +393,52 @@ namespace Server.Tests.Tenancy
 
             var stored = await a.GetJsonAsync($"/api/recipe/{id}");
             Assert.Equal(name, stored.GetProperty("name").GetString());
-            // Only isolation is asserted here; the line count is affected by a known, separate bug
-            // (see RecipeCreate_StoresEachIngredientLineOnce).
-            Assert.True(stored.GetProperty("ingredients").GetArrayLength() >= 1);
+            Assert.Equal(1, stored.GetProperty("ingredients").GetArrayLength());
         }
 
-        [Theory(Skip = "Known existing bug pending approval: RecipeService.CreateAsync adds every ingredient line and step twice (since 2026-02-04).")]
+        // Regression: RecipeService.CreateAsync used to add every ingredient line, step and base-recipe line twice.
+        [Theory]
         [MemberData(nameof(Databases))]
-        public async Task RecipeCreate_StoresEachIngredientLineOnce(TestDatabase database)
+        public async Task RecipeCreate_StoresEachLineExactlyOnce(TestDatabase database)
         {
             var (app, _, a, _) = await SetupAsync(database);
-            var ingredient = await CreateIngredientAsync(a, "single-line-ingredient");
-            var id = await CreateRecipeAsync(a, "single-line-recipe", ingredient);
+            var flour = await CreateIngredientAsync(a, "once-flour");
+            var sugar = await CreateIngredientAsync(a, "once-sugar");
+            var baseRecipe = await CreateRecipeAsync(a, "once-base", flour);
 
-            Assert.Equal(1, (await a.GetJsonAsync($"/api/recipe/{id}")).GetProperty("ingredients").GetArrayLength());
+            var form = new MultipartFormDataContent
+            {
+                { new StringContent("once-cake"), "Name" },
+                { new StringContent("1"), "OutputUnits" },
+                { new StringContent(flour.ToString()), "Ingredients[0].IngredientId" },
+                { new StringContent("100"), "Ingredients[0].Quantity" },
+                { new StringContent("2"), "Ingredients[0].Unit" },
+                { new StringContent(sugar.ToString()), "Ingredients[1].IngredientId" },
+                { new StringContent("50"), "Ingredients[1].Quantity" },
+                { new StringContent("2"), "Ingredients[1].Unit" },
+                { new StringContent("1"), "Steps[0].Order" },
+                { new StringContent("Mix"), "Steps[0].Description" },
+                { new StringContent("2"), "Steps[1].Order" },
+                { new StringContent("Bake"), "Steps[1].Description" },
+                { new StringContent(baseRecipe.ToString()), "BaseRecipes[0].BaseRecipeId" },
+                { new StringContent("1"), "BaseRecipes[0].Quantity" },
+                { new StringContent("5"), "BaseRecipes[0].Unit" },
+            };
+            var response = await a.SendAsync(HttpMethod.Post, "/api/recipe", form);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var id = (await ReadJson(response)).GetProperty("id").GetInt32();
+
+            var stored = await a.GetJsonAsync($"/api/recipe/{id}");
+            Assert.Equal(2, stored.GetProperty("ingredients").GetArrayLength());
+            Assert.Equal(2, stored.GetProperty("steps").GetArrayLength());
+            Assert.Equal(1, stored.GetProperty("baseRecipes").GetArrayLength());
+
+            // And in the database itself, not only in the API response.
+            await using var db = app.CreateUnscopedContext();
+            Assert.Equal(2, await db.RecipeIngredients.CountAsync(x => x.RecipeId == id));
+            Assert.Equal(2, await db.RecipeSteps.CountAsync(x => x.RecipeId == id));
+            Assert.Equal(1, await db.RecipeItems.CountAsync(x => x.ComposingRecipeId == id));
+            Assert.Equal(1, await db.RecipeIngredients.CountAsync(x => x.RecipeId == baseRecipe));
         }
 
         [Theory]
