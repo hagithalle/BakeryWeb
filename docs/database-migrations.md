@@ -37,6 +37,28 @@ startup SQL already modified. It is **schema-only**: no `INSERT`, `UPDATE` or `D
 `__EFMigrationsHistory` row. `Down()` deliberately throws: reverting would delete accounts and ownership links, so
 restore from a backup instead.
 
+## Migration `AddMissingProductTypeColumn` (fix/tenant-isolation)
+
+No earlier migration creates `Products.ProductType`, although the model has it. The old startup SQL added it on
+every start, so existing databases (local, production) have it, but a **fresh database built from migrations alone
+did not** and failed on every product query. EF generated this migration empty (its snapshot already contained the
+column), so the statement was written by hand:
+
+```sql
+ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "ProductType" integer NOT NULL DEFAULT 0;
+```
+
+This is the same definition the existing databases already have. Schema-only, idempotent, never changes rows;
+`Down()` throws. Verified on temporary databases (dropped afterwards):
+
+| Scenario | Result |
+|---|---|
+| Empty database, all migrations | Columns, indexes and foreign keys identical to the model; second run is a no-op |
+| Copy of local `BakeryDb`, reviewed idempotent script | Column already existed (skipped); full `pg_dump --schema-only` identical; all table data identical; one history row added; second run is a no-op |
+
+`Server.Tests/Tenancy/SchemaDriftTests.cs` now builds a database from the migrations and one from the model and
+fails on any column difference, so a gap like this cannot return silently.
+
 ## Invalid unit values (not fixed by any migration)
 
 `UnitOfMeasure` has always started at `Kilogram = 1`; **0 has never been a valid unit**. It appears because:

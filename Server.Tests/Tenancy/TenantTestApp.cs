@@ -95,16 +95,15 @@ namespace Server.Tests.Tenancy
         }
 
         /// <summary>
-        /// Creates the temporary PostgreSQL database with the schema of the CURRENT EF model.
-        /// The migrations are deliberately not used here: they currently miss Products.ProductType
-        /// (see SchemaDriftTests), and these tests are about tenant isolation, not migrations.
+        /// Creates the temporary PostgreSQL database by applying the real EF migrations, exactly like a new
+        /// environment would (SchemaDriftTests guarantees the result equals the current model).
         /// </summary>
         public async Task InitializeDatabaseAsync()
         {
             if (Database == TestDatabase.Postgres)
             {
-                await using var create = CreateUnscopedContext();
-                await create.Database.EnsureCreatedAsync();
+                await using var migrate = CreateUnscopedContext();
+                await migrate.Database.MigrateAsync();
             }
         }
 

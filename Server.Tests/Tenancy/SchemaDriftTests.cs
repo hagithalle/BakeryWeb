@@ -11,18 +11,7 @@ namespace Server.Tests.Tenancy
     /// </summary>
     public class SchemaDriftTests
     {
-        public sealed class KnownDriftFactAttribute : FactAttribute
-        {
-            public KnownDriftFactAttribute()
-            {
-                Skip = !TenantTestApp.PostgresConfigured
-                    ? $"Set {TenantTestApp.PostgresEnvironmentVariable} to run the PostgreSQL integration tests."
-                    // Remove this line once the reviewed migration adding Products.ProductType exists.
-                    : "Known gap pending approval: the migrations do not create Products.ProductType.";
-            }
-        }
-
-        [KnownDriftFact]
+        [PostgresFact]
         public async Task Migrations_ProduceExactlyTheCurrentModelSchema()
         {
             var server = Environment.GetEnvironmentVariable(TenantTestApp.PostgresEnvironmentVariable)!;
