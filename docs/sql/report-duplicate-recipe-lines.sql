@@ -2,6 +2,8 @@
 --
 -- The bug stored every ingredient line, step and base-recipe line of a NEWLY CREATED recipe twice.
 -- Editing a recipe replaces all its lines, so recipes edited after creation are clean.
+-- Rows count as duplicates only if they are identical in EVERY column except "Id" (to_jsonb(row) - 'Id'), so
+-- database-specific extra columns (for example a local "Notes" column) are always compared too.
 -- A recipe whose lines are ALL present exactly twice is the bug's fingerprint; anything else needs a human look
 -- (someone may have entered the same line twice on purpose).
 --
@@ -9,32 +11,20 @@
 --   psql -h <host> -U <user> -d <database> -v ON_ERROR_STOP=1 -f docs/sql/report-duplicate-recipe-lines.sql
 
 \echo '=== Summary'
-SELECT 'RecipeIngredients' AS "table", count(*) AS total_rows,
-       count(*) - count(DISTINCT ("RecipeId", "IngredientId", "Quantity", "Unit")) AS extra_copies
-FROM "RecipeIngredients"
+SELECT 'RecipeIngredients' AS "table", count(*) AS total_rows, count(*) - count(DISTINCT to_jsonb(x) - 'Id') AS extra_copies
+FROM "RecipeIngredients" x
 UNION ALL
-SELECT 'RecipeSteps', count(*),
-       count(*) - count(DISTINCT ("RecipeId", "Order", "Description", "EstimatedMinutes"))
-FROM "RecipeSteps"
+SELECT 'RecipeSteps', count(*), count(*) - count(DISTINCT to_jsonb(x) - 'Id') FROM "RecipeSteps" x
 UNION ALL
-SELECT 'RecipeItems', count(*),
-       count(*) - count(DISTINCT ("ComposingRecipeId", "BaseRecipeId", "Quantity", "Unit"))
-FROM "RecipeItems";
+SELECT 'RecipeItems', count(*), count(*) - count(DISTINCT to_jsonb(x) - 'Id') FROM "RecipeItems" x;
 
 \echo '=== Per recipe: line groups, duplicated groups, and whether every line is doubled (bug fingerprint)'
-WITH ing AS (
-    SELECT "RecipeId" AS recipe_id, count(*) AS copies
-    FROM "RecipeIngredients" GROUP BY "RecipeId", "IngredientId", "Quantity", "Unit"
-), stp AS (
-    SELECT "RecipeId" AS recipe_id, count(*) AS copies
-    FROM "RecipeSteps" GROUP BY "RecipeId", "Order", "Description", "EstimatedMinutes"
-), itm AS (
-    SELECT "ComposingRecipeId" AS recipe_id, count(*) AS copies
-    FROM "RecipeItems" GROUP BY "ComposingRecipeId", "BaseRecipeId", "Quantity", "Unit"
-), all_groups AS (
-    SELECT recipe_id, copies, 'ingredient' AS kind FROM ing
-    UNION ALL SELECT recipe_id, copies, 'step' FROM stp
-    UNION ALL SELECT recipe_id, copies, 'base recipe' FROM itm
+WITH all_groups AS (
+    SELECT "RecipeId" AS recipe_id, count(*) AS copies FROM "RecipeIngredients" x GROUP BY "RecipeId", to_jsonb(x) - 'Id'
+    UNION ALL
+    SELECT "RecipeId", count(*) FROM "RecipeSteps" x GROUP BY "RecipeId", to_jsonb(x) - 'Id'
+    UNION ALL
+    SELECT "ComposingRecipeId", count(*) FROM "RecipeItems" x GROUP BY "ComposingRecipeId", to_jsonb(x) - 'Id'
 )
 SELECT r."Id" AS recipe_id,
        r."UserId" AS owner_user_id,
