@@ -21,7 +21,7 @@ namespace Server.Tests.Auth
         {
             var handler = new StubHttpHandler(HttpStatusCode.OK, JwksJson());
             var provider = new ClerkJwksKeyProvider(
-                new StubHttpClientFactory(handler), TestConfig.EnabledClerkSettings(), TimeProvider.System);
+                new StubHttpClientFactory(handler), TestConfig.ValidClerkSettings(), TimeProvider.System);
 
             var keys = await provider.GetSigningKeysAsync(false, default);
 
@@ -35,7 +35,7 @@ namespace Server.Tests.Auth
         {
             var handler = new StubHttpHandler(HttpStatusCode.OK, JwksJson());
             var time = new FixedTimeProvider(DateTimeOffset.UtcNow);
-            var provider = new ClerkJwksKeyProvider(new StubHttpClientFactory(handler), TestConfig.EnabledClerkSettings(), time);
+            var provider = new ClerkJwksKeyProvider(new StubHttpClientFactory(handler), TestConfig.ValidClerkSettings(), time);
 
             await provider.GetSigningKeysAsync(false, default);
             await provider.GetSigningKeysAsync(false, default);

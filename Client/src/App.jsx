@@ -1,6 +1,10 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { heIL } from "@clerk/localizations";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { clerkAppearance } from "./Components/Auth/clerkAppearance";
+import AccountProblemPage from "./Components/Auth/AccountProblemPage";
+import PageLoader from "./Components/Common/PageLoader";
 import Dashboard from "./Pages/Dashboard.jsx";
 import MainLayout from "./Components/Layout/MainLayout";
 import IngredientsPage from "./Pages/IngredientsPage.jsx";
@@ -11,26 +15,37 @@ import IncomeExpense from "./Pages/IncomeExpense.jsx";
 import FixedExpensesPage from './Pages/FixedExpensesPage.jsx';
 import RecipesPage from './Pages/RecipesPage.jsx';
 import LoginPage from './Pages/LoginPage.jsx';
-import SsoCallbackPage from './Pages/SsoCallbackPage.jsx';
+import SignUpPage from './Pages/SignUpPage.jsx';
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { status } = useAuth();
 
-  if (!isAuthenticated) {
+  if (status === 'loading') {
+    return <PageLoader message="מתחברים..." />;
+  }
+
+  if (status === 'signedOut') {
     return (
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/sso-callback" element={<SsoCallbackPage />} />
+        <Route path="/login/*" element={<LoginPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
+  }
+
+  if (status === 'problem') {
+    return <AccountProblemPage />;
   }
 
   return (
     <MainLayout>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login/*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/sign-up/*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/ingredients" element={<IngredientsPage />} />
         <Route path="/recipes" element={<RecipesPage />} />
@@ -45,8 +60,30 @@ function AppRoutes() {
 }
 
 function App() {
+  const navigate = useNavigate();
+
+  if (!CLERK_PUBLISHABLE_KEY) {
+    // Without this check ClerkProvider throws and the whole app renders as a blank page.
+    return (
+      <div dir="rtl" style={{ padding: 32, fontFamily: 'sans-serif' }}>
+        חסרה הגדרת VITE_CLERK_PUBLISHABLE_KEY — לא ניתן להציג את מסך ההתחברות.
+      </div>
+    );
+  }
+
   return (
-    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider
+      publishableKey={CLERK_PUBLISHABLE_KEY}
+      localization={heIL}
+      appearance={clerkAppearance}
+      routerPush={(to) => navigate(to)}
+      routerReplace={(to) => navigate(to, { replace: true })}
+      signInUrl="/login"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
+      afterSignOutUrl="/login"
+    >
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

@@ -57,12 +57,36 @@ namespace Server.Tests.Auth
         }
 
         [Fact]
+        public void GoogleSignInUser_IsAccepted()
+        {
+            var profile = ClerkUserClient.ParseVerifiedPrimaryEmail(ClerkUserFixtures.GoogleUser("dana@gmail.com"));
+
+            Assert.Equal("dana@gmail.com", profile!.Email);
+            Assert.Equal("Dana Baker", profile.Name);
+        }
+
+        [Fact]
+        public void EmailPasswordUser_WithConfirmedCode_IsAccepted_WithoutName()
+        {
+            var profile = ClerkUserClient.ParseVerifiedPrimaryEmail(ClerkUserFixtures.PasswordUser("baker@example.com"));
+
+            Assert.Equal("baker@example.com", profile!.Email);
+            Assert.Null(profile.Name);
+        }
+
+        [Fact]
+        public void EmailPasswordUser_WithUnconfirmedCode_IsRejected()
+        {
+            Assert.Null(ClerkUserClient.ParseVerifiedPrimaryEmail(ClerkUserFixtures.PasswordUser("baker@example.com", "unverified")));
+        }
+
+        [Fact]
         public async Task Request_UsesBearerSecret_AndEscapesUserId()
         {
             var handler = new StubHttpHandler(HttpStatusCode.OK, UserJson("verified"));
             var client = new ClerkUserClient(
                 new HttpClient(handler) { BaseAddress = ClerkUserClient.BackendApiBaseAddress },
-                TestConfig.EnabledClerkSettings());
+                TestConfig.ValidClerkSettings());
 
             var profile = await client.GetVerifiedPrimaryEmailAsync("user_1/../admin", default);
 
@@ -77,7 +101,7 @@ namespace Server.Tests.Auth
             var handler = new StubHttpHandler(HttpStatusCode.InternalServerError, "{}");
             var client = new ClerkUserClient(
                 new HttpClient(handler) { BaseAddress = ClerkUserClient.BackendApiBaseAddress },
-                TestConfig.EnabledClerkSettings());
+                TestConfig.ValidClerkSettings());
 
             await Assert.ThrowsAsync<HttpRequestException>(() => client.GetVerifiedPrimaryEmailAsync("user_1", default));
         }

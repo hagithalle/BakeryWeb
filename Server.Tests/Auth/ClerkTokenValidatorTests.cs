@@ -10,7 +10,7 @@ namespace Server.Tests.Auth
         private readonly FakeClerkIssuer _clerk = new();
 
         private ClerkTokenValidator CreateValidator(IClerkSigningKeyProvider? keys = null) =>
-            new(TestConfig.EnabledClerkSettings(), keys ?? new StaticKeyProvider(new[] { _clerk.PublicKey }));
+            new(TestConfig.ValidClerkSettings(), keys ?? new StaticKeyProvider(new[] { _clerk.PublicKey }));
 
         [Fact]
         public async Task ValidToken_IsAccepted_AndReturnsClerkUserId()
@@ -154,13 +154,27 @@ namespace Server.Tests.Auth
         }
 
         [Fact]
-        public async Task DisabledClerk_RejectsEverything()
+        public async Task KeysUnavailable_IsReportedAsUnavailable_NotAsCrash()
         {
-            var validator = new ClerkTokenValidator(ClerkSettings.Disabled(), new StaticKeyProvider(new[] { _clerk.PublicKey }));
-
-            var result = await validator.ValidateAsync(_clerk.CreateToken(), default);
+            var result = await CreateValidator(new FailingKeyProvider()).ValidateAsync(_clerk.CreateToken(), default);
 
             Assert.False(result.IsValid);
+            Assert.True(result.KeysUnavailable);
+        }
+
+        [Fact]
+        public async Task InvalidToken_IsNotReportedAsUnavailable()
+        {
+            var result = await CreateValidator().ValidateAsync(_clerk.CreateToken(azp: "https://evil.example"), default);
+
+            Assert.False(result.IsValid);
+            Assert.False(result.KeysUnavailable);
+        }
+
+        private sealed class FailingKeyProvider : IClerkSigningKeyProvider
+        {
+            public Task<IReadOnlyList<SecurityKey>> GetSigningKeysAsync(bool forceRefresh, CancellationToken cancellationToken) =>
+                throw new HttpRequestException("Clerk JWKS endpoint unreachable");
         }
 
         private static string B64(string json) => Base64UrlEncoder.Encode(Encoding.UTF8.GetBytes(json));

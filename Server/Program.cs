@@ -9,7 +9,6 @@ using BakeryWeb.Server.AI.Tasks;
 using BakeryWeb.Server.AI.Prompts;
 using BakeryWeb.Server.AI.Services;
 using BakeryWeb.Server.AI.Services.Structured;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Server.Auth;
 
 
@@ -35,31 +34,10 @@ builder.Services.AddControllers()
         // No enum converter needed: default is int
     });
 
-// Add JWT Authentication
-// Fails fast (before the server starts) if JWT_SECRET is missing or weak - there is no fallback secret.
-var jwtSettings = JwtSettings.FromConfiguration(builder.Configuration);
-builder.Services.AddSingleton(jwtSettings);
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<TokenService>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = jwtSettings.CreateValidationParameters();
-    });
-builder.Services.AddAuthorization();
-
-// Clerk (Google sign-in) token verification - optional; disabled when no CLERK_* settings are present
+// Authentication: Clerk session tokens only (Google and email/password are both handled by Clerk).
+// Fails fast (before the server starts) if any CLERK_* setting is missing.
 var clerkSettings = ClerkSettings.FromConfiguration(builder.Configuration);
-builder.Services.AddSingleton(clerkSettings);
-builder.Services.AddHttpClient(ClerkJwksKeyProvider.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
-builder.Services.AddSingleton<IClerkSigningKeyProvider, ClerkJwksKeyProvider>();
-builder.Services.AddSingleton<IClerkTokenValidator, ClerkTokenValidator>();
-builder.Services.AddHttpClient<IClerkUserClient, ClerkUserClient>(client =>
-{
-    client.BaseAddress = ClerkUserClient.BackendApiBaseAddress;
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
-Console.WriteLine("Clerk sign-in configured: " + (clerkSettings.Enabled ? "yes" : "no"));
+builder.Services.AddClerkAuthentication(clerkSettings);
 builder.Services.AddHttpContextAccessor();
 
 // Add CORS - allow frontend (localhost dev + Vercel production)
@@ -112,140 +90,22 @@ builder.Services.AddScoped<RecipeImportService>();
 
 var app = builder.Build();
 
-// Initialize database
+// Database schema is managed only through reviewed EF Core migrations (see docs/database-migrations.md).
+// The app never changes the schema at startup; it only reports pending migrations.
 try
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<BakeryDbContext>();
-        var dbConnection = dbContext.Database.GetDbConnection();
-        
-        await dbConnection.OpenAsync();
-        
-        // Manually add missing recipe columns if they don't exist
-        var ensureColumnsSQL = @"
-            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""BakeTime"" integer NULL;
-            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Category"" text NULL;
-            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Description"" text NULL;
-            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""PrepTime"" integer NULL;
-            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Temperature"" integer NULL;
-
-            CREATE TABLE IF NOT EXISTS ""Users"" (
-                ""Id"" serial PRIMARY KEY,
-                ""Email"" text NOT NULL UNIQUE,
-                ""PasswordHash"" text NOT NULL,
-                ""Name"" text NOT NULL DEFAULT '',
-                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now()
-            );
-
-            ALTER TABLE ""Ingredients"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
-            ALTER TABLE ""Packagings"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
-            ALTER TABLE ""OverheadItems"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
-            ALTER TABLE ""LaborSettings"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
-            ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;
-
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ProductType"" integer NOT NULL DEFAULT 0;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""SaleUnitType"" integer NOT NULL DEFAULT 0;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""UnitConversionRate"" integer NOT NULL DEFAULT 1;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""PackagingId"" integer NULL;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""PackagingTimeMinutes"" integer NULL;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" text NULL;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Description"" text NULL;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""Category"" text NULL;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ProfitMarginPercent"" numeric NOT NULL DEFAULT 0;
-            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""ManualSellingPrice"" numeric NULL;
-
-            ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""ClerkId"" text NULL;
-            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_ClerkId"" ON ""Users"" (""ClerkId"") WHERE ""ClerkId"" IS NOT NULL;
-        ";
-        
-        using (var command = dbConnection.CreateCommand())
-        {
-            command.CommandText = ensureColumnsSQL;
-            await command.ExecuteNonQueryAsync();
-            Console.WriteLine("Recipe metadata columns ensured");
-        }
-        
-        // Ensure migrations history table exists
-        var ensureMigrationsTable = @"
-            CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
-                ""MigrationId"" character varying(150) NOT NULL,
-                ""ProductVersion"" character varying(32) NOT NULL,
-                CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
-            );
-        ";
-        
-        using (var command = dbConnection.CreateCommand())
-        {
-            command.CommandText = ensureMigrationsTable;
-            await command.ExecuteNonQueryAsync();
-            Console.WriteLine("Migrations table ensured");
-        }
-        
-        // Mark all existing migrations as applied (skip duplicates)
-        var markMigrationsSQL = @"
-            INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
-            VALUES 
-            ('20251215113227_InitialCreate', '10.0.0'),
-            ('20251223080229_UpdateIngredientCategory', '10.0.0'),
-            ('20251223082636_AddPackaging', '10.0.0'),
-            ('20251223084607_AddLaborSettings', '10.0.0'),
-            ('20251223085325_AddOverheadItem', '10.0.0'),
-            ('20251223113711_AddRecipeModels', '10.0.0'),
-            ('20251224080358_AddProduct', '10.0.0'),
-            ('20260101085359_AddRecipeImageUrl', '10.0.0'),
-            ('20260101090143_AddRecipeTypeToRecipe', '10.0.0'),
-            ('20260208065444_ConvertUnitToEnum', '10.0.0'),
-            ('20260208082456_AddStockUnit', '10.0.0')
-            ON CONFLICT (""MigrationId"") DO NOTHING;
-        ";
-        
-        using (var command = dbConnection.CreateCommand())
-        {
-            command.CommandText = markMigrationsSQL;
-            await command.ExecuteNonQueryAsync();
-            Console.WriteLine("Migrations history updated");
-        }
-        
-        dbConnection.Close();
-        
-        // Try to apply pending migrations
-        try
-        {
-            var migrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
-            if (migrations.Any())
-            {
-                Console.WriteLine($"Applying {migrations.Count} pending migration(s)");
-                await dbContext.Database.MigrateAsync();
-            }
-            else
-            {
-                Console.WriteLine("No pending migrations");
-            }
-        }
-        catch (Exception migrationEx)
-        {
-            Console.WriteLine($"Migration error (continuing): {migrationEx.Message}");
-        }
-        
-        // תיקון רשומות קיימות: עדכון Unit=0 ל-Unit=2 (גרם)
-        try
-        {
-            var updatedCount = await dbContext.Database.ExecuteSqlRawAsync(
-                "UPDATE \"RecipeIngredients\" SET \"Unit\" = 2 WHERE \"Unit\" = 0"
-            );
-            Console.WriteLine($"Fixed {updatedCount} RecipeIngredients with invalid Unit (0 -> 2 Gram)");
-        }
-        catch (Exception fixEx)
-        {
-            Console.WriteLine($"Error fixing RecipeIngredients Unit: {fixEx.Message}");
-        }
-    }
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<BakeryDbContext>();
+    var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
+    if (pending.Count > 0)
+        Console.WriteLine($"WARNING: {pending.Count} pending database migration(s): {string.Join(", ", pending)}. " +
+                          "Apply them with the reviewed migration procedure before using the app.");
+    else
+        Console.WriteLine("Database schema is up to date");
 }
 catch (Exception dbEx)
 {
-    Console.WriteLine($"Database initialization error: {dbEx.Message}");
+    Console.WriteLine($"Database check failed: {dbEx.GetType().Name}");
 }
 
 // Configure the HTTP request pipeline.

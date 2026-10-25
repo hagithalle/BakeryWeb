@@ -3,10 +3,13 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Server.Auth
 {
-    public sealed record ClerkTokenValidationResult(bool IsValid, string? ClerkUserId, string? FailureReason)
+    public sealed record ClerkTokenValidationResult(bool IsValid, string? ClerkUserId, string? FailureReason, bool KeysUnavailable = false)
     {
         public static ClerkTokenValidationResult Success(string clerkUserId) => new(true, clerkUserId, null);
         public static ClerkTokenValidationResult Failure(string reason) => new(false, null, reason);
+
+        /// <summary>Clerk's signing keys could not be downloaded, so the token could not be checked at all.</summary>
+        public static ClerkTokenValidationResult Unavailable(string reason) => new(false, null, reason, KeysUnavailable: true);
     }
 
     public interface IClerkTokenValidator
@@ -35,20 +38,25 @@ namespace Server.Auth
 
         public async Task<ClerkTokenValidationResult> ValidateAsync(string token, CancellationToken cancellationToken)
         {
-            if (!_settings.Enabled)
-                return ClerkTokenValidationResult.Failure("Clerk sign-in is not configured");
-
             if (string.IsNullOrWhiteSpace(token))
                 return ClerkTokenValidationResult.Failure("Token is empty");
 
-            var keys = await _keyProvider.GetSigningKeysAsync(forceRefresh: false, cancellationToken);
-            var result = await _handler.ValidateTokenAsync(token, CreateParameters(keys));
-
-            // Unknown signing key: Clerk may have rotated keys, so refresh once and retry.
-            if (!result.IsValid && result.Exception is SecurityTokenSignatureKeyNotFoundException)
+            TokenValidationResult result;
+            try
             {
-                keys = await _keyProvider.GetSigningKeysAsync(forceRefresh: true, cancellationToken);
+                var keys = await _keyProvider.GetSigningKeysAsync(forceRefresh: false, cancellationToken);
                 result = await _handler.ValidateTokenAsync(token, CreateParameters(keys));
+
+                // Unknown signing key: Clerk may have rotated keys, so refresh once and retry.
+                if (!result.IsValid && result.Exception is SecurityTokenSignatureKeyNotFoundException)
+                {
+                    keys = await _keyProvider.GetSigningKeysAsync(forceRefresh: true, cancellationToken);
+                    result = await _handler.ValidateTokenAsync(token, CreateParameters(keys));
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+            {
+                return ClerkTokenValidationResult.Unavailable($"Clerk signing keys unavailable: {ex.GetType().Name}");
             }
 
             if (!result.IsValid)

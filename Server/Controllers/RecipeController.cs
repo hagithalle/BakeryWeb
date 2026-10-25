@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Server.Models;
 using Server.Services;
+using Server.Validation;
 
 namespace Server.Controllers
 {
@@ -42,7 +43,11 @@ namespace Server.Controllers
                 Console.WriteLine("❌ Recipe is NULL!");
                 return BadRequest("Recipe is null");
             }
-            
+
+            var unitErrors = RecipeUnitValidator.Validate(recipe);
+            if (unitErrors.Count > 0)
+                return InvalidUnits(unitErrors);
+
             Console.WriteLine($"Name: {recipe.Name}");
             Console.WriteLine($"Ingredients: {recipe.Ingredients?.Count ?? 0}");
             Console.WriteLine($"Steps: {recipe.Steps?.Count ?? 0}");
@@ -88,6 +93,10 @@ namespace Server.Controllers
                 return BadRequest(new { errors = errors.Select(e => e.ErrorMessage).ToList() });
             }
             Console.WriteLine("   ✅ ModelState is valid");
+
+            var unitErrors = RecipeUnitValidator.Validate(recipe);
+            if (unitErrors.Count > 0)
+                return InvalidUnits(unitErrors);
 
             // [2] עדכון זמנים ונתונים
             Console.WriteLine("\n[2] 📦 Updated Fields:");
@@ -184,5 +193,12 @@ namespace Server.Controllers
             var ok = await _service.DeleteAsync(id);
             return ok ? NoContent() : NotFound();
         }
+
+        // "message" is what the recipes page shows in its save-error alert.
+        private BadRequestObjectResult InvalidUnits(IReadOnlyList<string> errors) => BadRequest(new
+        {
+            message = "יש לבחור יחידת מידה תקינה לכל רכיב במתכון",
+            errors,
+        });
     }
 }

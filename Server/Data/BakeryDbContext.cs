@@ -26,6 +26,19 @@ namespace Server.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Users: internal accounts. Credentials live in Clerk; ClerkId links the two.
+            modelBuilder.Entity<User>(user =>
+            {
+                user.HasKey(u => u.Id);
+                user.Property(u => u.Email).IsRequired();
+                user.Property(u => u.PasswordHash).IsRequired(); // legacy, unused for Clerk accounts
+                user.Property(u => u.Name).IsRequired().HasDefaultValue(string.Empty);
+                user.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
+                user.HasIndex(u => u.Email).IsUnique().HasDatabaseName("IX_Users_Email");
+                user.HasIndex(u => u.ClerkId).IsUnique().HasDatabaseName("IX_Users_ClerkId")
+                    .HasFilter("\"ClerkId\" IS NOT NULL");
+            });
+
             // Configure Ingredient table
             modelBuilder.Entity<Ingredient>()
                 .HasKey(i => i.Id);

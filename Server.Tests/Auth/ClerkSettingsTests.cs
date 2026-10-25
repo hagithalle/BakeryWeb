@@ -5,10 +5,13 @@ namespace Server.Tests.Auth
     public class ClerkSettingsTests
     {
         [Fact]
-        public void NoSettings_MeansDisabled()
+        public void NoSettings_Throw_BecauseClerkIsRequired()
         {
-            var settings = ClerkSettings.FromConfiguration(TestConfig.Build());
-            Assert.False(settings.Enabled);
+            var ex = Assert.Throws<InvalidOperationException>(() => ClerkSettings.FromConfiguration(TestConfig.Build()));
+
+            Assert.Contains(ClerkSettings.IssuerConfigKey, ex.Message);
+            Assert.Contains(ClerkSettings.SecretKeyConfigKey, ex.Message);
+            Assert.Contains(ClerkSettings.AuthorizedPartiesConfigKey, ex.Message);
         }
 
         [Fact]
@@ -51,7 +54,6 @@ namespace Server.Tests.Auth
                 (ClerkSettings.SecretKeyConfigKey, "sk_test_x"),
                 (ClerkSettings.AuthorizedPartiesConfigKey, " https://bakery.test.example/ , http://localhost:5173 ")));
 
-            Assert.True(settings.Enabled);
             Assert.Equal(TestConfig.ClerkIssuer, settings.Issuer);
             Assert.Equal(new Uri(TestConfig.ClerkIssuer + "/.well-known/jwks.json"), settings.JwksUri);
             Assert.True(settings.IsAuthorizedParty("https://bakery.test.example"));
@@ -65,7 +67,7 @@ namespace Server.Tests.Auth
         [InlineData("https://bakery.test.example.evil.example")]
         public void UnknownAuthorizedParty_IsRejected(string? azp)
         {
-            Assert.False(TestConfig.EnabledClerkSettings().IsAuthorizedParty(azp));
+            Assert.False(TestConfig.ValidClerkSettings().IsAuthorizedParty(azp));
         }
     }
 }

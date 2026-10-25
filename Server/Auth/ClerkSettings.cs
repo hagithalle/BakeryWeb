@@ -1,9 +1,8 @@
 namespace Server.Auth
 {
     /// <summary>
-    /// Configuration for verifying Clerk (Google sign-in) session tokens.
-    /// Clerk sign-in is optional: when none of the settings are present it is disabled and
-    /// /api/auth/clerk-sync returns 503. A partial configuration is treated as an error.
+    /// Configuration for Clerk, the only authentication provider (Google and email/password).
+    /// All three settings are required; the server refuses to start without them.
     /// </summary>
     public sealed class ClerkSettings
     {
@@ -11,40 +10,32 @@ namespace Server.Auth
         public const string SecretKeyConfigKey = "CLERK_SECRET_KEY";
         public const string AuthorizedPartiesConfigKey = "CLERK_AUTHORIZED_PARTIES";
 
-        public bool Enabled { get; }
-
         /// <summary>Clerk Frontend API URL, e.g. https://your-app.clerk.accounts.dev (no trailing slash).</summary>
-        public string Issuer { get; } = string.Empty;
+        public string Issuer { get; }
 
         /// <summary>Clerk Backend API secret key. Never log this value.</summary>
-        public string SecretKey { get; } = string.Empty;
+        public string SecretKey { get; }
 
         /// <summary>Frontend origins allowed in the token's "azp" claim.</summary>
-        public IReadOnlyCollection<string> AuthorizedParties { get; } = Array.Empty<string>();
+        public IReadOnlyCollection<string> AuthorizedParties { get; }
 
         public Uri JwksUri => new($"{Issuer}/.well-known/jwks.json");
 
-        private ClerkSettings() { }
-
         private ClerkSettings(string issuer, string secretKey, IReadOnlyCollection<string> authorizedParties)
         {
-            Enabled = true;
             Issuer = issuer;
             SecretKey = secretKey;
             AuthorizedParties = authorizedParties;
         }
 
-        public static ClerkSettings Disabled() => new();
-
+        /// <summary>
+        /// Reads and validates the Clerk settings. Error messages name settings but never include their values.
+        /// </summary>
         public static ClerkSettings FromConfiguration(IConfiguration configuration)
         {
             var issuer = configuration[IssuerConfigKey]?.Trim();
             var secretKey = configuration[SecretKeyConfigKey]?.Trim();
             var parties = configuration[AuthorizedPartiesConfigKey]?.Trim();
-
-            var values = new[] { issuer, secretKey, parties };
-            if (values.All(string.IsNullOrEmpty))
-                return Disabled();
 
             var missing = new List<string>();
             if (string.IsNullOrEmpty(issuer)) missing.Add(IssuerConfigKey);
@@ -52,7 +43,7 @@ namespace Server.Auth
             if (string.IsNullOrEmpty(parties)) missing.Add(AuthorizedPartiesConfigKey);
             if (missing.Count > 0)
                 throw new InvalidOperationException(
-                    $"Clerk sign-in is partially configured. Missing: {string.Join(", ", missing)}.");
+                    $"Clerk authentication is not configured. Missing: {string.Join(", ", missing)}.");
 
             return new ClerkSettings(NormalizeIssuer(issuer!), secretKey!, ParseAuthorizedParties(parties!));
         }

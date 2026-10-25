@@ -17,6 +17,7 @@ import RecipeDetailsPanel from "../Components/Recipes/RecipeDetailsPanel";
 import RecipeStartDialog from "../Components/Recipes/RecipeStartDialog";
 import ImportRecipeDialog from "../Components/Recipes/Import/ImportRecipeDialog.jsx";
 import { useLanguage } from "../context/LanguageContext";
+import { units as UNIT_OPTIONS } from "../constants/units";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import mapServerRecipeToForm, { mapImportedRecipeToForm } from "../utils/recipeMappers.js";
 
@@ -215,10 +216,26 @@ const handleBackToImport = () => {
           continue;
         }
 
+        // יחידת מידה: לא משכתבים בשקט ערך לא חוקי (למשל 0 ישן) לגרם
+        const rawUnit = ing.unit;
+        const numericUnit = Number(rawUnit);
+        let unit;
+        if (rawUnit === undefined || rawUnit === null || rawUnit === "") {
+          unit = 2; // שורה חדשה בלי יחידה: ברירת מחדל גרם
+        } else if (UNIT_OPTIONS.some((u) => u.value === numericUnit)) {
+          unit = numericUnit;
+        } else if (!isNaN(numericUnit)) {
+          // ערך מספרי לא חוקי (בד"כ 0 ממתכון ישן) - עוצרים את השמירה ומבקשים לבחור יחידה
+          alert(`לחומר הגלם "${ing.name}" אין יחידת מידה תקינה. יש לבחור יחידת מידה לפני השמירה.`);
+          return;
+        } else {
+          unit = 2; // יחידה טקסטואלית (ייבוא AI) - התנהגות קיימת, תטופל בענף יחידות המידה
+        }
+
         const finalIngredient = {
           IngredientId: found.id,
           Quantity: Number(ing.amount),
-          Unit: Number(ing.unit) || 2, // ברירת מחדל: גרם
+          Unit: unit,
         };
         ensuredIngredients.push(finalIngredient);
         console.log(

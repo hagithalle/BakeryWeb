@@ -16,7 +16,7 @@ namespace Server.Auth
 
     /// <summary>
     /// Reads user details from the Clerk Backend API. Session tokens don't contain the email by default,
-    /// and even when they do we need Clerk's verification status before linking accounts by email.
+    /// and even when they do we need Clerk's verification status before trusting it.
     /// </summary>
     public sealed class ClerkUserClient : IClerkUserClient
     {
@@ -33,9 +33,6 @@ namespace Server.Auth
 
         public async Task<ClerkUserProfile?> GetVerifiedPrimaryEmailAsync(string clerkUserId, CancellationToken cancellationToken)
         {
-            if (!_settings.Enabled)
-                throw new InvalidOperationException("Clerk sign-in is not configured.");
-
             using var request = new HttpRequestMessage(HttpMethod.Get, $"users/{Uri.EscapeDataString(clerkUserId)}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.SecretKey);
 

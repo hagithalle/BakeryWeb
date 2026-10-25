@@ -9,7 +9,6 @@ namespace Server.Tests.Auth
 {
     internal static class TestConfig
     {
-        public const string ValidJwtSecret = "unit-test-secret-that-is-long-enough-0123456789";
         public const string ClerkIssuer = "https://clerk.test.example";
         public const string AllowedOrigin = "https://bakery.test.example";
 
@@ -18,13 +17,10 @@ namespace Server.Tests.Auth
                 .AddInMemoryCollection(values.Select(v => new KeyValuePair<string, string?>(v.Key, v.Value)))
                 .Build();
 
-        public static ClerkSettings EnabledClerkSettings() => ClerkSettings.FromConfiguration(Build(
+        public static ClerkSettings ValidClerkSettings() => ClerkSettings.FromConfiguration(Build(
             (ClerkSettings.IssuerConfigKey, ClerkIssuer),
             (ClerkSettings.SecretKeyConfigKey, "sk_test_not_a_real_key"),
             (ClerkSettings.AuthorizedPartiesConfigKey, $"{AllowedOrigin},http://localhost:5173")));
-
-        public static JwtSettings JwtSettings() =>
-            Server.Auth.JwtSettings.FromConfiguration(Build((Server.Auth.JwtSettings.SecretConfigKey, ValidJwtSecret)));
     }
 
     /// <summary>A TimeProvider fixed at a given instant, for deterministic expiry tests.</summary>
