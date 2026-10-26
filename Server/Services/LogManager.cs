@@ -15,6 +15,8 @@ namespace BakeryWeb.Server.Services
 
     public class FileLogger : ILogger
     {
+        // One lock for the whole process: every FileLogger writes the same app.log file.
+        private static readonly object FileLock = new object();
         private readonly string _filePath;
         public FileLogger(string filePath)
         {
@@ -23,13 +25,17 @@ namespace BakeryWeb.Server.Services
         public void Log(LogEntry entry)
         {
             var logLine = $"[{entry.Timestamp:yyyy-MM-dd HH:mm:ss}] [{entry.Type}] [{entry.Source}.{entry.Function}] {entry.Message}";
-            File.AppendAllText(_filePath, logLine + Environment.NewLine);
+            lock (FileLock)
+            {
+                File.AppendAllText(_filePath, logLine + Environment.NewLine);
+            }
         }
     }
 
     public class LogManager
     {
         private readonly List<LogEntry> _logs = new List<LogEntry>();
+        private readonly object _lock = new object();
         private readonly List<ILogger> _loggers = new List<ILogger>();
 
         public LogManager(Microsoft.Extensions.Configuration.IConfiguration configuration)
@@ -66,10 +72,15 @@ namespace BakeryWeb.Server.Services
                 Message = message,
                 Timestamp = DateTime.Now
             };
-            _logs.Add(entry);
-            foreach (var logger in _loggers)
+            // LogManager is a singleton shared by concurrent requests: the list and the log file must not be
+            // written by two requests at once (that used to fail the request with "file in use").
+            lock (_lock)
             {
-                logger.Log(entry);
+                _logs.Add(entry);
+                foreach (var logger in _loggers)
+                {
+                    logger.Log(entry);
+                }
             }
         }
 
