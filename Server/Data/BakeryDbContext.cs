@@ -35,6 +35,7 @@ namespace Server.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<PackageItem> PackageItems { get; set; }
         public DbSet<ProductAdditionalPackaging> ProductAdditionalPackagings { get; set; }
+        public DbSet<BusinessSettings> BusinessSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -132,6 +133,21 @@ namespace Server.Data
                 .Property(p => p.ProductType)
                 .HasConversion<int>();
 
+            // null = legacy product whose stored price has not been confirmed (never backfilled)
+            modelBuilder.Entity<Product>()
+                .Property(p => p.PricingMode)
+                .HasConversion<int?>();
+
+            // One settings row per user; VatStatus stays empty until the user chooses it
+            modelBuilder.Entity<BusinessSettings>(settings =>
+            {
+                settings.HasKey(b => b.Id);
+                settings.Property(b => b.UserId).IsRequired();
+                settings.Property(b => b.VatStatus).HasConversion<int?>();
+                settings.HasIndex(b => b.UserId).IsUnique().HasDatabaseName("IX_BusinessSettings_UserId");
+                settings.HasOne<User>().WithMany().HasForeignKey(b => b.UserId).OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Recipe)
                 .WithMany()
@@ -197,6 +213,7 @@ namespace Server.Data
             ApplyOwnerFilter<LaborSettings>(modelBuilder);
             ApplyOwnerFilter<Recipe>(modelBuilder);
             ApplyOwnerFilter<Product>(modelBuilder);
+            ApplyOwnerFilter<BusinessSettings>(modelBuilder);
 
             modelBuilder.Entity<RecipeIngredient>().HasQueryFilter(x =>
                 IsUnscopedContext || (x.Recipe!.UserId != null && x.Recipe.UserId == CurrentUserId));

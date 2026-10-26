@@ -38,6 +38,7 @@ export async function createProductWithImage(product, imageFile) {
     Category: product.category,
     ProfitMarginPercent: product.profitMarginPercent,
     ManualSellingPrice: product.manualSellingPrice,
+    PricingMode: product.pricingMode,
     PackagingTimeMinutes: product.packagingTimeMinutes
   };
 

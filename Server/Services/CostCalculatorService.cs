@@ -409,6 +409,27 @@ namespace Server.Services
         public IReadOnlyList<CostWarning> Warnings { get; set; } = Array.Empty<CostWarning>();
     }
 
+    /// <summary>Cost-preview response: the cost breakdown plus the selling price, VAT and profit.</summary>
+    public class ProductCostPreview : ProductCostBreakdown
+    {
+        public ProductPricing? Pricing { get; set; }
+
+        public static ProductCostPreview From(ProductCostBreakdown c, ProductPricing pricing) => new()
+        {
+            RecipeIngredientsCost = c.RecipeIngredientsCost,
+            RecipeLaborCost = c.RecipeLaborCost,
+            RecipeOverheadCost = c.RecipeOverheadCost,
+            RecipeCost = c.RecipeCost,
+            PackagingCost = c.PackagingCost,
+            PackagingLaborCost = c.PackagingLaborCost,
+            PackagingOverheadCost = c.PackagingOverheadCost,
+            UnitConversionRate = c.UnitConversionRate,
+            TotalCost = c.TotalCost,
+            Warnings = c.Warnings,
+            Pricing = pricing,
+        };
+    }
+
     // מודל לתוצאות חישוב מוצר סופי
     public class ProductCostBreakdown
     {

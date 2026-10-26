@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Tabs, Tab, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import LaborSettingsPanel from "../Components/CostsManagement/LaborSettingsPanel";
+import BusinessSettingsPanel from "../Components/CostsManagement/BusinessSettingsPanel";
 import OverheadItemsPanel from "../Components/CostsManagement/OverheadItemsPanel";
 import FixedExpensesList from '../Components/FixedExpenses/FixedExpensesList';
 import FixedExpensesSummary from '../Components/FixedExpenses/FixedExpensesSummary';
@@ -163,7 +164,12 @@ export default function CostsManagementPage() {
 
       {/* תוכן */}
       <Box sx={{ mt: 3, flexGrow: 1, overflow: 'auto' }}>
-        {currentTab === 0 && <LaborSettingsPanel />}
+        {currentTab === 0 && (
+          <>
+            <BusinessSettingsPanel />
+            <LaborSettingsPanel />
+          </>
+        )}
         {currentTab === 1 && <FixedExpensesPage />}
       </Box>
     </Box>

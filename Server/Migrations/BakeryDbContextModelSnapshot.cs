@@ -22,6 +22,32 @@ namespace Server.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Server.Models.BusinessSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("DefaultMarkupPercent")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("VatStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_BusinessSettings_UserId");
+
+                    b.ToTable("BusinessSettings");
+                });
+
             modelBuilder.Entity("Server.Models.Ingredient", b =>
                 {
                     b.Property<int>("Id")
@@ -208,6 +234,9 @@ namespace Server.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int?>("PackagingTimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PricingMode")
                         .HasColumnType("integer");
 
                     b.Property<int>("ProductType")
@@ -439,6 +468,15 @@ namespace Server.Migrations
                         .HasDatabaseName("IX_Users_Email");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Server.Models.BusinessSettings", b =>
+                {
+                    b.HasOne("Server.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Server.Models.PackageItem", b =>

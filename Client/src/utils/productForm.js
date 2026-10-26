@@ -105,6 +105,9 @@ export const buildInitialValues = (product) => {
     packagingTimeMinutes: getField(product, "packagingTimeMinutes", "PackagingTimeMinutes") || 0,
     profitMarginPercent: marginToPercent(getField(product, "profitMarginPercent", "ProfitMarginPercent")),
     manualSellingPrice: getField(product, "manualSellingPrice", "ManualSellingPrice") || "",
+    // null = מחיר ישן שלא אושר (נשמר כך עד אישור מפורש)
+    pricingMode: getField(product, "pricingMode", "PricingMode") ?? null,
+    pricing: getField(product, "pricing", "Pricing") ?? null,
     imageUrl: getField(product, "imageUrl", "ImageUrl") || "",
   };
 };
@@ -152,6 +155,8 @@ export const buildUpdatePayload = (productData, existingProduct) => {
     imageUrl: existingProduct.imageUrl || null,
     profitMarginPercent: productData.profitMarginPercent,
     manualSellingPrice: productData.manualSellingPrice,
+    // בלי מצב תמחור השרת משאיר את המצב הקיים (מחיר ישן נשאר "לא אושר")
+    pricingMode: productData.pricingMode ?? null,
     packageItems,
     additionalPackaging,
   };

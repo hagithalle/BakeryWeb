@@ -71,6 +71,11 @@ builder.Services.AddScoped<IPackagingService, PackagingService>();
 builder.Services.AddScoped<IOverheadItemService, OverheadItemService>();
 builder.Services.AddScoped<ILaborSettingsService, LaborSettingsService>();
 builder.Services.AddScoped<CostCalculatorService>();
+// Pricing: VAT rates by effective date from configuration (checked at startup), the user's business settings
+builder.Services.AddSingleton(Server.Services.Pricing.VatRateTable.FromConfiguration(builder.Configuration));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<Server.Services.Pricing.BusinessSettingsService>();
+builder.Services.AddScoped<Server.Services.Pricing.PricingService>();
 builder.Services.AddScoped<Server.Validation.ReferenceValidator>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IProductService, ProductService>();

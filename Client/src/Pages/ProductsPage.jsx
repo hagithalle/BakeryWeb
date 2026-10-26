@@ -48,6 +48,7 @@ import {
   buildUpdatePayload,
 } from "../utils/productForm";
 import { resolveImageUrl } from "../utils/imageUrl";
+import { formatMoneyOrDash } from "../utils/pricingForm";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 
@@ -232,13 +233,14 @@ export default function ProductsPage() {
         );
         const totalCost = toNumber(getField(p, "totalCost", "TotalCost"));
 
-        const profitPercent =
-          toNumber(
-            getField(p, "profitMarginPercent", "ProfitMarginPercent")
-          ) * 100;
-        const sellingWithVat = toNumber(
-          getField(p, "sellingPriceWithVAT", "SellingPriceWithVAT")
-        );
+        // מחיר ורווח כפי שחושבו בשרת. מחיר ישן שלא אושר מוצג כמו קודם ומסומן; רווח לא ידוע מוצג כ"—"
+        const pricing = getField(p, "pricing", "Pricing");
+        const markupOnCost = pricing?.markupOnCost ?? pricing?.MarkupOnCost;
+        const profitPercent = markupOnCost === null || markupOnCost === undefined ? null : markupOnCost * 100;
+        const sellingWithVat = pricing
+          ? pricing.finalPrice ?? pricing.FinalPrice ?? null
+          : getField(p, "sellingPriceWithVAT", "SellingPriceWithVAT") ?? null;
+        const priceUnconfirmed = !!(pricing?.isLegacy ?? pricing?.IsLegacy);
 
         return {
           id: getField(p, "id", "Id"),
@@ -254,6 +256,7 @@ export default function ProductsPage() {
           totalCost,
           profitPercent,
           sellingPrice: sellingWithVat,
+          priceUnconfirmed,
           raw: p,
         };
       });
@@ -332,6 +335,7 @@ export default function ProductsPage() {
                   packagingCost,
                   laborCost,
                   profitPercent,
+                  priceUnconfirmed,
                   raw: product,
                 } = item;
 
@@ -340,7 +344,7 @@ export default function ProductsPage() {
                 const productImageUrl = resolveImageUrl(
                   product.imageUrl ?? product.ImageUrl
                 );
-                const productPrice = sellingPrice || 0;
+                const productPrice = sellingPrice;
                 const isExpanded =
                   detailsProduct?.id === productId ||
                   detailsProduct?.Id === productId;
@@ -617,8 +621,13 @@ export default function ProductsPage() {
                                 fontSize: "2.5rem",
                               }}
                             >
-                              {formatCurrency(productPrice)}
+                              {formatMoneyOrDash(productPrice)}
                             </Typography>
+                            {priceUnconfirmed && (
+                              <Typography variant="caption" sx={{ display: "block", textAlign: "center", color: "#B26A00" }}>
+                                מחיר ישן – יש לאשר בעריכת המוצר
+                              </Typography>
+                            )}
                           </Box>
 
                           {/* רווח */}
@@ -647,7 +656,7 @@ export default function ProductsPage() {
                                 fontWeight: 700,
                               }}
                             >
-                              {profitPercent.toFixed(1)}%
+                              {profitPercent === null ? "—" : `${profitPercent.toFixed(1)}%`}
                               <Box
                                 component="span"
                                 sx={{ fontSize: "1rem" }}
@@ -730,7 +739,8 @@ export default function ProductsPage() {
                               fontSize: "1.1rem",
                             }}
                           >
-                            {formatCurrency(productPrice)}
+                            {formatMoneyOrDash(productPrice)}
+                            {priceUnconfirmed && " · לא אושר"}
                           </Typography>
                         </Box>
 

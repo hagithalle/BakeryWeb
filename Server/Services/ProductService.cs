@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Server.Controllers;
 using Server.Data;
 using Server.Models;
+using Server.Services.Pricing;
 using Server.Validation;
 
 namespace Server.Services
@@ -15,16 +16,16 @@ namespace Server.Services
         private readonly CostCalculatorService _costCalculator;
         private readonly IConfiguration _configuration;
         private readonly ReferenceValidator _references;
-        private readonly decimal _vatRate;
+        private readonly PricingService _pricing;
         private readonly string _uploadPath;
 
-        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager, ReferenceValidator references)
+        public ProductService(BakeryDbContext db, CostCalculatorService costCalculator, IConfiguration configuration, LogManager logManager, ReferenceValidator references, PricingService pricing)
         {
             _references = references;
             _db = db;
             _costCalculator = costCalculator;
             _configuration = configuration;
-            _vatRate = configuration.GetValue<decimal>("PricingSettings:VatRate", 0.17m);
+            _pricing = pricing;
             _uploadPath = configuration.GetValue<string>("FileUpload:Path") ?? "Uploads/Products";
             _logManager = logManager;
         }
@@ -36,6 +37,8 @@ namespace Server.Services
                 ? request.PackageItems ?? new List<PackageItemRequest>()
                 : new List<PackageItemRequest>();
             var additionalPackaging = request.AdditionalPackaging ?? new List<AdditionalPackagingRequest>();
+            var pricingMode = (PricingMode?)request.PricingMode;
+            PricingService.Validate(pricingMode, request.ManualSellingPrice, request.ProfitMarginPercent);
 
             // 1. Every referenced recipe / packaging must belong to the current user - checked before anything is
             //    written to the database or to disk.
@@ -58,6 +61,7 @@ namespace Server.Services
                 PackagingTimeMinutes = request.PackagingTimeMinutes,
                 ProfitMarginPercent = request.ProfitMarginPercent,
                 ManualSellingPrice = request.ManualSellingPrice,
+                PricingMode = pricingMode,
                 PackageItems = packageItems
                     .Select(i => new PackageItem { RecipeId = i.RecipeId, Quantity = i.Quantity })
                     .ToList(),
@@ -137,8 +141,7 @@ namespace Server.Services
             // חישוב עלויות ומחיר מכירה לכל מוצר (המחשבון טוען בעצמו מתכונים, מתכוני בסיס ואריזות)
             foreach (var product in products)
             {
-                _costCalculator.ApplyProductCosts(product);
-                CalculateSellingPrice(product);
+                _pricing.Apply(product, _costCalculator.ApplyProductCosts(product));
             }
 
             return products;
@@ -161,8 +164,7 @@ namespace Server.Services
 
             if (product != null)
             {
-                _costCalculator.ApplyProductCosts(product);
-                CalculateSellingPrice(product);
+                _pricing.Apply(product, _costCalculator.ApplyProductCosts(product));
             }
 
             return product;
@@ -183,6 +185,7 @@ namespace Server.Services
                 product.PackagingId,
                 (product.PackageItems ?? new List<PackageItem>()).Select(i => i.RecipeId).ToList(),
                 (product.AdditionalPackaging ?? new List<ProductAdditionalPackaging>()).Select(i => i.PackagingId).ToList());
+            PricingService.Validate(product.PricingMode ?? existing.PricingMode, product.ManualSellingPrice, product.ProfitMarginPercent);
 
             // עדכון שדות בסיסיים
             existing.Name = product.Name;
@@ -197,6 +200,10 @@ namespace Server.Services
             existing.Category = product.Category;
             existing.ProfitMarginPercent = product.ProfitMarginPercent;
             existing.ManualSellingPrice = product.ManualSellingPrice;
+            // A request without a mode (older clients, or a legacy product saved without confirming its price)
+            // keeps the current mode: a legacy price is only confirmed by explicitly choosing a mode.
+            if (product.PricingMode != null)
+                existing.PricingMode = product.PricingMode;
 
             // עדכון PackageItems אם יש
             if (product.PackageItems != null)
@@ -255,7 +262,7 @@ namespace Server.Services
             return true;
         }
 
-        public ProductCostBreakdown PreviewCost(ProductCostPreviewRequest request)
+        public ProductCostPreview PreviewCost(ProductCostPreviewRequest request)
         {
             // A product object that is never added to the context: only used to calculate. Ids the current user
             // does not own are treated like missing ones (the calculator only sees the user's own rows).
@@ -273,27 +280,14 @@ namespace Server.Services
                     : new List<PackageItem>(),
                 AdditionalPackaging = (request.AdditionalPackaging ?? new List<AdditionalPackagingRequest>())
                     .Select(i => new ProductAdditionalPackaging { PackagingId = i.PackagingId, Quantity = i.Quantity }).ToList(),
+                PricingMode = (PricingMode?)request.PricingMode,
+                ManualSellingPrice = request.ManualSellingPrice,
+                ProfitMarginPercent = request.ProfitMarginPercent,
             };
-            return _costCalculator.CalculateProductCost(draft);
-        }
-
-        // חישוב מחיר מכירה (עם רווח ומע"מ)
-        private void CalculateSellingPrice(Product product)
-        {
-            // אם הוגדר מחיר ידני, השתמש בו
-            if (product.ManualSellingPrice.HasValue && product.ManualSellingPrice.Value > 0)
-            {
-                product.SellingPriceBeforeVAT = product.ManualSellingPrice.Value;
-                product.SellingPriceWithVAT = product.ManualSellingPrice.Value * (1 + _vatRate);
-                product.ProfitAmount = product.ManualSellingPrice.Value - product.TotalCost;
-            }
-            else
-            {
-                // חישוב אוטומטי לפי אחוז רווח
-                product.ProfitAmount = product.TotalCost * product.ProfitMarginPercent;
-                product.SellingPriceBeforeVAT = product.TotalCost + product.ProfitAmount;
-                product.SellingPriceWithVAT = product.SellingPriceBeforeVAT * (1 + _vatRate);
-            }
+            if (draft.PricingMode is PricingMode mode && !Enum.IsDefined(mode))
+                throw new PricingValidationException("אופן התמחור לא תקין");
+            var costs = _costCalculator.CalculateProductCost(draft);
+            return ProductCostPreview.From(costs, _pricing.Price(draft, costs));
         }
 
         private decimal CalculateAutomaticSellingPrice(Product product)

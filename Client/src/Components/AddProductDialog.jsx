@@ -39,9 +39,29 @@ import {
   formatMoney,
   toSavedPackageItems,
   toSavedPackagingItems,
-  percentToMargin,
 } from "../utils/productForm";
 import { resolveImageUrl } from "../utils/imageUrl";
+import {
+  PricingMode,
+  initialPricingState,
+  confirmLegacy,
+  pricingFields,
+  pricingIsValid,
+  formatMoneyOrDash,
+  formatPercentOrDash,
+  vatSummary,
+} from "../utils/pricingForm";
+
+// אחד משלושת הערכים העיקריים בתמחור
+function PricingFigure({ label, value, note = null, negative = false }) {
+  return (
+    <Box sx={{ bgcolor: '#fff', p: 1.5, borderRadius: 2, border: '1px solid #EADBC8', textAlign: 'center' }}>
+      <Typography variant="caption" sx={{ color: '#7B5B4B', fontWeight: 600 }}>{label}</Typography>
+      <Typography sx={{ fontSize: '1.25rem', fontWeight: 800, color: negative ? '#C62828' : '#3E2723' }}>{value}</Typography>
+      {note && <Typography variant="caption" sx={{ color: '#777' }}>{note}</Typography>}
+    </Box>
+  );
+}
 
 /**
  * דיאלוג להוספת מוצר חדש
@@ -111,9 +131,8 @@ export default function AddProductDialog({
   const [editingPackagingQuantity, setEditingPackagingQuantity] = useState("");
   
   // ========== מחירים ==========
-  const [profitMarginPercent, setProfitMarginPercent] = useState(15);
-  const [priceType, setPriceType] = useState("withVAT"); // withVAT, withoutVAT, manual
-  const [manualSellingPrice, setManualSellingPrice] = useState("");
+  // תמחור: מצב (ידני / לפי אחוז / מומלץ; null = מחיר ישן שלא אושר), מחיר ידני ואחוז תוספת של המוצר
+  const [pricingState, setPricingState] = useState(() => initialPricingState(null));
   
   // ========== תמונה ==========
   const [imageFile, setImageFile] = useState(null);
@@ -148,9 +167,7 @@ export default function AddProductDialog({
       setShowCustomCategory(initialValues.category === "אחר" || false);
       setAdditionalPackaging(initialValues.additionalPackaging || []);
       setPackagingTimeMinutes(initialValues.packagingTimeMinutes || 0);
-      setProfitMarginPercent(initialValues.profitMarginPercent || 15);
-      setPriceType(initialValues.manualSellingPrice ? "manual" : "withVAT");
-      setManualSellingPrice(initialValues.manualSellingPrice || "");
+      setPricingState(initialPricingState(initialValues));
       setExistingImageUrl(initialValues.imageUrl || "");
       setImagePreview(null);
       setImageFile(null);
@@ -178,9 +195,7 @@ export default function AddProductDialog({
     setPackagingAddRows([]);
     setEditingPackagingIdx(null);
     setPackagingTimeMinutes(0);
-    setProfitMarginPercent(15);
-    setPriceType("withVAT");
-    setManualSellingPrice("");
+    setPricingState(initialPricingState(null));
     setImageFile(null);
     setImagePreview(null);
     setExistingImageUrl("");
@@ -380,8 +395,9 @@ export default function AddProductDialog({
       packageItems: items,
       additionalPackaging: extras,
       packagingTimeMinutes: minutes,
+      ...pricingFields(pricingState),
     };
-  }, [productType, selectedRecipeId, recipeUnits, packageItems, additionalPackaging, packagingTimeMinutes]);
+  }, [productType, selectedRecipeId, recipeUnits, packageItems, additionalPackaging, packagingTimeMinutes, pricingState]);
 
   // התוצאה נשמרת יחד עם הטיוטה שעבורה חושבה, כך שתוצאה ישנה לעולם לא מוצגת
   const draftKey = costDraft ? JSON.stringify(costDraft) : null;
@@ -412,24 +428,24 @@ export default function AddProductDialog({
     const packagingOverheadCost = ready ? num(costPreview.packagingOverheadCost) : 0;
     const totalCost = ready ? num(costPreview.totalCost) : 0;
 
-    // התמחור עצמו (רווח ומע"מ) לא השתנה בשלב הזה – יעבור לשרת בשלב A2
-    const profitAmount = totalCost * (profitMarginPercent / 100);
-    const sellingPriceBeforeVAT = totalCost + profitAmount;
-    const sellingPriceWithVAT = sellingPriceBeforeVAT * 1.17;
-
     return {
       baseCost,
       packagingLaborCost,
       packagingOverheadCost,
       totalCost,
-      profitAmount,
-      sellingPriceBeforeVAT,
-      sellingPriceWithVAT,
       hasItems, // אם יש פריטים לחישוב או לא
       ready,
       warnings: ready ? costPreview.warnings || [] : [],
+      // מחיר, מע"מ ורווח – מחושבים בשרת בלבד
+      pricing: ready ? costPreview.pricing || null : null,
     };
-  }, [costDraft, costPreview, profitMarginPercent]);
+  }, [costDraft, costPreview]);
+
+  const pricing = calculatedPrices.pricing;
+  const legacyReview = pricingState.mode === null ? pricing?.legacy ?? null : null;
+  const pricingIssues = (pricing?.issues || []).filter(
+    (issue) => !["VatStatusNotSet", "LegacyPriceNotConfirmed"].includes(issue.code)
+  );
 
   // ========== בדיקת תקינות ==========
   const isValid = useMemo(() => {
@@ -448,8 +464,8 @@ export default function AddProductDialog({
     if (!category) return false;
     if (showCustomCategory && !customCategory.trim()) return false;
     
-    // מחיר ידני
-    if (priceType === "manual" && (!manualSellingPrice || parseFloat(manualSellingPrice) <= 0)) return false;
+    // תמחור (מחיר ידני חיובי, אחוז תוספת תקין)
+    if (!pricingIsValid(pricingState)) return false;
     
     return true;
   }, [
@@ -460,8 +476,7 @@ export default function AddProductDialog({
     category,
     showCustomCategory,
     customCategory,
-    priceType,
-    manualSellingPrice
+    pricingState
   ]);
 
   // ========== שמירה ==========
@@ -470,24 +485,12 @@ export default function AddProductDialog({
     
     const finalCategory = showCustomCategory ? customCategory : category;
     
-    // חישוב המחיר הסופי בהתאם לבחירה
-    let sellingPrice;
-    if (priceType === "manual") {
-      sellingPrice = parseFloat(manualSellingPrice);
-    } else if (priceType === "withVAT") {
-      sellingPrice = calculatedPrices.sellingPriceWithVAT;
-    } else {
-      sellingPrice = calculatedPrices.sellingPriceBeforeVAT;
-    }
-    
     const productData = {
       name: productName,
       productType,
       description,
       category: finalCategory,
-      profitMarginPercent: percentToMargin(profitMarginPercent),
-      manualSellingPrice: sellingPrice,
-      priceType: priceType,
+      ...pricingFields(pricingState),
       packagingTimeMinutes: parseInt(packagingTimeMinutes) || 0,
       imageFile: imageFile  // נוסיף את התמונה
     };
@@ -1221,22 +1224,150 @@ export default function AddProductDialog({
 
         <Divider />
 
-        {/* ========== תמחור ========== */}
+        {/* ========== תמחור (כל הסכומים מחושבים בשרת) ========== */}
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: '#7B5B4B' }}>
             תמחור
           </Typography>
 
-          {/* מחיר עלות (תצוגה בלבד - יחושב בשרת) */}
-          <Box sx={{ bgcolor: '#FFF3E0', p: 2, borderRadius: 2, mb: 2 }}>
-            <Typography variant="body2" sx={{ color: '#666', mb: 2, fontWeight: 600 }}>
-              💰 פירוט עלויות:
-            </Typography>
-            {calculatedPrices.hasItems && !calculatedPrices.ready ? (
-              <Typography variant="body2" sx={{ color: costPreviewFailed ? '#C62828' : '#999' }}>
-                {costPreviewFailed ? 'לא ניתן לחשב את העלות כרגע' : 'מחשב עלויות…'}
+          {pricing?.issues?.some(issue => issue.code === "VatStatusNotSet") && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              לא נבחר סטטוס מע"מ לעסק, ולכן לא ניתן לחשב מחיר מומלץ ורווח.
+              יש לבחור "עוסק פטור" או "עוסק מורשה" בעמוד ניהול עלויות.
+            </Alert>
+          )}
+
+          {/* מחיר ישן שלא אושר: שום דבר לא משתנה עד שהבעלים בוחרת במפורש */}
+          {legacyReview && (
+            <Box sx={{ bgcolor: '#FFF8E1', p: 2, borderRadius: 2, mb: 2, borderRight: '4px solid #F9A825' }}>
+              <Typography sx={{ fontWeight: 700, color: '#5D4037', mb: 0.5 }}>המחיר של מוצר זה עדיין לא אושר</Typography>
+              <Typography variant="body2" sx={{ color: '#5D4037' }}>
+                המחיר נשמר לפני שהוגדר אם הוא כולל מע"מ. כרגע מוצג {formatMoneyOrDash(legacyReview.displayedPrice)}
+                {legacyReview.storedPrice != null && <> (הערך השמור: {formatMoneyOrDash(legacyReview.storedPrice)})</>}.
+                כמה הלקוח משלם בפועל?
               </Typography>
-            ) : calculatedPrices.hasItems ? (
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
+                {legacyReview.finalIfStoredIsFinal != null && (
+                  <Button variant="outlined" onClick={() => setPricingState(state => confirmLegacy(state, "stored", legacyReview))}>
+                    הלקוח משלם {formatMoneyOrDash(legacyReview.finalIfStoredIsFinal)}
+                  </Button>
+                )}
+                {legacyReview.finalIfStoredExcludesVat != null && (
+                  <Button variant="outlined" onClick={() => setPricingState(state => confirmLegacy(state, "displayed", legacyReview))}>
+                    הלקוח משלם {formatMoneyOrDash(legacyReview.finalIfStoredExcludesVat)}
+                  </Button>
+                )}
+                <Button variant="text" onClick={() => setPricingState(state => confirmLegacy(state, "other", legacyReview))}>
+                  מחיר אחר
+                </Button>
+              </Box>
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6D4C41' }}>
+                עד לבחירה, שמירת המוצר לא משנה את המחיר.
+              </Typography>
+            </Box>
+          )}
+
+          {/* אופן קביעת המחיר */}
+          {pricingState.mode !== null && (
+            <>
+              <FormControl component="fieldset" sx={{ mb: 1 }}>
+                <RadioGroup
+                  row
+                  value={String(pricingState.mode)}
+                  onChange={e => setPricingState(state => ({ ...state, mode: Number(e.target.value) }))}
+                >
+                  <FormControlLabel value={String(PricingMode.Recommended)} control={<Radio />} label="מחיר מומלץ" />
+                  <FormControlLabel value={String(PricingMode.Percentage)} control={<Radio />} label="לפי אחוז תוספת" />
+                  <FormControlLabel value={String(PricingMode.Manual)} control={<Radio />} label="מחיר ידני" />
+                </RadioGroup>
+              </FormControl>
+
+              {pricingState.mode === PricingMode.Manual && (
+                <TextField
+                  label="מחיר סופי ללקוח"
+                  type="number"
+                  value={pricingState.manualPrice}
+                  onChange={e => setPricingState(state => ({ ...state, manualPrice: e.target.value }))}
+                  fullWidth
+                  required
+                  helperText="הסכום שהלקוח משלם בפועל"
+                  sx={{ bgcolor: '#fff', borderRadius: 2, mb: 1 }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">₪</InputAdornment>,
+                    inputProps: { min: 0, step: 0.01 }
+                  }}
+                />
+              )}
+              {pricingState.mode === PricingMode.Percentage && (
+                <TextField
+                  label="תוספת על העלות"
+                  type="number"
+                  value={pricingState.productMarkupPercent}
+                  onChange={e => setPricingState(state => ({ ...state, productMarkupPercent: e.target.value }))}
+                  fullWidth
+                  helperText="מחיר = עלות × (1 + התוספת), ועוד מע״מ לעוסק מורשה"
+                  sx={{ bgcolor: '#fff', borderRadius: 2, mb: 1 }}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    inputProps: { min: 0, max: 1000, step: 0.5 }
+                  }}
+                />
+              )}
+              {pricingState.mode === PricingMode.Recommended && (
+                <Typography variant="body2" sx={{ color: '#6D4C41', mb: 1 }}>
+                  עלות × (1 + {formatPercentOrDash(pricing?.appliedMarkup)} תוספת), מעוגל לשקל שלם.
+                  את אחוז התוספת משנים בהגדרות העסק.
+                </Typography>
+              )}
+            </>
+          )}
+
+          {/* שלושת הערכים העיקריים */}
+          {!calculatedPrices.hasItems ? (
+            <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic', mt: 1 }}>
+              {productType === 'single' ? 'בחרי מתכון כדי לראות עלות ומחיר' : 'הוסיפי מוצרים למארז כדי לראות עלות ומחיר'}
+            </Typography>
+          ) : !calculatedPrices.ready ? (
+            <Typography variant="body2" sx={{ color: costPreviewFailed ? '#C62828' : '#999', mt: 1 }}>
+              {costPreviewFailed ? 'לא ניתן לחשב כרגע' : 'מחשב…'}
+            </Typography>
+          ) : (
+            <>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5, mt: 1 }}>
+                <PricingFigure label="עלות ייצור" value={formatMoneyOrDash(pricing?.productionCost)} />
+                <PricingFigure
+                  label={legacyReview ? "מחיר מוצג (לא אושר)" : "מחיר סופי ללקוח"}
+                  value={formatMoneyOrDash(pricing?.finalPrice)}
+                  note={pricing?.roundedToWholeShekel ? "מעוגל לשקל שלם" : null}
+                />
+                <PricingFigure
+                  label="רווח צפוי"
+                  value={formatMoneyOrDash(pricing?.profit)}
+                  note={pricing?.profit != null
+                    ? `${formatPercentOrDash(pricing.markupOnCost)} על העלות · ${formatPercentOrDash(pricing.marginOnRevenue)} מההכנסה`
+                    : null}
+                  negative={pricing?.profit != null && pricing.profit < 0}
+                />
+              </Box>
+              {vatSummary(pricing) && (
+                <Typography variant="body2" sx={{ mt: 1, color: '#5D4037' }}>{vatSummary(pricing)}</Typography>
+              )}
+              {pricingIssues.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  {pricingIssues.map(issue => (
+                    <Typography key={issue.code} variant="caption" sx={{ display: 'block', color: '#6D4C41' }}>• {issue.message}</Typography>
+                  ))}
+                </Box>
+              )}
+            </>
+          )}
+
+          {/* פירוט עלות הייצור (מהשרת) */}
+          {calculatedPrices.ready && (
+            <Box sx={{ bgcolor: '#FFF3E0', p: 2, borderRadius: 2, mt: 2 }}>
+              <Typography variant="body2" sx={{ color: '#666', mb: 2, fontWeight: 600 }}>
+                פירוט עלות הייצור:
+              </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {/* עלות בסיסית */}
                 <Box sx={{ bgcolor: '#fff', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #C98929' }}>
@@ -1278,113 +1409,8 @@ export default function AddProductDialog({
                     🔢 סה"כ עלות מוצר: ₪{calculatedPrices.totalCost.toFixed(2)}
                   </Typography>
                 </Box>
-
-                {/* תמחור סופי */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                  <Typography variant="body2">
-                    <strong>רווח ({profitMarginPercent}%):</strong> ₪{calculatedPrices.profitAmount.toFixed(2)}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>מחיר בלי מע"מ:</strong> ₪{calculatedPrices.sellingPriceBeforeVAT.toFixed(2)}
-                  </Typography>
-                </Box>
-                <Box sx={{ bgcolor: '#D7CCC8', p: 1, borderRadius: 1, textAlign: 'center' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#3E2723' }}>
-                    💵 מחיר מכירה סופי (עם מע"מ): ₪{calculatedPrices.sellingPriceWithVAT.toFixed(2)}
-                  </Typography>
-                </Box>
               </Box>
-            ) : (
-              <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
-                {productType === 'single' 
-                  ? '← בחר מתכון כדי לראות חישוב עלויות' 
-                  : '← הוסף מוצרים/אריזה כדי לראות חישוב עלויות'}
-              </Typography>
-            )}
-          </Box>
-
-          {/* אחוז רווח */}
-          <TextField
-            label="אחוז רווח מומלץ (%)"
-            type="number"
-            value={profitMarginPercent}
-            onChange={e => setProfitMarginPercent(Math.max(0, parseFloat(e.target.value) || 0))}
-            fullWidth
-            sx={{ bgcolor: '#fff', borderRadius: 2, mb: 2 }}
-            InputProps={{
-              inputProps: { min: 0, step: 0.5 }
-            }}
-          />
-
-          {/* בחירת סוג מחיר */}
-          <FormControl component="fieldset" sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#7B5B4B', mb: 1 }}>
-              בחר סוג מחיר
-            </Typography>
-            <RadioGroup
-              value={priceType}
-              onChange={e => setPriceType(e.target.value)}
-              sx={{ ml: 1 }}
-            >
-              <FormControlLabel
-                value="withVAT"
-                control={
-                  <Radio
-                    sx={{
-                      color: '#C98929',
-                      '&.Mui-checked': {
-                        color: '#C98929',
-                      }
-                    }}
-                  />
-                }
-                label={`מחיר עם מע"מ (מומלץ): ₪${calculatedPrices.sellingPriceWithVAT?.toFixed(2) || '0.00'}`}
-              />
-              <FormControlLabel
-                value="withoutVAT"
-                control={
-                  <Radio
-                    sx={{
-                      color: '#C98929',
-                      '&.Mui-checked': {
-                        color: '#C98929',
-                      }
-                    }}
-                  />
-                }
-                label={`מחיר בלי מע"מ: ₪${calculatedPrices.sellingPriceBeforeVAT?.toFixed(2) || '0.00'}`}
-              />
-              <FormControlLabel
-                value="manual"
-                control={
-                  <Radio
-                    sx={{
-                      color: '#C98929',
-                      '&.Mui-checked': {
-                        color: '#C98929',
-                      }
-                    }}
-                  />
-                }
-                label="קבע מחיר ידני"
-              />
-            </RadioGroup>
-          </FormControl>
-
-          {priceType === "manual" && (
-            <TextField
-              label='מחיר מכירה ידני (כולל מע"מ)'
-              type="number"
-              value={manualSellingPrice}
-              onChange={e => setManualSellingPrice(e.target.value)}
-              fullWidth
-              required
-              sx={{ bgcolor: '#fff', borderRadius: 2 }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">₪</InputAdornment>,
-                inputProps: { min: 0, step: 0.01 }
-              }}
-            />
+            </Box>
           )}
         </Box>
         </Box>

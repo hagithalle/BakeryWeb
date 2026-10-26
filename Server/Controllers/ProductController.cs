@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Server.Models;
 using Server.Services;
+using Server.Services.Pricing;
 using Server.Validation;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,6 +59,10 @@ namespace Server.Controllers
             {
                 return InvalidReferences(ex);
             }
+            catch (PricingValidationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 var detail = ex.InnerException?.Message ?? ex.Message;
@@ -89,6 +94,10 @@ namespace Server.Controllers
             {
                 return InvalidReferences(ex);
             }
+            catch (PricingValidationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 var detail = ex.InnerException?.Message ?? ex.Message;
@@ -110,7 +119,14 @@ namespace Server.Controllers
         [HttpPost("cost-preview")]
         public IActionResult CostPreview([FromBody] ProductCostPreviewRequest request)
         {
-            return Ok(_service.PreviewCost(request));
+            try
+            {
+                return Ok(_service.PreviewCost(request));
+            }
+            catch (PricingValidationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("{id}/recalculate-price")]
@@ -141,6 +157,8 @@ namespace Server.Controllers
         public string? Category { get; set; }
         public decimal ProfitMarginPercent { get; set; }
         public decimal? ManualSellingPrice { get; set; }
+        // 1 = ידני (מחיר סופי), 2 = לפי אחוז של המוצר, 3 = מומלץ; ריק = התנהגות קודמת (לקוחות ישנים)
+        public int? PricingMode { get; set; }
 
         // עבור Single type
         public int? RecipeId { get; set; }
@@ -171,6 +189,11 @@ namespace Server.Controllers
         public int? PackagingTimeMinutes { get; set; }
         public List<PackageItemRequest>? PackageItems { get; set; }
         public List<AdditionalPackagingRequest>? AdditionalPackaging { get; set; }
+
+        // תמחור (אופציונלי): אותה משמעות כמו בשמירת מוצר
+        public int? PricingMode { get; set; }
+        public decimal? ManualSellingPrice { get; set; }
+        public decimal ProfitMarginPercent { get; set; }
     }
 
     public class PackageItemRequest

@@ -50,7 +50,12 @@ namespace Server.Models
         // אחוז רווח רצוי (0.15 = 15%)
         public decimal ProfitMarginPercent { get; set; } = 0;
 
+        // מחיר שהוזן ידנית. במצב Manual זהו הסכום הסופי שהלקוח משלם.
+        // במוצר ישן (PricingMode ריק) משמעותו לא אושרה - הוא נשמר כמו שהוא עד שהבעלים מאשרת.
         public decimal? ManualSellingPrice { get; set; }
+
+        // אופן קביעת המחיר; ריק = מוצר ישן שהמחיר שלו עדיין לא אושר
+        public PricingMode? PricingMode { get; set; }
 
         public int? UserId { get; set; }
 
@@ -76,14 +81,19 @@ namespace Server.Models
         [NotMapped]
         public decimal TotalCost { get; set; }
 
+        // שדות תאימות ללקוחות קיימים (null כשלא ניתן לחשב). המידע המלא נמצא ב-Pricing.
         [NotMapped]
-        public decimal ProfitAmount { get; set; }
+        public decimal? ProfitAmount { get; set; }
 
         [NotMapped]
-        public decimal SellingPriceBeforeVAT { get; set; }
+        public decimal? SellingPriceBeforeVAT { get; set; }
 
         [NotMapped]
-        public decimal SellingPriceWithVAT { get; set; }
+        public decimal? SellingPriceWithVAT { get; set; }
+
+        // מחיר, מע"מ ורווח כפי שחושבו בשרת
+        [NotMapped]
+        public ProductPricing? Pricing { get; set; }
 
         // אזהרות על נתונים שעלולים להפוך את העלות לשגויה (הערכים עצמם לא משתנים)
         [NotMapped]

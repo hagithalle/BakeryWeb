@@ -11,6 +11,7 @@ import {
   marginToPercent,
   percentToMargin,
 } from "./productForm";
+import { initialPricingState, pricingFields } from "./pricingForm";
 
 // Shapes as GET /api/products returns them (camelCase, with nested recipe / packaging)
 const yeastCake = {
@@ -37,15 +38,14 @@ const cookieBox = {
   ],
 };
 
-// What AddProductDialog.handleSave does with an UNCHANGED form (manual price mode, the mode it opens in)
+// What AddProductDialog.handleSave does with an UNCHANGED form (same pricing functions as the dialog)
 const saveUnchanged = (initial) => {
   const data = {
     name: initial.name,
     productType: initial.productType,
     description: initial.description,
     category: initial.category,
-    profitMarginPercent: percentToMargin(initial.profitMarginPercent),
-    manualSellingPrice: parseFloat(initial.manualSellingPrice),
+    ...pricingFields(initialPricingState(initial)),
     packagingTimeMinutes: parseInt(initial.packagingTimeMinutes) || 0,
   };
   if (initial.productType === "single") {
@@ -102,7 +102,7 @@ describe("editing a box keeps its items", () => {
     const payload = saveUnchanged(buildInitialValues(cookieBox));
     expect(payload).toMatchObject({
       id: 1, productType: 1, recipeId: null, packagingId: null, packagingTimeMinutes: 5, imageUrl: null,
-      profitMarginPercent: 0.15, manualSellingPrice: 63.91728841269841,
+      profitMarginPercent: 0.15, manualSellingPrice: 63.91728841269841, pricingMode: null,
       packageItems: [{ recipeId: 2, quantity: 20 }, { recipeId: 5, quantity: 10 }],
       additionalPackaging: [{ packagingId: 1, quantity: 1 }, { packagingId: 2, quantity: 1 }],
     });
@@ -119,7 +119,7 @@ describe("editing a single product keeps its data", () => {
     const payload = saveUnchanged(buildInitialValues(yeastCake));
     expect(payload).toMatchObject({
       id: 2, productType: 0, recipeId: 6, unitConversionRate: 1, saleUnitType: 2, packagingTimeMinutes: 5,
-      imageUrl: "/uploads/products/b2198bcc.png", profitMarginPercent: 0.1, manualSellingPrice: 48,
+      imageUrl: "/uploads/products/b2198bcc.png", profitMarginPercent: 0.1, manualSellingPrice: 48, pricingMode: null,
       packageItems: [],
       additionalPackaging: [{ packagingId: 3, quantity: 1 }, { packagingId: 2, quantity: 1 }],
     });
