@@ -31,6 +31,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import BaseDialog from "./BaseDialog";
 import PackagingDialog from "./PackagingDialog";
 import { UnitTypeLabels } from "../utils/unitEnums";
+import { previewProductCost } from "../Services/productService";
 
 /**
  * דיאלוג להוספת מוצר חדש
@@ -339,108 +340,62 @@ export default function AddProductDialog({
     }
     return recipe;
   };
-  
-  const getPackagingById = (id) => packaging.find(p => Number(p.id ?? p.Id) === Number(id));
+
+  // ========== עלויות מהשרת ==========
+  // העלות מחושבת בשרת (אותו חישוב כמו במוצר שמור: מתכוני בסיס, עבודה, תקורה ואריזה – כל אחד פעם אחת).
+  const costDraft = useMemo(() => {
+    const isPackage = productType === "package";
+    const items = isPackage
+      ? packageItems
+          .map(item => ({ recipeId: Number(item.productId ?? item.recipeId), quantity: Number(item.quantity) || 1 }))
+          .filter(item => item.recipeId > 0)
+      : [];
+    const extras = additionalPackaging
+      .map(item => ({ packagingId: Number(item.packagingId), quantity: Number(item.quantity) || 1 }))
+      .filter(item => item.packagingId > 0);
+    const minutes = parseInt(packagingTimeMinutes) || 0;
+    const hasItems = isPackage ? items.length > 0 : !!selectedRecipeId;
+    if (!hasItems && extras.length === 0 && minutes === 0) return null;
+    return {
+      productType: isPackage ? 1 : 0,
+      recipeId: isPackage ? null : Number(selectedRecipeId) || null,
+      recipeUnits: parseInt(recipeUnits) || 1,
+      packageItems: items,
+      additionalPackaging: extras,
+      packagingTimeMinutes: minutes,
+    };
+  }, [productType, selectedRecipeId, recipeUnits, packageItems, additionalPackaging, packagingTimeMinutes]);
+
+  // התוצאה נשמרת יחד עם הטיוטה שעבורה חושבה, כך שתוצאה ישנה לעולם לא מוצגת
+  const draftKey = costDraft ? JSON.stringify(costDraft) : null;
+  const [preview, setPreview] = useState({ key: null, result: null, failed: false });
+
+  useEffect(() => {
+    if (!draftKey) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      previewProductCost(JSON.parse(draftKey))
+        .then(result => { if (!cancelled) setPreview({ key: draftKey, result, failed: false }); })
+        .catch(() => { if (!cancelled) setPreview({ key: draftKey, result: null, failed: true }); });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [draftKey]);
+
+  const costPreview = preview.key === draftKey ? preview.result : null;
+  const costPreviewFailed = preview.key === draftKey && preview.failed;
 
   const calculatedPrices = useMemo(() => {
-    let baseCost = 0;
-    let packagingLaborCost = 0;
-    let packagingOverheadCost = 0;
-    let totalCost = 0;
-    let hasItems = false;
+    const hasItems = !!costDraft;
+    const ready = hasItems && !!costPreview;
+    const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
-    // חישוב עלות מתכונים
-    if (productType === "single" && selectedRecipeId) {
-      hasItems = true;
-      const recipe = getRecipeById(selectedRecipeId);
-      if (recipe) {
-        // TotalCost הוא עלות כל המתכון
-        // recipeUnits הוא כמה יחידות המתכון עושה
-        // ולכן עלות ליחידה = TotalCost / OutputUnits
-        const recipeTotalCost = recipe.TotalCost ?? recipe.totalCost ?? 0;
-        const recipeOutputUnits = recipe.OutputUnits ?? recipe.outputUnits ?? 1;
-        const recipeName = recipe.Name ?? recipe.name ?? "";
-        const costPerUnit = recipeTotalCost / recipeOutputUnits;
-        
-        console.log(`💰 Single Recipe Cost:`, {
-          name: recipeName,
-          totalCost: recipeTotalCost,
-          outputUnits: recipeOutputUnits,
-          costPerUnit: costPerUnit
-        });
-        
-        baseCost = costPerUnit > 0 ? costPerUnit : 0;
-      }
-    } else if (productType === "package" && packageItems.length > 0) {
-      hasItems = true;
-      // סכום עלויות כל המתכונים במארז
-      packageItems.forEach(item => {
-        const recipe = getRecipeById(item.productId); // productId contains recipeId
-        if (recipe) {
-          const recipeTotalCost = recipe.TotalCost ?? recipe.totalCost ?? 0;
-          const recipeOutputUnits = recipe.OutputUnits ?? recipe.outputUnits ?? 1;
-          const recipeName = recipe.Name ?? recipe.name ?? "";
-          const costPerUnit = recipeTotalCost / recipeOutputUnits;
-          const itemCost = costPerUnit * (item.quantity || 1);
-          
-          console.log(`💰 Package Item: ${recipeName}`, {
-            totalCost: recipeTotalCost,
-            outputUnits: recipeOutputUnits,
-            costPerUnit: costPerUnit,
-            quantity: item.quantity,
-            itemCost: itemCost
-          });
-          
-          baseCost += itemCost; // ✅ הוסף את עלות המוצרים למארז
-        }
-      });
-    }
+    // עלות בסיסית = חלק המתכונים (כולל מתכוני בסיס) + חומרי אריזה
+    const baseCost = ready ? num(costPreview.recipeCost) + num(costPreview.packagingCost) : 0;
+    const packagingLaborCost = ready ? num(costPreview.packagingLaborCost) : 0;
+    const packagingOverheadCost = ready ? num(costPreview.packagingOverheadCost) : 0;
+    const totalCost = ready ? num(costPreview.totalCost) : 0;
 
-    // הוספת עלויות אריזה
-    if (additionalPackaging.length > 0) {
-      hasItems = true;
-      additionalPackaging.forEach(item => {
-        const pack = getPackagingById(item.packagingId);
-        if (pack) {
-          const packCost = pack.Cost || pack.cost || 0;
-          if (packCost > 0) {
-            const itemCost = packCost * (item.quantity || 1);
-            console.log(`📦 Packaging: ${pack.Name || pack.name}`, {
-              costPerUnit: packCost,
-              quantity: item.quantity,
-              itemCost: itemCost
-            });
-            baseCost += itemCost;
-          }
-        }
-      });
-    }
-
-    // הוספת עלות זמן אריזה (עבודה + תקורה)
-    // * ערכים משוערים בקליינט - השרת יחשב בדיוק
-    const HOURLY_LABOR = 200; // שקל לשעה (משוער)
-    const HOURLY_OVERHEAD = 100; // שקל לשעה (משוער)
-    if (packagingTimeMinutes > 0) {
-      hasItems = true;
-      packagingLaborCost = (packagingTimeMinutes / 60) * HOURLY_LABOR;
-      packagingOverheadCost = (packagingTimeMinutes / 60) * HOURLY_OVERHEAD;
-      console.log(`⏱️ Packaging Time: ${packagingTimeMinutes} דקות`, {
-        packagingTimeMinutes,
-        packagingLaborCost: packagingLaborCost.toFixed(2),
-        packagingOverheadCost: packagingOverheadCost.toFixed(2)
-      });
-    }
-
-    // אם אין פריטים בחורים, להציג 0
-    if (!hasItems) {
-      baseCost = 0;
-    }
-
-    // סה"כ עלות = בסיס + עבודה/תקורה
-    totalCost = baseCost + packagingLaborCost + packagingOverheadCost;
-
-    console.log(`📊 Final totalCost: ₪${totalCost.toFixed(2)}`);
-
+    // התמחור עצמו (רווח ומע"מ) לא השתנה בשלב הזה – יעבור לשרת בשלב A2
     const profitAmount = totalCost * (profitMarginPercent / 100);
     const sellingPriceBeforeVAT = totalCost + profitAmount;
     const sellingPriceWithVAT = sellingPriceBeforeVAT * 1.17;
@@ -453,20 +408,11 @@ export default function AddProductDialog({
       profitAmount,
       sellingPriceBeforeVAT,
       sellingPriceWithVAT,
-      hasItems // אם יש פריטים לחישוב או לא
+      hasItems, // אם יש פריטים לחישוב או לא
+      ready,
+      warnings: ready ? costPreview.warnings || [] : [],
     };
-  }, [
-    productType,
-    selectedRecipeId,
-    recipeUnits,
-    selectedRecipeData,
-    packageItems,
-    additionalPackaging,
-    packagingTimeMinutes,
-    profitMarginPercent,
-    recipes,
-    packaging
-  ]);
+  }, [costDraft, costPreview, profitMarginPercent]);
 
   // ========== בדיקת תקינות ==========
   const isValid = useMemo(() => {
@@ -1274,9 +1220,13 @@ export default function AddProductDialog({
           {/* מחיר עלות (תצוגה בלבד - יחושב בשרת) */}
           <Box sx={{ bgcolor: '#FFF3E0', p: 2, borderRadius: 2, mb: 2 }}>
             <Typography variant="body2" sx={{ color: '#666', mb: 2, fontWeight: 600 }}>
-              💰 פירוט עלויות (משוער - החישוב המדויק בשרת):
+              💰 פירוט עלויות:
             </Typography>
-            {calculatedPrices.hasItems ? (
+            {calculatedPrices.hasItems && !calculatedPrices.ready ? (
+              <Typography variant="body2" sx={{ color: costPreviewFailed ? '#C62828' : '#999' }}>
+                {costPreviewFailed ? 'לא ניתן לחשב את העלות כרגע' : 'מחשב עלויות…'}
+              </Typography>
+            ) : calculatedPrices.hasItems ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {/* עלות בסיסית */}
                 <Box sx={{ bgcolor: '#fff', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #C98929' }}>
@@ -1300,6 +1250,15 @@ export default function AddProductDialog({
                     <Typography variant="body2" sx={{ pl: 1 }}>
                       תקורה: ₪{calculatedPrices.packagingOverheadCost?.toFixed(2) || '0.00'}
                     </Typography>
+                  </Box>
+                )}
+
+                {/* אזהרות על נתונים שעלולים להפוך את העלות לשגויה */}
+                {calculatedPrices.warnings.length > 0 && (
+                  <Box sx={{ bgcolor: '#FFF8E1', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #F9A825' }}>
+                    {[...new Set(calculatedPrices.warnings.map(w => w.message))].map(message => (
+                      <Typography key={message} variant="body2" sx={{ color: '#6D4C41' }}>⚠️ {message}</Typography>
+                    ))}
                   </Box>
                 )}
 

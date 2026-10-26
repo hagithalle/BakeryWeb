@@ -12,6 +12,7 @@ namespace Server.Services
         Task<Product> CreateAsync(CreateProductRequest request);
         Task<bool> UpdateAsync(int id, Product product);
         Task<bool> RecalculateSellingPriceAsync(int id);
+        ProductCostBreakdown PreviewCost(ProductCostPreviewRequest request);
         Task<bool> DeleteAsync(int id);
     }
 }

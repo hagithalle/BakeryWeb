@@ -134,23 +134,11 @@ namespace Server.Services
                     .ThenInclude(ap => ap.Packaging)
                 .ToListAsync();
 
-            // חישוב עלויות לכל מוצר
+            // חישוב עלויות ומחיר מכירה לכל מוצר (המחשבון טוען בעצמו מתכונים, מתכוני בסיס ואריזות)
             foreach (var product in products)
             {
-                var costs = _costCalculator.CalculateProductCost(product);
-                if (costs != null)
-                {
-                    product.RecipeIngredientsCost = costs.RecipeIngredientsCost;
-                    product.RecipeLaborCost = costs.RecipeLaborCost;
-                    product.RecipeOverheadCost = costs.RecipeOverheadCost;
-                    product.PackagingCost = costs.PackagingCost;
-                    product.PackagingLaborCost = costs.PackagingLaborCost;
-                    product.PackagingOverheadCost = costs.PackagingOverheadCost;
-                    product.TotalCost = costs.TotalCost;
-
-                    // חישוב מחיר מכירה
-                    CalculateSellingPrice(product);
-                }
+                _costCalculator.ApplyProductCosts(product);
+                CalculateSellingPrice(product);
             }
 
             return products;
@@ -173,21 +161,8 @@ namespace Server.Services
 
             if (product != null)
             {
-                // חישוב עלויות
-                var costs = _costCalculator.CalculateProductCost(product);
-                if (costs != null)
-                {
-                    product.RecipeIngredientsCost = costs.RecipeIngredientsCost;
-                    product.RecipeLaborCost = costs.RecipeLaborCost;
-                    product.RecipeOverheadCost = costs.RecipeOverheadCost;
-                    product.PackagingCost = costs.PackagingCost;
-                    product.PackagingLaborCost = costs.PackagingLaborCost;
-                    product.PackagingOverheadCost = costs.PackagingOverheadCost;
-                    product.TotalCost = costs.TotalCost;
-
-                    // חישוב מחיר מכירה
-                    CalculateSellingPrice(product);
-                }
+                _costCalculator.ApplyProductCosts(product);
+                CalculateSellingPrice(product);
             }
 
             return product;
@@ -265,30 +240,41 @@ namespace Server.Services
 
         public async Task<bool> RecalculateSellingPriceAsync(int id)
         {
+            // Box items and extra packaging are part of the cost, so they must be loaded too.
             var product = await _db.Products
-                .Include(p => p.Recipe)
-                    .ThenInclude(r => r.Ingredients)
-                        .ThenInclude(ri => ri.Ingredient)
-                .Include(p => p.Packaging)
+                .Include(p => p.PackageItems)
+                .Include(p => p.AdditionalPackaging)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null) return false;
 
-            var costs = _costCalculator.CalculateProductCost(product);
-            if (costs != null)
-            {
-                product.RecipeIngredientsCost = costs.RecipeIngredientsCost;
-                product.RecipeLaborCost = costs.RecipeLaborCost;
-                product.RecipeOverheadCost = costs.RecipeOverheadCost;
-                product.PackagingCost = costs.PackagingCost;
-                product.PackagingLaborCost = costs.PackagingLaborCost;
-                product.PackagingOverheadCost = costs.PackagingOverheadCost;
-                product.TotalCost = costs.TotalCost;
-            }
+            _costCalculator.ApplyProductCosts(product);
 
             product.ManualSellingPrice = CalculateAutomaticSellingPrice(product);
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        public ProductCostBreakdown PreviewCost(ProductCostPreviewRequest request)
+        {
+            // A product object that is never added to the context: only used to calculate. Ids the current user
+            // does not own are treated like missing ones (the calculator only sees the user's own rows).
+            var productType = (ProductType)request.ProductType;
+            var draft = new Product
+            {
+                ProductType = productType,
+                RecipeId = productType == ProductType.Package ? null : request.RecipeId,
+                UnitConversionRate = request.RecipeUnits,
+                PackagingId = request.PackagingId,
+                PackagingTimeMinutes = request.PackagingTimeMinutes,
+                PackageItems = productType == ProductType.Package
+                    ? (request.PackageItems ?? new List<PackageItemRequest>())
+                        .Select(i => new PackageItem { RecipeId = i.RecipeId, Quantity = i.Quantity }).ToList()
+                    : new List<PackageItem>(),
+                AdditionalPackaging = (request.AdditionalPackaging ?? new List<AdditionalPackagingRequest>())
+                    .Select(i => new ProductAdditionalPackaging { PackagingId = i.PackagingId, Quantity = i.Quantity }).ToList(),
+            };
+            return _costCalculator.CalculateProductCost(draft);
         }
 
         // חישוב מחיר מכירה (עם רווח ומע"מ)

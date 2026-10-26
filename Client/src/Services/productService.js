@@ -140,6 +140,12 @@ export async function deleteProduct(id) {
   return response.data;
 }
 
+// עלות של מוצר שנמצא בעריכה (לא נשמר) – מחושבת בשרת בדיוק כמו עלות של מוצר שמור
+export async function previewProductCost(draft) {
+  const response = await api.post(`${PRODUCTS_API}/cost-preview`, draft);
+  return response.data;
+}
+
 export async function recalculateProductPrice(id) {
   const response = await api.post(`${PRODUCTS_API}/${id}/recalculate-price`);
   return response.data;

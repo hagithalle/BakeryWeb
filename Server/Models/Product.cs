@@ -84,5 +84,9 @@ namespace Server.Models
 
         [NotMapped]
         public decimal SellingPriceWithVAT { get; set; }
+
+        // אזהרות על נתונים שעלולים להפוך את העלות לשגויה (הערכים עצמם לא משתנים)
+        [NotMapped]
+        public IReadOnlyList<CostWarning> CostWarnings { get; set; } = new List<CostWarning>();
     }
 }

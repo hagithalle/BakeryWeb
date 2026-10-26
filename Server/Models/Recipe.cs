@@ -49,6 +49,10 @@ namespace Server.Models
         [NotMapped]
         public decimal IngredientsCost { get; set; }
 
+        // החלק היחסי של מתכוני הבסיס (חומרי גלם + עבודה + תקורה שלהם)
+        [NotMapped]
+        public decimal BaseRecipesCost { get; set; }
+
         [NotMapped]
         public decimal LaborCost { get; set; }
 
@@ -63,5 +67,9 @@ namespace Server.Models
 
         [NotMapped]
         public decimal CostPerUnit { get; set; }
+
+        // אזהרות על נתונים שעלולים להפוך את העלות לשגויה (הערכים עצמם לא משתנים)
+        [NotMapped]
+        public IReadOnlyList<CostWarning> CostWarnings { get; set; } = new List<CostWarning>();
     }
 }

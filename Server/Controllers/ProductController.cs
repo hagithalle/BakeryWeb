@@ -103,6 +103,16 @@ namespace Server.Controllers
             errors = ex.Fields,
         });
 
+        /// <summary>
+        /// Cost of a product that is being created or edited (nothing is saved). The add/edit dialog uses it so the
+        /// costs it shows are calculated by the server, exactly like the saved product's.
+        /// </summary>
+        [HttpPost("cost-preview")]
+        public IActionResult CostPreview([FromBody] ProductCostPreviewRequest request)
+        {
+            return Ok(_service.PreviewCost(request));
+        }
+
         [HttpPost("{id}/recalculate-price")]
         public async Task<IActionResult> RecalculatePrice(int id)
         {
@@ -148,6 +158,18 @@ namespace Server.Controllers
         public List<PackageItemRequest>? PackageItems { get; set; }
 
         // Additional Packaging (אריזה נוספת)
+        public List<AdditionalPackagingRequest>? AdditionalPackaging { get; set; }
+    }
+
+    /// <summary>The cost-relevant fields of a product being edited (same meaning as in CreateProductRequest).</summary>
+    public class ProductCostPreviewRequest
+    {
+        public int ProductType { get; set; } // 0 = Single, 1 = Package
+        public int? RecipeId { get; set; }
+        public int RecipeUnits { get; set; } = 1;
+        public int? PackagingId { get; set; }
+        public int? PackagingTimeMinutes { get; set; }
+        public List<PackageItemRequest>? PackageItems { get; set; }
         public List<AdditionalPackagingRequest>? AdditionalPackaging { get; set; }
     }
 

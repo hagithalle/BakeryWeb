@@ -58,7 +58,6 @@ namespace Server.Services
 
         public async Task<IEnumerable<Recipe>> GetAllAsync()
         {
-            Console.WriteLine("\n>>> RecipeService.GetAllAsync START");
             var recipes = await _db.Recipes
                 .Include(r => r.Ingredients)
                 .ThenInclude(ri => ri.Ingredient)
@@ -66,40 +65,10 @@ namespace Server.Services
                 .Include(r => r.BaseRecipes)
                 .ThenInclude(br => br.BaseRecipe)
                 .ToListAsync();
-            
-            Console.WriteLine($"   Found {recipes.Count} recipes");
-            foreach (var r in recipes)
-            {
-                Console.WriteLine($"   Recipe ID={r.Id}, Name={r.Name}");
-                Console.WriteLine($"      Ingredients: {r.Ingredients?.Count ?? 0}");
-                if (r.Ingredients != null)
-                {
-                    foreach (var ri in r.Ingredients)
-                    {
-                        Console.WriteLine($"         - IngredientId={ri.IngredientId}, Qty={ri.Quantity}, Unit={ri.Unit}, Ingredient.Name={ri.Ingredient?.Name ?? "null"}");
-                        // חישוב עלות הרכיב
-                        if (ri.Ingredient != null)
-                        {
-                            ri.Cost = _costCalculator.CalculateIngredientCost(ri);
-                            Console.WriteLine($"         ✅ Calculated Cost: {ri.Cost}");
-                        }
-                    }
-                }
-                Console.WriteLine($"      Steps: {r.Steps?.Count ?? 0}");
 
-                // חישוב עלויות
-                var costs = _costCalculator.CalculateRecipeCost(r);
-                if (costs != null)
-                {
-                    r.IngredientsCost = costs.IngredientsCost;
-                    r.LaborCost = costs.LaborCost;
-                    r.OverheadCost = costs.OverheadCost;
-                    r.PackagingCost = costs.PackagingCost;
-                    r.TotalCost = costs.TotalCost;
-                    r.CostPerUnit = costs.CostPerUnit;
-                }
-            }
-            Console.WriteLine(">>> RecipeService.GetAllAsync END\n");
+            // Costs (including nested sub-recipes) come from the calculator, never from what was loaded here.
+            foreach (var r in recipes)
+                _costCalculator.ApplyRecipeCosts(r);
             return recipes;
         }
 
@@ -114,32 +83,7 @@ namespace Server.Services
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (recipe != null)
-            {
-                // חישוב עלות כל רכיב
-                if (recipe.Ingredients != null)
-                {
-                    foreach (var ri in recipe.Ingredients)
-                    {
-                        if (ri.Ingredient != null)
-                        {
-                            ri.Cost = _costCalculator.CalculateIngredientCost(ri);
-                            Console.WriteLine($"   GetByIdAsync - Ingredient: {ri.Ingredient.Name}, Cost: {ri.Cost}");
-                        }
-                    }
-                }
-
-                // חישוב עלויות
-                var costs = _costCalculator.CalculateRecipeCost(recipe);
-                if (costs != null)
-                {
-                    recipe.IngredientsCost = costs.IngredientsCost;
-                    recipe.LaborCost = costs.LaborCost;
-                    recipe.OverheadCost = costs.OverheadCost;
-                    recipe.PackagingCost = costs.PackagingCost;
-                    recipe.TotalCost = costs.TotalCost;
-                    recipe.CostPerUnit = costs.CostPerUnit;
-                }
-            }
+                _costCalculator.ApplyRecipeCosts(recipe);
 
             return recipe;
         }

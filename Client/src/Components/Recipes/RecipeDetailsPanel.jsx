@@ -8,7 +8,7 @@ import RecipeTabs from "./RecipeTabs";
 import RecipeIngredientsTable from "./RecipeIngredientsTable";
 import RecipeStepsPanel from "./RecipeStepsPanel";
 import RecipeCostsPanel from "./RecipeCostsPanel";
-import { getUnitDisplayName, calculateIngredientCost } from "../../utils/unitUtils";
+import { getUnitDisplayName } from "../../utils/unitUtils";
 
 
 export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTabChange }) {
@@ -55,46 +55,34 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
       }));
   }, [recipe?.steps]);
 
-  // חישוב עלויות - משתמשים בערכים שחוזרים מהשרת
+  // עלויות – כל הערכים מחושבים בשרת (כולל החלק היחסי של מתכוני הבסיס)
   const costBreakdown = useMemo(() => {
     if (!recipe) return null;
-    
-    console.log('🔍 costBreakdown - recipe.ingredients:', recipe.ingredients);
-    
+    const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+
     return {
-      ingredients: (recipe.ingredients || recipe.Ingredients || []).map((ri, idx) => {
+      ingredients: (recipe.ingredients || recipe.Ingredients || []).map((ri) => {
         const ing = ri.ingredient || ri.Ingredient;
-        const qty = ri.quantity || ri.Quantity;
-        const unit = ri.unit ?? ri.Unit ?? 2; // יחידת המידה מה-RecipeIngredient, עם ברירת מחדל
-        
-        // חישוב עלות בקליינט - משתמשים ביחידה של RecipeIngredient
-        const calculatedCost = calculateIngredientCost({ ...ing, unit: unit }, qty);
-        
-        console.log(`🔍 Ingredient[${idx}]:`, {
-          name: ing?.name,
-          quantity: qty,
-          unit: unit,
-          unitType: typeof unit,
-          pricePerKg: ing?.pricePerKg,
-          calculatedCost: calculatedCost
-        });
-        
-        const displayUnit = getUnitDisplayName(unit);
-        console.log(`   📍 displayUnit after getUnitDisplayName:`, displayUnit);
-        
         return {
           name: ing?.name || ing?.Name || "לא ידוע",
-          amount: qty,
-          unit: displayUnit, // משתמשים ביחידה של RecipeIngredient
-          cost: calculatedCost
+          amount: ri.quantity ?? ri.Quantity,
+          unit: getUnitDisplayName(ri.unit ?? ri.Unit), // היחידה של שורת המתכון
+          cost: num(ri.cost ?? ri.Cost),
         };
       }),
-      laborCost: recipe.laborCost || recipe.LaborCost || 0,
-      overheadCost: recipe.overheadCost || recipe.OverheadCost || 0,
-      packagingCost: recipe.packagingCost || recipe.PackagingCost || 0,
-      totalCost: recipe.totalCost || recipe.TotalCost || 0,
+      subRecipes: (recipe.baseRecipes || recipe.BaseRecipes || []).map((br) => ({
+        name: br.baseRecipe?.name || br.BaseRecipe?.Name || "מתכון בסיס",
+        amount: br.quantity ?? br.Quantity,
+        cost: num(br.totalCost ?? br.TotalCost),
+      })),
+      baseRecipesCost: num(recipe.baseRecipesCost ?? recipe.BaseRecipesCost),
+      laborCost: num(recipe.laborCost ?? recipe.LaborCost),
+      overheadCost: num(recipe.overheadCost ?? recipe.OverheadCost),
+      packagingCost: num(recipe.packagingCost ?? recipe.PackagingCost),
+      totalCost: num(recipe.totalCost ?? recipe.TotalCost),
       yield: recipe.outputUnits || recipe.OutputUnits || 1,
-      costPerUnit: recipe.costPerUnit || recipe.CostPerUnit || 0
+      costPerUnit: num(recipe.costPerUnit ?? recipe.CostPerUnit),
+      warnings: recipe.costWarnings || recipe.CostWarnings || [],
     };
   }, [recipe]);
 
