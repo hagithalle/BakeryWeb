@@ -41,110 +41,18 @@ import {
 import { getAllRecipes } from "../Services/RecipeService";
 import { fetchPackaging, addPackaging } from "../Services/packagingService";
 
+import {
+  getField,
+  toNumber,
+  buildInitialValues,
+  buildUpdatePayload,
+} from "../utils/productForm";
+import { resolveImageUrl } from "../utils/imageUrl";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 
 // ===== helpers =====
-const getField = (obj, camelKey, pascalKey) =>
-  obj?.[camelKey] ?? obj?.[pascalKey];
-
-const toNumber = (value) => Number(value || 0);
-
 const formatCurrency = (value) => `₪${toNumber(value).toFixed(2)}`;
-
-// בניית ערכי ההתחלה לטופס עריכת מוצר
-const buildInitialValues = (product) => {
-  if (!product) return null;
-
-  const productTypeValue = Number(
-    getField(product, "productType", "ProductType") ?? 0
-  );
-  const productType = productTypeValue === 1 ? "package" : "single";
-
-  const recipeUnitsQuantity =
-    getField(product, "unitConversionRate", "UnitConversionRate") || 1;
-
-  const packageItems =
-    product.packageItems || product.PackageItems || [];
-  const mappedPackageItems = packageItems.map((item) => ({
-    recipeId:
-      getField(item, "recipeId", "RecipeId") ??
-      getField(item, "productId", "ProductId") ??
-      null,
-    quantity: Number(getField(item, "quantity", "Quantity") || 1),
-  }));
-
-  const additionalPackaging =
-    product.additionalPackaging || product.AdditionalPackaging || [];
-  const mappedAdditionalPackaging = additionalPackaging.map((item) => ({
-    packagingId: getField(item, "packagingId", "PackagingId"),
-    quantity: Number(getField(item, "quantity", "Quantity") || 1),
-  }));
-
-  return {
-    id: getField(product, "id", "Id"),
-    name: getField(product, "name", "Name") || "",
-    description: getField(product, "description", "Description") || "",
-    productType,
-    recipeId: getField(product, "recipeId", "RecipeId") || "",
-    recipeUnits: recipeUnitsQuantity,
-    unitConversionRate: recipeUnitsQuantity,
-    saleUnitType: getField(product, "saleUnitType", "SaleUnitType") ?? 0,
-    packageItems: mappedPackageItems,
-    category: getField(product, "category", "Category") || "",
-    additionalPackaging: mappedAdditionalPackaging,
-    packagingId: getField(product, "packagingId", "PackagingId") || null,
-    packagingTimeMinutes:
-      getField(product, "packagingTimeMinutes", "PackagingTimeMinutes") || 0,
-    profitMarginPercent:
-      toNumber(
-        getField(product, "profitMarginPercent", "ProfitMarginPercent")
-      ) * 100,
-    manualSellingPrice:
-      getField(product, "manualSellingPrice", "ManualSellingPrice") || "",
-    imageUrl: getField(product, "imageUrl", "ImageUrl") || "",
-  };
-};
-
-// payload לעדכון מוצר קיים
-const buildUpdatePayload = (productData, existingProduct) => {
-  const productTypeValue = productData.productType === "package" ? 1 : 0;
-
-  const packageItems =
-    productTypeValue === 1
-      ? (productData.packageItems || []).map((item) => ({
-          recipeId: Number(item.recipeId ?? item.productId),
-          quantity: Number(item.quantity) || 1,
-        }))
-      : [];
-
-  const additionalPackaging = (productData.additionalPackaging || []).map(
-    (item) => ({
-      packagingId: Number(item.packagingId),
-      quantity: Number(item.quantity) || 1,
-    })
-  );
-
-  return {
-    id: existingProduct.id,
-    name: productData.name,
-    description: productData.description,
-    category: productData.category,
-    productType: productTypeValue,
-    recipeId: productTypeValue === 0 ? Number(productData.recipeId) : null,
-    unitConversionRate:
-      productTypeValue === 0 ? Number(productData.recipeUnits || 1) : 1,
-    saleUnitType:
-      productTypeValue === 0 ? Number(productData.saleUnitType ?? 0) : 0,
-    packagingId: existingProduct.packagingId || null,
-    packagingTimeMinutes: Number(productData.packagingTimeMinutes) || 0,
-    imageUrl: existingProduct.imageUrl || null,
-    profitMarginPercent: productData.profitMarginPercent,
-    manualSellingPrice: productData.manualSellingPrice,
-    packageItems,
-    additionalPackaging,
-  };
-};
 
 export default function ProductsPage() {
   const { lang } = useLanguage();
@@ -429,8 +337,9 @@ export default function ProductsPage() {
 
                 const productId = id;
                 const productName = name || "ללא שם";
-                const productImageUrl =
-                  product.imageUrl ?? product.ImageUrl;
+                const productImageUrl = resolveImageUrl(
+                  product.imageUrl ?? product.ImageUrl
+                );
                 const productPrice = sellingPrice || 0;
                 const isExpanded =
                   detailsProduct?.id === productId ||

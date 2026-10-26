@@ -32,6 +32,16 @@ import BaseDialog from "./BaseDialog";
 import PackagingDialog from "./PackagingDialog";
 import { UnitTypeLabels } from "../utils/unitEnums";
 import { previewProductCost } from "../Services/productService";
+import {
+  withPackagingDetails,
+  withRecipeNames,
+  packagingLineCost,
+  formatMoney,
+  toSavedPackageItems,
+  toSavedPackagingItems,
+  percentToMargin,
+} from "../utils/productForm";
+import { resolveImageUrl } from "../utils/imageUrl";
 
 /**
  * דיאלוג להוספת מוצר חדש
@@ -200,7 +210,7 @@ export default function AddProductDialog({
 
   const handleStartEditPackage = (idx) => {
     setEditingPackageIdx(idx);
-    setEditingPackageProductId(packageItems[idx].productId.toString());
+    setEditingPackageProductId(String(packageItems[idx].productId ?? ""));
     setEditingPackageQuantity(packageItems[idx].quantity.toString());
   };
 
@@ -251,7 +261,7 @@ export default function AddProductDialog({
 
   const handleStartEditPackaging = (idx) => {
     setEditingPackagingIdx(idx);
-    setEditingPackagingId(additionalPackaging[idx].packagingId.toString());
+    setEditingPackagingId(String(additionalPackaging[idx].packagingId ?? ""));
     setEditingPackagingQuantity(additionalPackaging[idx].quantity.toString());
   };
 
@@ -340,6 +350,13 @@ export default function AddProductDialog({
     }
     return recipe;
   };
+
+  // ========== תצוגת פריטים: שם ועלות עדכניים מרשימות המתכונים והאריזות ==========
+  const packageItemsView = useMemo(() => withRecipeNames(packageItems, recipes), [packageItems, recipes]);
+  const additionalPackagingView = useMemo(
+    () => withPackagingDetails(additionalPackaging, packaging),
+    [additionalPackaging, packaging]
+  );
 
   // ========== עלויות מהשרת ==========
   // העלות מחושבת בשרת (אותו חישוב כמו במוצר שמור: מתכוני בסיס, עבודה, תקורה ואריזה – כל אחד פעם אחת).
@@ -468,7 +485,7 @@ export default function AddProductDialog({
       productType,
       description,
       category: finalCategory,
-      profitMarginPercent: profitMarginPercent / 100,
+      profitMarginPercent: percentToMargin(profitMarginPercent),
       manualSellingPrice: sellingPrice,
       priceType: priceType,
       packagingTimeMinutes: parseInt(packagingTimeMinutes) || 0,
@@ -478,21 +495,14 @@ export default function AddProductDialog({
     if (productType === "single") {
       productData.recipeId = parseInt(selectedRecipeId);
       productData.recipeUnits = parseInt(recipeUnits);
-      productData.saleUnitType = selectedRecipeData?.outputUnitType ?? 0;
+      // בלי בחירה מחדש של המתכון נשמר סוג יחידת המכירה הקיים
+      productData.saleUnitType = selectedRecipeData?.outputUnitType ?? initialValues?.saleUnitType ?? 0;
     } else {
-      productData.packageItems = packageItems.map(item => ({
-        productId: parseInt(item.productId),
-        quantity: parseInt(item.quantity)
-      }));
+      productData.packageItems = toSavedPackageItems(packageItems);
     }
 
     if (additionalPackaging.length > 0) {
-      productData.additionalPackaging = additionalPackaging
-        .filter(p => p.packagingId)
-        .map(item => ({
-          packagingId: parseInt(item.packagingId),
-          quantity: parseInt(item.quantity) || 1
-        }));
+      productData.additionalPackaging = toSavedPackagingItems(additionalPackaging);
     }
 
     try {
@@ -592,7 +602,7 @@ export default function AddProductDialog({
               <CardMedia
                 component="img"
                 height="200"
-                image={imagePreview || existingImageUrl}
+                image={imagePreview || resolveImageUrl(existingImageUrl)}
                 alt="תמונת מוצר"
                 sx={{ objectFit: 'cover' }}
               />
@@ -889,7 +899,7 @@ export default function AddProductDialog({
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', mb: 1 }}>
                   מוצרים שנוספו:
                 </Typography>
-                {packageItems.map((item, idx) => (
+                {packageItemsView.map((item, idx) => (
                   <Paper
                     key={idx}
                     sx={{
@@ -1134,7 +1144,7 @@ export default function AddProductDialog({
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', mb: 1 }}>
                 מוצרי אריזה שנוספו:
               </Typography>
-              {additionalPackaging.map((item, idx) => (
+              {additionalPackagingView.map((item, idx) => (
                 <Paper
                   key={idx}
                   sx={{
@@ -1193,7 +1203,7 @@ export default function AddProductDialog({
                     // מצב צפייה
                     <>
                       <Typography sx={{ flex: 1, color: '#5D4037' }}>
-                        {item.name} - {item.quantity} יחידות (₪{(item.cost * item.quantity).toFixed(2)})
+                        {item.name || "אריזה"} - {item.quantity} יחידות ({formatMoney(packagingLineCost(item))})
                       </Typography>
                       <IconButton onClick={() => handleStartEditPackaging(idx)} sx={{ color: '#5D4037' }}>
                         <Box component="img" src={editIconSvg} alt="" sx={{ width: 16, height: 16, objectFit: 'contain' }} />

@@ -11,7 +11,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:5003'
+      '/api': 'http://localhost:5003',
+      // uploaded product images are served by the backend (anonymous static files)
+      '/uploads': 'http://localhost:5003'
     },
     fs: {
       allow: [
