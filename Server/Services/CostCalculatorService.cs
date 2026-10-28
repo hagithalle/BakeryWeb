@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
+using Server.Services.Pricing;
 
 namespace Server.Services
 {
@@ -27,15 +28,23 @@ namespace Server.Services
     /// ingredients + labor + overhead (+ packaging) columns always add up to the total and nothing is counted twice.
     /// Problems in the data (unknown units, zero prices, missing references...) never change a value silently:
     /// the value is calculated exactly as before and a warning explains why it may be wrong.
+    ///
+    /// Purchase prices (ingredients, packaging, overhead) are used at their effective cost for the business
+    /// (see PurchaseVatRules): converted only when their VAT treatment, and for a registered business their
+    /// deductibility, are known. An item that was not reviewed is used exactly as entered, with a warning.
     /// </summary>
     public class CostCalculatorService
     {
         private readonly BakeryDbContext _context;
+        private readonly BusinessSettingsService _settings;
+        private readonly PricingService _pricing;
         private CostData? _data;
 
-        public CostCalculatorService(BakeryDbContext context)
+        public CostCalculatorService(BakeryDbContext context, BusinessSettingsService settings, PricingService pricing)
         {
             _context = context;
+            _settings = settings;
+            _pricing = pricing;
             // Anything saved in this request (new recipe, changed price...) must be visible to later calculations.
             _context.SavedChanges += (_, _) => _data = null;
         }
@@ -46,7 +55,12 @@ namespace Server.Services
         {
             public required Dictionary<int, Recipe> Recipes { get; init; }
             public required Dictionary<int, Ingredient> Ingredients { get; init; }
+            /// <summary>Effective price per ingredient (per kg / unit), and why.</summary>
+            public required Dictionary<int, (decimal Price, PurchaseVatState State)> IngredientPrices { get; init; }
             public required Dictionary<int, decimal> PackagingCosts { get; init; }
+            public required Dictionary<int, CostWarning> PackagingVatWarnings { get; init; }
+            /// <summary>Active overhead expenses whose VAT information is missing (their amount is used as entered).</summary>
+            public required List<CostWarning> OverheadVatWarnings { get; init; }
             public required bool HasLaborSettings { get; init; }
             public required decimal HourlyLabor { get; init; }
             public required decimal HourlyOverhead { get; init; }
@@ -62,13 +76,20 @@ namespace Server.Services
                 .Include(r => r.BaseRecipes)
                 .ToList();
             var ingredients = _context.Ingredients.AsNoTracking().ToList();
-            var packaging = _context.Packagings.AsNoTracking().Select(p => new { p.Id, p.Cost }).ToList();
+            var packagingRows = _context.Packagings.AsNoTracking().ToList();
             // The current user's own settings (the query filter limits LaborSettings to their single row)
             var labor = _context.LaborSettings.AsNoTracking().FirstOrDefault();
-            var activeOverhead = _context.OverheadItems.AsNoTracking()
-                .Where(x => x.IsActive)
-                .Select(x => x.MonthlyCost)
-                .ToList();
+            var overheadRows = _context.OverheadItems.AsNoTracking().Where(x => x.IsActive).ToList();
+
+            // VAT context for purchase prices: the business VAT status and the rate in force today
+            var business = _settings.VatStatus;
+            var rate = _pricing.TodaysVatRate()?.Rate;
+            (decimal Price, PurchaseVatState State) Effective(IPurchasePriced item, decimal entered) =>
+                PurchaseVatRules.EffectivePrice(entered, item.PurchaseVatTreatment, item.InputVatDeductible, business, rate);
+
+            var packagingEffective = packagingRows.ToDictionary(p => p.Id, p => Effective(p, p.Cost));
+            var overheadEffective = overheadRows.Select(o => (Item: o, Cost: Effective(o, o.MonthlyCost))).ToList();
+            var activeOverhead = overheadEffective.Select(o => o.Cost.Price).ToList();
 
             decimal hourlyLabor = 0, hourlyOverhead = 0;
             if (labor != null)
@@ -84,7 +105,14 @@ namespace Server.Services
             {
                 Recipes = recipes.ToDictionary(r => r.Id),
                 Ingredients = ingredients.ToDictionary(i => i.Id),
-                PackagingCosts = packaging.ToDictionary(p => p.Id, p => p.Cost),
+                IngredientPrices = ingredients.ToDictionary(i => i.Id, i => Effective(i, i.PricePerKg)),
+                PackagingCosts = packagingEffective.ToDictionary(p => p.Key, p => p.Value.Price),
+                PackagingVatWarnings = packagingRows
+                    .Select(p => (p.Id, Warning: VatWarning(packagingEffective[p.Id].State, "האריזה", p.Name, null, null)))
+                    .Where(x => x.Warning != null).ToDictionary(x => x.Id, x => x.Warning!),
+                OverheadVatWarnings = overheadEffective
+                    .Select(o => VatWarning(o.Cost.State, "ההוצאה", o.Item.Name, null, null))
+                    .Where(w => w != null).Select(w => w!).ToList(),
                 HasLaborSettings = labor != null,
                 HourlyLabor = hourlyLabor,
                 HourlyOverhead = hourlyOverhead,
@@ -94,6 +122,14 @@ namespace Server.Services
         }
 
         public decimal GetHourlyLaborCost() => Data.HourlyLabor;
+
+        /// <summary>A warning for a purchase whose VAT information is missing (its price is used as entered).</summary>
+        private static CostWarning? VatWarning(PurchaseVatState state, string kind, string name, int? recipeId, int? lineId) => state switch
+        {
+            PurchaseVatState.TreatmentUnknown => CostWarning.PurchaseVatUnknown(kind, name, recipeId, lineId),
+            PurchaseVatState.DeductibilityUnknown => CostWarning.InputVatDeductibilityUnknown(kind, name, recipeId, lineId),
+            _ => null,
+        };
 
         public decimal GetHourlyOverheadCost() => Data.HourlyOverhead;
 
@@ -159,7 +195,11 @@ namespace Server.Services
             if (ingredient.PricePerKg == 0)
                 warnings.Add(CostWarning.ZeroPrice(recipeId, line.Id, ingredient.Name));
 
-            return (ingredient.PricePerKg * ConvertToKilogram(line.Quantity, unit), warnings);
+            var (price, vatState) = Data.IngredientPrices[ingredient.Id];
+            if (VatWarning(vatState, "חומר הגלם", ingredient.Name, recipeId, line.Id) is { } vatWarning)
+                warnings.Add(vatWarning);
+
+            return (price * ConvertToKilogram(line.Quantity, unit), warnings);
         }
 
         // ------------------------------------------------------------------ recipes
@@ -239,6 +279,7 @@ namespace Server.Services
             var laborCost = (totalTime / 60m) * Data.HourlyLabor;
             // עלויות תקורה למנה (חודשי / 30)
             var overheadCost = Data.BatchOverhead;
+            if (overheadCost != 0) warnings.AddRange(Data.OverheadVatWarnings);
 
             if (recipe.OutputUnits <= 0) warnings.Add(CostWarning.MissingYield(recipeId, recipe.Name));
             if ((recipe.Ingredients?.Count ?? 0) == 0 && (recipe.BaseRecipes?.Count ?? 0) == 0)
@@ -337,7 +378,11 @@ namespace Server.Services
             // עלות אריזה ספציפית + אריזה נוספת
             decimal PackagingCost(int id)
             {
-                if (Data.PackagingCosts.TryGetValue(id, out var cost)) return cost;
+                if (Data.PackagingCosts.TryGetValue(id, out var cost))
+                {
+                    if (Data.PackagingVatWarnings.TryGetValue(id, out var vatWarning)) warnings.Add(vatWarning);
+                    return cost;
+                }
                 warnings.Add(CostWarning.MissingPackaging());
                 return 0;
             }
@@ -350,6 +395,7 @@ namespace Server.Services
             var packagingTime = product.PackagingTimeMinutes ?? 0;
             var packagingLaborCost = (packagingTime / 60m) * Data.HourlyLabor;
             var packagingOverheadCost = (packagingTime / 60m) * Data.HourlyOverhead;
+            if (packagingOverheadCost != 0) warnings.AddRange(Data.OverheadVatWarnings);
             if (packagingTime > 0 && !Data.HasLaborSettings) warnings.Add(CostWarning.NoLaborSettings());
 
             return new ProductCostBreakdown

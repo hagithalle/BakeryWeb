@@ -13,6 +13,7 @@ import PackagingPage from "./Pages/PackagingPage.jsx";
 import CostsManagementPage from "./Pages/CostsManagementPage.jsx";
 import IncomeExpense from "./Pages/IncomeExpense.jsx";
 import FixedExpensesPage from './Pages/FixedExpensesPage.jsx';
+import PurchaseVatReviewPage from './Pages/PurchaseVatReviewPage';
 import RecipesPage from './Pages/RecipesPage.jsx';
 import LoginPage from './Pages/LoginPage.jsx';
 import SignUpPage from './Pages/SignUpPage.jsx';
@@ -54,6 +55,7 @@ function AppRoutes() {
         <Route path="/income-expense" element={<IncomeExpense />} />
         <Route path="/costs" element={<CostsManagementPage />} />
         <Route path="/fixed-expenses" element={<FixedExpensesPage />} />
+        <Route path="/purchase-vat" element={<PurchaseVatReviewPage />} />
       </Routes>
     </MainLayout>
   );

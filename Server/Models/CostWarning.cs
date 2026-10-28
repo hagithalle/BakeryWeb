@@ -31,6 +31,10 @@ namespace Server.Models
             new("NoLaborSettings", "לא הוגדרו הגדרות עבודה – עלות העבודה חושבה כ-0");
         public static CostWarning MissingProductRecipe() =>
             new("MissingRecipe", "המתכון של המוצר לא נמצא – עלות המתכון חושבה כ-0");
+        public static CostWarning PurchaseVatUnknown(string kind, string name, int? recipeId = null, int? lineId = null) =>
+            new("PurchaseVatUnknown", $"לא צוין אם המחיר של {kind} \"{name}\" כולל מע\"מ – העלות מחושבת לפי המחיר כפי שהוזן", recipeId, lineId);
+        public static CostWarning InputVatDeductibilityUnknown(string kind, string name, int? recipeId = null, int? lineId = null) =>
+            new("InputVatDeductibilityUnknown", $"לא צוין אם המע\"מ על {kind} \"{name}\" מוכר לקיזוז – העלות מחושבת לפי המחיר כפי שהוזן", recipeId, lineId);
         public static CostWarning MissingPackaging() =>
             new("MissingPackaging", "פריט אריזה לא נמצא – עלותו חושבה כ-0");
     }

@@ -27,7 +27,8 @@ builder.Services.AddDbContext<BakeryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add Controllers
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+        options.Filters.Add<Server.Services.Pricing.PricingValidationExceptionFilter>())
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -76,6 +77,7 @@ builder.Services.AddSingleton(Server.Services.Pricing.VatRateTable.FromConfigura
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<Server.Services.Pricing.BusinessSettingsService>();
 builder.Services.AddScoped<Server.Services.Pricing.PricingService>();
+builder.Services.AddScoped<Server.Services.Pricing.PurchaseVatService>();
 builder.Services.AddScoped<Server.Validation.ReferenceValidator>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IProductService, ProductService>();

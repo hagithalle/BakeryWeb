@@ -38,7 +38,10 @@ namespace Server.Services.Pricing
                 VatRate: TodaysVatRate(),
                 ProductionCost: cost.TotalCost,
                 CostComplete: !cost.Warnings.Any(w => IncompleteCostCodes.Contains(w.Code)),
-                LegacyVatRate: _legacyVatRate));
+                LegacyVatRate: _legacyVatRate,
+                UnverifiedPurchases: cost.Warnings
+                    .Where(w => w.Code is "PurchaseVatUnknown" or "InputVatDeductibilityUnknown")
+                    .Select(w => w.Message).Distinct().Count()));
 
         /// <summary>Calculates the pricing and fills the product's response fields (old ones kept for existing clients).</summary>
         public ProductPricing Apply(Product product, ProductCostBreakdown cost)

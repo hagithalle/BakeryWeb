@@ -67,6 +67,9 @@ export default function IngredientMobileItem({ row, onEdit, onDelete, categoryCo
           <Typography variant="body1" sx={{ fontWeight: 700, flexGrow: 1 }}>
             {row.name}
           </Typography>
+          {row.purchaseVatTreatment == null && (
+            <Chip size="small" variant="outlined" color="warning" label='מע"מ לא נבדק' sx={{ height: 20, fontSize: 11 }} />
+          )}
 
           {/* Category chip */}
           <Chip

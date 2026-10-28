@@ -62,6 +62,9 @@ namespace Server.Migrations
                     b.Property<decimal>("Cost")
                         .HasColumnType("numeric");
 
+                    b.Property<bool?>("InputVatDeductible")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -69,6 +72,9 @@ namespace Server.Migrations
 
                     b.Property<decimal>("PricePerKg")
                         .HasColumnType("numeric");
+
+                    b.Property<int?>("PurchaseVatTreatment")
+                        .HasColumnType("integer");
 
                     b.Property<int>("StockQuantity")
                         .HasColumnType("integer");
@@ -132,6 +138,9 @@ namespace Server.Migrations
                     b.Property<int>("Category")
                         .HasColumnType("integer");
 
+                    b.Property<bool?>("InputVatDeductible")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -141,6 +150,9 @@ namespace Server.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int?>("PurchaseVatTreatment")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -190,9 +202,15 @@ namespace Server.Migrations
                     b.Property<decimal>("Cost")
                         .HasColumnType("numeric");
 
+                    b.Property<bool?>("InputVatDeductible")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int?>("PurchaseVatTreatment")
+                        .HasColumnType("integer");
 
                     b.Property<int>("StockUnits")
                         .HasColumnType("integer");

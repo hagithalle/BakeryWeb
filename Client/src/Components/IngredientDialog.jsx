@@ -7,6 +7,10 @@ import { fieldSx, primaryBtnSx, secondaryBtnSx } from "./ui/dialogStyles";
 import { Button } from "@mui/material";
 
 import ingredientsIcon from "../assets/decor/page-headers/ingredients-header-icon.svg";
+import { useQuery } from "@tanstack/react-query";
+import PurchaseVatFields from "./PurchaseVatFields";
+import { initialPurchaseVat, purchaseVatIsComplete, purchaseVatPayload } from "../utils/purchaseVat";
+import { getBusinessSettings } from "../Services/businessSettingsService";
 
 export default function IngredientDialog({
   open, onClose, onSave, categories, units, strings,
@@ -20,6 +24,10 @@ export default function IngredientDialog({
   const [stockQuantity, setStockQuantity] = React.useState("");
   const [stockUnit, setStockUnit] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  // מע"מ במחיר הקנייה; סטטוס המע"מ של העסק קובע אם לשאול על קיזוז
+  const [purchaseVat, setPurchaseVat] = React.useState(() => initialPurchaseVat(initialValues));
+  const { data: businessSettings } = useQuery({ queryKey: ["businessSettings"], queryFn: getBusinessSettings });
+  const vatStatus = businessSettings?.vatStatus ?? null;
 
   React.useEffect(() => {
     if (initialValues) {
@@ -29,6 +37,7 @@ export default function IngredientDialog({
       setPricePerKg(initialValues.pricePerKg || "");
       setStockQuantity(initialValues.stockQuantity || "");
       setStockUnit(String(initialValues.stockUnit ?? initialValues.unit ?? "1"));
+      setPurchaseVat(initialPurchaseVat(initialValues));
     } else {
       setName("");
       setCategory(categories?.[0]?.value ? String(categories[0].value) : "");
@@ -36,6 +45,7 @@ export default function IngredientDialog({
       setStockUnit("1");
       setPricePerKg("");
       setStockQuantity("");
+      setPurchaseVat(initialPurchaseVat(null));
     }
   }, [initialValues, open, categories]);
 
@@ -49,6 +59,7 @@ export default function IngredientDialog({
         pricePerKg: parseFloat(pricePerKg) || 0,
         stockQuantity: parseInt(stockQuantity) || 0,
         stockUnit: parseInt(stockUnit || unit || "1"),
+        ...purchaseVatPayload(purchaseVat, vatStatus),
       };
       if (initialValues && initialValues.id) {
         await onSave({ id: initialValues.id, ...ingredient });
@@ -68,6 +79,9 @@ export default function IngredientDialog({
   };
 
   const isEdit = !!(initialValues && initialValues.id);
+  // חומר גלם חדש מדף חומרי הגלם חייב תשובה; יצירה מהירה מתוך מתכון יכולה להישאר "לא נבדק" (עם אזהרה)
+  const vatRequired = !isEdit && !showPriceWarning;
+  const vatComplete = purchaseVatIsComplete(purchaseVat, vatStatus, vatRequired);
   const title = isEdit
     ? (strings?.ingredient?.edit || "ערוך חומר גלם")
     : (strings?.ingredient?.add || "הוסף חומר גלם חדש");
@@ -134,6 +148,13 @@ export default function IngredientDialog({
             sx={fieldSx}
           />
 
+          <PurchaseVatFields
+            value={purchaseVat}
+            onChange={setPurchaseVat}
+            vatStatus={vatStatus}
+            isNew={vatRequired}
+          />
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
               label={strings?.ingredient?.stockQuantity || "כמות במלאי"}
@@ -172,7 +193,7 @@ export default function IngredientDialog({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2.5 }}>
         <Button
           onClick={handleSave}
-          disabled={isSaving || !name}
+          disabled={isSaving || !name || !vatComplete}
           fullWidth
           sx={{ ...primaryBtnSx, borderRadius: '14px', py: 1.3, fontSize: '16px' }}
         >

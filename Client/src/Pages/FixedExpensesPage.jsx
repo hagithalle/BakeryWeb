@@ -102,6 +102,8 @@ export default function FixedExpensesPage() {
           type: typeValue,
           isActive: item.isActive,
           id: item.id,
+          purchaseVatTreatment: item.purchaseVatTreatment ?? null,
+          inputVatDeductible: item.inputVatDeductible ?? null,
         };
       });
 
@@ -192,6 +194,10 @@ export default function FixedExpensesPage() {
           isActive: true,
           type: typeValue,
           category: expense.category, // always take from form
+          // only present when answered: an omitted treatment keeps the stored one on the server
+          ...(expense.purchaseVatTreatment != null
+            ? { purchaseVatTreatment: expense.purchaseVatTreatment, inputVatDeductible: expense.inputVatDeductible ?? null }
+            : {}),
         };
 
         console.log(
@@ -212,6 +218,9 @@ export default function FixedExpensesPage() {
           isActive: true,
           type: typeValue,
           category: categoryValue,
+          ...(expense.purchaseVatTreatment != null
+            ? { purchaseVatTreatment: expense.purchaseVatTreatment, inputVatDeductible: expense.inputVatDeductible ?? null }
+            : {}),
         };
 
         console.log(

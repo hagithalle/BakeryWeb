@@ -117,6 +117,10 @@ export default function IngredientsPage() {
       pricePerKg: ingredient.pricePerKg || 0,
       stockQuantity: ingredient.stockQuantity || 0,
       stockUnit: ingredient.stockUnit || ingredient.unit,
+      // מע"מ במחיר הקנייה – רק כשנענה (בלי זה השרת משאיר את הערכים השמורים)
+      ...(ingredient.purchaseVatTreatment != null
+        ? { purchaseVatTreatment: ingredient.purchaseVatTreatment, inputVatDeductible: ingredient.inputVatDeductible ?? null }
+        : {}),
     };
     if (selectedIngredient) {
       editMutation.mutate({ ...selectedIngredient, ...ingredientToSave });

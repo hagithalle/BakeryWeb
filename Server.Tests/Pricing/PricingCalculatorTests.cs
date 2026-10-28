@@ -207,10 +207,16 @@ namespace Server.Tests.Pricing
         }
 
         [Fact]
-        public void InputVat_IsFlaggedAsNotYetVerified_ForBothVatStatuses()
+        public void UnreviewedPurchases_AreCounted_OnlyWhenThereAreAny()
         {
-            Assert.Contains("InputVatNotVerified", Codes(Price(PricingMode.Manual, VatStatus.Exempt, 80, 100)));
-            Assert.Contains("InputVatNotVerified", Codes(Price(PricingMode.Manual, VatStatus.Registered, 80, 118)));
+            var flagged = PricingCalculator.Calculate(new PricingInput(PricingMode.Manual, 100, 0.1m, 0.15m, VatStatus.Exempt, Vat18,
+                80, true, LegacyVatRate: 0.17m, UnverifiedPurchases: 3));
+            var issue = Assert.Single(flagged.Issues, i => i.Code == "PurchaseVatNotVerified");
+            Assert.StartsWith("3 ", issue.Message);
+            Assert.Equal(20m, flagged.Profit);   // the warning never changes a value
+
+            Assert.DoesNotContain("PurchaseVatNotVerified", Codes(Price(PricingMode.Manual, VatStatus.Exempt, 80, 100)));
+            Assert.DoesNotContain("PurchaseVatNotVerified", Codes(Price(PricingMode.Manual, VatStatus.Registered, 80, 118)));
         }
 
         // ------------------------------------------------------------------ legacy (unconfirmed) prices

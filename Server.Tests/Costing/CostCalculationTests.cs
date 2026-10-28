@@ -319,15 +319,18 @@ namespace Server.Tests.Costing
         public static async Task<Bakery> SeedAsync(TenantTestApp app, int userId, decimal salary = 4000m, decimal overhead = 300m)
         {
             await using var db = app.CreateUnscopedContext();
-            var x = new Ingredient { Name = "X", PricePerKg = 20, Unit = UnitOfMeasure.Kilogram, UserId = userId };
-            var y = new Ingredient { Name = "Y", PricePerKg = 10, Unit = UnitOfMeasure.Kilogram, UserId = userId };
-            var z = new Ingredient { Name = "Z", PricePerKg = 8, Unit = UnitOfMeasure.Kilogram, UserId = userId };
-            var box = new Packaging { Name = "box", Cost = 1.5m, UserId = userId };
-            var sticker = new Packaging { Name = "sticker", Cost = 0.25m, UserId = userId };
+            // Every purchase is reviewed as "price includes VAT" (A3), so these costing tests carry no VAT warnings;
+            // without a business VAT status the prices are used exactly as entered either way.
+            const PurchaseVatTreatment Incl = PurchaseVatTreatment.IncludesVat;
+            var x = new Ingredient { Name = "X", PricePerKg = 20, Unit = UnitOfMeasure.Kilogram, UserId = userId, PurchaseVatTreatment = Incl };
+            var y = new Ingredient { Name = "Y", PricePerKg = 10, Unit = UnitOfMeasure.Kilogram, UserId = userId, PurchaseVatTreatment = Incl };
+            var z = new Ingredient { Name = "Z", PricePerKg = 8, Unit = UnitOfMeasure.Kilogram, UserId = userId, PurchaseVatTreatment = Incl };
+            var box = new Packaging { Name = "box", Cost = 1.5m, UserId = userId, PurchaseVatTreatment = Incl };
+            var sticker = new Packaging { Name = "sticker", Cost = 0.25m, UserId = userId, PurchaseVatTreatment = Incl };
             db.AddRange(x, y, z, box, sticker,
                 new LaborSettings { DesiredMonthlySalary = salary, WorkingDaysPerMonth = 20, WorkingHoursPerDay = 4, UserId = userId },
-                new OverheadItem { Name = "rent", MonthlyCost = overhead, IsActive = true, UserId = userId },
-                new OverheadItem { Name = "old", MonthlyCost = 60, IsActive = false, UserId = userId });
+                new OverheadItem { Name = "rent", MonthlyCost = overhead, IsActive = true, UserId = userId, PurchaseVatTreatment = Incl },
+                new OverheadItem { Name = "old", MonthlyCost = 60, IsActive = false, UserId = userId, PurchaseVatTreatment = Incl });
             await db.SaveChangesAsync();
 
             var c = new Recipe { Name = "C", OutputUnits = 5, PrepTime = 6, UserId = userId,

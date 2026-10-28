@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Paper, Typography, TextField, Button, Alert, RadioGroup, FormControlLabel, Radio, InputAdornment } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link as RouterLink } from "react-router-dom";
 import { getBusinessSettings, saveBusinessSettings } from "../../Services/businessSettingsService";
 import { VatStatus, formatPercentOrDash } from "../../utils/pricingForm";
 import { marginToPercent, percentToMargin } from "../../utils/productForm";
@@ -79,6 +80,13 @@ function BusinessSettingsForm({ settings, queryClient, message, setMessage }) {
         </Typography>
       )}
       {message && <Alert severity={message.severity} sx={{ mt: 2 }}>{message.text}</Alert>}
+
+      <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #EADBC8" }}>
+        <Typography variant="body2" sx={{ mb: 1, color: "#5D4037" }}>
+          כדי שהעלויות יהיו מדויקות, יש לציין לכל חומר גלם, אריזה והוצאה אם המחיר שהוזן כולל מע"מ.
+        </Typography>
+        <Button component={RouterLink} to="/purchase-vat" variant="outlined">בדיקת מע"מ במחירי קנייה</Button>
+      </Box>
     </Paper>
   );
 }

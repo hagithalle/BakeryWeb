@@ -11,6 +11,7 @@ import useLocaleStrings from "../hooks/useLocaleStrings";
 import { useLanguage } from "../context/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPackaging, addPackaging, deletePackaging, editPackaging } from '../Services/packagingService';
+import { treatmentLabel } from '../utils/purchaseVat';
 import packagingIllustration from '../assets/decor/page-headers/packaging-header-icon.svg';
 import addPackagingIcon from '../assets/icons/actions/add-packaging.svg';
 
@@ -30,7 +31,9 @@ export default function PackagingPage() {
   const columns = [
     { field: "name",       headerName: strings.sidebar?.packaging || "שם" },
     { field: "cost",       headerName: strings.packaging?.cost    || "עלות" },
-    { field: "stockUnits", headerName: strings.packaging?.stockUnits || "יחידות במלאי" }
+    { field: "stockUnits", headerName: strings.packaging?.stockUnits || "יחידות במלאי" },
+    // מע"מ בעלות האריזה (מסך הבדיקה המרוכזת מציג גם את העלות בפועל)
+    { field: "purchaseVatTreatment", headerName: 'מע"מ', renderCell: (row) => treatmentLabel(row.purchaseVatTreatment ?? null) },
   ];
 
   const filteredRows = useMemo(() => {

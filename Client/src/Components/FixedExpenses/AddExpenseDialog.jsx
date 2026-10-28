@@ -4,6 +4,10 @@ import SoftDialog from '../ui/SoftDialog';
 import FormSection from '../ui/FormSection';
 import { fieldSx, primaryBtnSx, secondaryBtnSx } from '../ui/dialogStyles';
 import financeIcon from '../../assets/decor/page-headers/finance-header-icon.svg';
+import { useQuery } from "@tanstack/react-query";
+import PurchaseVatFields from "../PurchaseVatFields";
+import { initialPurchaseVat, purchaseVatIsComplete, purchaseVatPayload } from "../../utils/purchaseVat";
+import { getBusinessSettings } from "../../Services/businessSettingsService";
 
 const expenseCategories = [
   { value: 0, label: 'הוצאות תפעול' },
@@ -38,9 +42,14 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
   };
 
   const [form, setForm] = useState(getInitialForm(initialData));
+  const [purchaseVat, setPurchaseVat] = useState(() => initialPurchaseVat(initialData));
+  const { data: businessSettings } = useQuery({ queryKey: ["businessSettings"], queryFn: getBusinessSettings });
+  const vatStatus = businessSettings?.vatStatus ?? null;
+  const vatComplete = purchaseVatIsComplete(purchaseVat, vatStatus, !initialData);
 
   React.useEffect(() => {
     setForm(getInitialForm(initialData));
+    setPurchaseVat(initialPurchaseVat(initialData));
   }, [initialData, open]);
 
   const handleChange = (field) => (e) => {
@@ -51,7 +60,10 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
 
   const handleSave = () => {
     if (!form.title || !form.amount) return;
-    const payload = { ...form, amount: parseFloat(form.amount), category: Number(form.category) };
+    const payload = {
+      ...form, amount: parseFloat(form.amount), category: Number(form.category),
+      ...purchaseVatPayload(purchaseVat, vatStatus),
+    };
     console.log('AddExpenseDialog onSave payload:', payload);
     onSave(payload);
   };
@@ -94,6 +106,7 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
             fullWidth
             sx={fieldSx}
           />
+          <PurchaseVatFields value={purchaseVat} onChange={setPurchaseVat} vatStatus={vatStatus} isNew={!initialData} priceLabel="סכום" />
           <TextField
             select
             label="סוג הוצאה"
@@ -111,7 +124,7 @@ export default function AddExpenseDialog({ open, onClose, onSave, initialData })
 
       <Box sx={{ display: 'flex', gap: 1.5, mt: 2.5, justifyContent: 'flex-end' }}>
         <Button onClick={onClose} sx={secondaryBtnSx}>ביטול</Button>
-        <Button onClick={handleSave} disabled={!form.title || !form.amount} sx={primaryBtnSx}>
+        <Button onClick={handleSave} disabled={!form.title || !form.amount || !vatComplete} sx={primaryBtnSx}>
           {initialData ? 'שמור' : 'הוסף'}
         </Button>
       </Box>

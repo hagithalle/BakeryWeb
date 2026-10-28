@@ -16,7 +16,7 @@ namespace Server.Models
         Other = 4        // שונות
     }
 
-    public class OverheadItem : IOwnedEntity
+    public class OverheadItem : IOwnedEntity, IPurchasePriced
     {
         public int Id { get; set; }
 
@@ -31,6 +31,10 @@ namespace Server.Models
         public bool IsActive { get; set; } = true;
 
         public OverheadType Type { get; set; } = OverheadType.עקיפה;
+
+        // מע"מ בהוצאה החודשית (ריק = לא נבדק עדיין; הסכום נלקח כפי שהוזן)
+        public PurchaseVatTreatment? PurchaseVatTreatment { get; set; }
+        public bool? InputVatDeductible { get; set; }
 
         public int? UserId { get; set; }
     }

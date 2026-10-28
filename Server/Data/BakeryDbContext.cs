@@ -192,6 +192,11 @@ namespace Server.Data
                 .HasForeignKey(pap => pap.PackagingId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Purchase VAT treatment (null = not reviewed; never backfilled)
+            modelBuilder.Entity<Ingredient>().Property(i => i.PurchaseVatTreatment).HasConversion<int?>();
+            modelBuilder.Entity<Packaging>().Property(p => p.PurchaseVatTreatment).HasConversion<int?>();
+            modelBuilder.Entity<OverheadItem>().Property(o => o.PurchaseVatTreatment).HasConversion<int?>();
+
             // Ensure OverheadItem.Type is stored as int (not string)
             modelBuilder.Entity<OverheadItem>()
                 .Property(o => o.Type)

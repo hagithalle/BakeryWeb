@@ -87,6 +87,9 @@ export default function IngredientsTable({ rows, onEdit, onDelete, strings, cate
                       sx={{ width: 28, height: 28, flexShrink: 0 }}
                     />
                     {row.name}
+                    {row.purchaseVatTreatment == null && (
+                      <Chip size="small" variant="outlined" color="warning" label='מע"מ לא נבדק' sx={{ height: 20, fontSize: 11 }} />
+                    )}
                   </Box>
                 </TableCell>
 

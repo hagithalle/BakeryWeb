@@ -13,7 +13,8 @@ namespace Server.Services.Pricing
         VatRateTable.Entry? VatRate,   // rate in force today (null = none configured for today)
         decimal ProductionCost,
         bool CostComplete,             // false when a referenced recipe / ingredient / packaging is missing
-        decimal LegacyVatRate);        // the single rate used before A2 (PricingSettings:VatRate)
+        decimal LegacyVatRate,         // the single rate used before A2 (PricingSettings:VatRate)
+        int UnverifiedPurchases = 0);  // purchases in this cost whose VAT information is missing (used as entered)
 
     /// <summary>
     /// The single place where selling prices, VAT and profit are calculated. Pure: no database, no clock.
@@ -26,7 +27,7 @@ namespace Server.Services.Pricing
     ///
     /// Revenue without VAT = final price (exempt) or final price / (1 + rate) (registered).
     /// Profit = revenue without VAT - production cost. Markup on cost = profit / cost; margin = profit / revenue.
-    /// Purchase prices are used as entered (input VAT is handled in phase A3).
+    /// Purchase prices arrive at their effective cost (CostCalculatorService / PurchaseVatRules).
     /// </summary>
     public static class PricingCalculator
     {
@@ -47,13 +48,16 @@ namespace Server.Services.Pricing
             }
             if (costValid) pricing.ProductionCost = Money(input.ProductionCost);
 
+            // Any product (legacy or not) whose cost uses purchases without complete VAT information
+            if (input.UnverifiedPurchases > 0)
+                pricing.Issues.Add(new("PurchaseVatNotVerified",
+                    $"{input.UnverifiedPurchases} פריטי קנייה בעלות הזו עדיין ללא פרטי מע\"מ מלאים – העלות מחושבת לפי המחירים כפי שהוזנו"));
+
             if (input.Mode == null)
                 return Legacy(input, pricing);
 
             if (input.VatStatus == null)
                 pricing.Issues.Add(new("VatStatusNotSet", "לא נבחר סטטוס מע\"מ בהגדרות העסק – לא ניתן לחשב מע\"מ ורווח"));
-            else
-                pricing.Issues.Add(new("InputVatNotVerified", "מחירי הקנייה נלקחו כפי שהוזנו; הטיפול במע\"מ על קניות ייבדק בשלב הבא"));
 
             decimal? rate = input.VatStatus switch
             {
