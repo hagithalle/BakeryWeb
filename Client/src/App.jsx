@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
-import { heIL } from "@clerk/localizations";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { clerkAppearance } from "./Components/Auth/clerkAppearance";
+import { clerkLocalization } from "./Components/Auth/clerkLocalization";
 import AccountProblemPage from "./Components/Auth/AccountProblemPage";
 import PageLoader from "./Components/Common/PageLoader";
 import Dashboard from "./Pages/Dashboard.jsx";
@@ -76,7 +76,7 @@ function App() {
   return (
     <ClerkProvider
       publishableKey={CLERK_PUBLISHABLE_KEY}
-      localization={heIL}
+      localization={clerkLocalization}
       appearance={clerkAppearance}
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}
