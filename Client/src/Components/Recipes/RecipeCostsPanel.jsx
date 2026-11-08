@@ -12,6 +12,7 @@ import {
   Divider
 } from "@mui/material";
 import { getUnitDisplayName } from "../../utils/unitUtils";
+import { blockingWarnings, infoWarnings, isCostBlocked, isLineBlocked, uniqueMessages } from "../../utils/costStatus";
 
 // כל הסכומים מגיעים מהשרת; כאן רק מציגים אותם
 export default function RecipeCostsPanel({ costBreakdown }) {
@@ -33,21 +34,44 @@ export default function RecipeCostsPanel({ costBreakdown }) {
     totalCost = 0,
     costPerUnit = 0,
     yield: recipeYield = 1,
-    warnings = []
+    warnings = [],
+    recipeId = null,
+    costStatus = null
   } = costBreakdown;
 
+  // A blocked cost is never shown as a number (server: CostWarning.blocking / costStatus).
+  const blocked = isCostBlocked({ costStatus, costWarnings: warnings });
+  const money = (value) => (blocked ? "—" : `${value.toFixed(2)} ₪`);
+  // Valid ingredient lines keep their (exact) cost so the problem line is easy to find; a sub-recipe's share is
+  // hidden whenever this recipe is blocked (its own cost may be the blocked part).
+  const lineMoney = (item) =>
+    isLineBlocked(warnings, recipeId, item.lineId) ? "—" : item.cost.toFixed(2);
+  const subRecipeMoney = (item) => (blocked ? "—" : item.cost.toFixed(2));
   const ingredientsTotal = ingredients.reduce((sum, item) => sum + item.cost, 0);
-  const warningMessages = [...new Set(warnings.map(w => w.message))];
+  const blockingMessages = uniqueMessages(blockingWarnings(warnings));
+  const infoMessages = uniqueMessages(infoWarnings(warnings));
 
   return (
     <Box sx={{ mt: 2 }}>
-      {/* אזהרות על נתונים שעלולים להפוך את העלות לשגויה */}
-      {warningMessages.length > 0 && (
+      {/* עלות שלא ניתן לחשב באופן אמין: אין סכומים ואין מחיר אוטומטי */}
+      {blocked && (
+        <Box role="alert" sx={{ mb: 3, p: 2, bgcolor: '#FDECEA', borderRadius: 2, borderRight: '4px solid #B3261E' }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: '#7A1C16', fontWeight: 800 }}>
+            לא ניתן לחשב עלות אמינה למתכון הזה – לכן לא מוצגים סכומים ולא מחושב מחיר אוטומטי. יש לתקן:
+          </Typography>
+          {blockingMessages.map(message => (
+            <Typography key={message} variant="body2" sx={{ color: '#7A1C16' }}>• {message}</Typography>
+          ))}
+        </Box>
+      )}
+
+      {/* הערות שלא חוסמות את החישוב (למשל פרטי מע"מ חסרים) */}
+      {infoMessages.length > 0 && (
         <Box sx={{ mb: 3, p: 2, bgcolor: '#FFF8E1', borderRadius: 2, borderRight: '4px solid #F9A825' }}>
           <Typography variant="subtitle2" sx={{ mb: 1, color: '#6D4C41', fontWeight: 700 }}>
-            שימי לב – העלות עלולה להיות לא מדויקת:
+            לתשומת לב:
           </Typography>
-          {warningMessages.map(message => (
+          {infoMessages.map(message => (
             <Typography key={message} variant="body2" sx={{ color: '#6D4C41' }}>• {message}</Typography>
           ))}
         </Box>
@@ -76,7 +100,7 @@ export default function RecipeCostsPanel({ costBreakdown }) {
                   <TableCell align="right">
                     {typeof item.unit === 'string' ? item.unit : getUnitDisplayName(item.unit)}
                   </TableCell>
-                  <TableCell align="right">{item.cost.toFixed(2)}</TableCell>
+                  <TableCell align="right">{lineMoney(item)}</TableCell>
                 </TableRow>
               ))}
               <TableRow sx={{ bgcolor: '#FFF7F2' }}>
@@ -84,7 +108,7 @@ export default function RecipeCostsPanel({ costBreakdown }) {
                   סה"כ חומרי גלם
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                  {ingredientsTotal.toFixed(2)} ₪
+                  {money(ingredientsTotal)}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -112,7 +136,7 @@ export default function RecipeCostsPanel({ costBreakdown }) {
                   <TableRow key={index} hover>
                     <TableCell align="right">{item.name}</TableCell>
                     <TableCell align="right">{item.amount}</TableCell>
-                    <TableCell align="right">{item.cost.toFixed(2)}</TableCell>
+                    <TableCell align="right">{subRecipeMoney(item)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -131,26 +155,26 @@ export default function RecipeCostsPanel({ costBreakdown }) {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography>סה"כ חומרי גלם:</Typography>
             <Typography fontWeight="medium">
-              {ingredientsTotal.toFixed(2)} ₪
+              {money(ingredientsTotal)}
             </Typography>
           </Box>
           {subRecipes.length > 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography>מתכוני בסיס:</Typography>
-              <Typography fontWeight="medium">{baseRecipesCost.toFixed(2)} ₪</Typography>
+              <Typography fontWeight="medium">{money(baseRecipesCost)}</Typography>
             </Box>
           )}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography>עלות עבודה:</Typography>
-            <Typography fontWeight="medium">{laborCost.toFixed(2)} ₪</Typography>
+            <Typography fontWeight="medium">{money(laborCost)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography>עלויות תקורה:</Typography>
-            <Typography fontWeight="medium">{overheadCost.toFixed(2)} ₪</Typography>
+            <Typography fontWeight="medium">{money(overheadCost)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography>אריזה:</Typography>
-            <Typography fontWeight="medium">{packagingCost.toFixed(2)} ₪</Typography>
+            <Typography fontWeight="medium">{money(packagingCost)}</Typography>
           </Box>
 
           <Divider sx={{ my: 2 }} />
@@ -160,7 +184,7 @@ export default function RecipeCostsPanel({ costBreakdown }) {
               עלות כוללת:
             </Typography>
             <Typography variant="h6" sx={{ color: '#751B13', fontWeight: 'bold' }}>
-              {totalCost.toFixed(2)} ₪
+              {money(totalCost)}
             </Typography>
           </Box>
 
@@ -171,7 +195,7 @@ export default function RecipeCostsPanel({ costBreakdown }) {
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography>עלות ליחידה:</Typography>
             <Typography fontWeight="medium" sx={{ color: '#D84315', fontSize: '1.1rem' }}>
-              {costPerUnit.toFixed(2)} ₪
+              {money(costPerUnit)}
             </Typography>
           </Box>
         </Box>

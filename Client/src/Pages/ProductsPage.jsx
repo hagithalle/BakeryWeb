@@ -50,11 +50,13 @@ import {
 import { resolveImageUrl } from "../utils/imageUrl";
 import { formatMoneyOrDash } from "../utils/pricingForm";
 import { resolveProductCategory } from "../utils/productCategory";
+import { isCostBlocked } from "../utils/costStatus";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 
 // ===== helpers =====
-const formatCurrency = (value) => `₪${toNumber(value).toFixed(2)}`;
+// null = the cost cannot be calculated reliably (shown as "—", never as ₪0.00)
+const formatCurrency = (value) => (value === null || value === undefined ? "—" : `₪${toNumber(value).toFixed(2)}`);
 
 export default function ProductsPage() {
   const { lang } = useLanguage();
@@ -238,6 +240,10 @@ export default function ProductsPage() {
           ? pricing.finalPrice ?? pricing.FinalPrice ?? null
           : getField(p, "sellingPriceWithVAT", "SellingPriceWithVAT") ?? null;
         const priceUnconfirmed = !!(pricing?.isLegacy ?? pricing?.IsLegacy);
+        // Server marked the production cost as unreliable: no cost figures are shown (the price shown is the
+        // server's: a manually confirmed price is kept exactly; no automatic price is calculated).
+        const costBlocked = isCostBlocked(p);
+        const costOrNull = (value) => (costBlocked ? null : value);
 
         return {
           id: getField(p, "id", "Id"),
@@ -246,14 +252,15 @@ export default function ProductsPage() {
           categoryLabel: category || "ללא קטגוריה",
           productTypeLabel,
           recipeUnits,
-          ingredientsCost,
-          packagingCost,
-          laborCost: recipeLabor + packagingLabor,
-          overheadCost: recipeOverhead + packagingOverhead,
-          totalCost,
+          ingredientsCost: costOrNull(ingredientsCost),
+          packagingCost: costOrNull(packagingCost),
+          laborCost: costOrNull(recipeLabor + packagingLabor),
+          overheadCost: costOrNull(recipeOverhead + packagingOverhead),
+          totalCost: costOrNull(totalCost),
           profitPercent,
           sellingPrice: sellingWithVat,
           priceUnconfirmed,
+          costBlocked,
           raw: p,
         };
       });
@@ -333,6 +340,7 @@ export default function ProductsPage() {
                   laborCost,
                   profitPercent,
                   priceUnconfirmed,
+                  costBlocked,
                   raw: product,
                 } = item;
 
@@ -625,6 +633,11 @@ export default function ProductsPage() {
                                 מחיר ישן – יש לאשר בעריכת המוצר
                               </Typography>
                             )}
+                            {costBlocked && (
+                              <Typography variant="caption" sx={{ display: "block", textAlign: "center", color: "#B3261E", fontWeight: 700 }}>
+                                לא ניתן לחשב עלות אמינה – אין רווח ומחיר אוטומטי
+                              </Typography>
+                            )}
                           </Box>
 
                           {/* רווח */}
@@ -738,6 +751,7 @@ export default function ProductsPage() {
                           >
                             {formatMoneyOrDash(productPrice)}
                             {priceUnconfirmed && " · לא אושר"}
+                            {costBlocked && " · עלות לא אמינה"}
                           </Typography>
                         </Box>
 

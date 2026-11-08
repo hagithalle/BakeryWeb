@@ -39,7 +39,8 @@ namespace Server.Services.Pricing
             if (!input.CostComplete)
             {
                 pricing.CostStatus = "Incomplete";
-                pricing.Issues.Add(new("CostIncomplete", "חסרים נתונים לחישוב עלות הייצור (מתכון, חומר גלם או אריזה) – לא ניתן לחשב רווח"));
+                pricing.Issues.Add(new("CostIncomplete",
+                    "לא ניתן לחשב עלות ייצור אמינה (יחידות, המרות, מחירים או רכיבים חסרים – ראו אזהרות העלות) – לא מחושבים רווח ומחיר אוטומטי"));
             }
             else if (input.ProductionCost <= 0)
             {
@@ -126,6 +127,17 @@ namespace Server.Services.Pricing
         private static ProductPricing Legacy(PricingInput input, ProductPricing pricing)
         {
             var hasStored = input.StoredPrice is decimal s && s > 0;
+            var costValid = input.CostComplete && input.ProductionCost > 0;
+            if (!hasStored && !costValid)
+            {
+                // Without a stored price the old behaviour derived a price from the cost; an unreliable cost must not
+                // produce a price, so none is shown until the cost can be calculated (nothing stored changes).
+                pricing.Legacy = new LegacyPriceReview { StoredPrice = input.StoredPrice, DisplayedPrice = null, LegacyVatRate = input.LegacyVatRate };
+                pricing.Issues.Add(new("PriceNeedsCost", "לא ניתן להציג מחיר: אין מחיר שמור ועלות הייצור לא ניתנת לחישוב אמין"));
+                pricing.Issues.Add(new("LegacyPriceNotConfirmed",
+                    "מחיר מוצר זה נשמר לפני שהוגדר אם הוא כולל מע\"מ. יש לאשר מהו המחיר הסופי ללקוח"));
+                return pricing;
+            }
             // Same expressions as the previous ProductService.CalculateSellingPrice, so the values are identical.
             var beforeVat = hasStored ? input.StoredPrice!.Value : input.ProductionCost + input.ProductionCost * input.ProductMarkup;
             var displayed = beforeVat * (1 + input.LegacyVatRate);

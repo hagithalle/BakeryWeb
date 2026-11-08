@@ -7,6 +7,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useLanguage } from "../../../context/LanguageContext";
 import useLocaleStrings from "../../../hooks/useLocaleStrings";
 import { units, unitLabels } from "../../../constants/units";
+import { normalizeUnit, ingredientLineFlags as lineFlags } from "../../../utils/recipeIngredientLines";
 import IngredientDialog from "../../IngredientDialog";
 import { fetchCategories } from "../../../Services/ingredientsService";
 // helper to highlight missing ingredient
@@ -73,16 +74,17 @@ export default function RecipeIngredientsSection({
   // התחלת עריכה של רכיב קיים
   const handleStartEdit = idx => {
     setEditingIdx(idx);
-    setEditingAmount(ingredients[idx].amount.toString());
-    setEditingUnit(ingredients[idx].unit.toString());
+    setEditingAmount(String(ingredients[idx].amount ?? ""));
+    setEditingUnit(ingredients[idx].unit == null ? "" : String(ingredients[idx].unit));
   };
 
-  // שמירה של עריכה
+  // שמירה של עריכה – הערכים נשמרים כפי שהוזנו (בלי ברירת מחדל שקטה ל-0 או לק"ג);
+  // ערך חסר/לא תקין מסומן בשורה ועוצר את שמירת המתכון
   const handleSaveEdit = idx => {
     const updated = {
       ...ingredients[idx],
-      amount: parseFloat(editingAmount) || 0,
-      unit: parseInt(editingUnit) || 1
+      amount: editingAmount,
+      unit: normalizeUnit(editingUnit)
     };
 
     // בדוק אם החומר גלם קיים ברשימה
@@ -439,10 +441,17 @@ export default function RecipeIngredientsSection({
               ) : (
                 // מצב צפייה
                 <>
-                  <Typography sx={{ flex: 1 }}>
-                    {ing.name} - {ing.amount}{" "}
-                    {unitLabels[ing.unit] || ing.unit}
-                  </Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography>
+                      {ing.name || "(חומר גלם לא נבחר)"} - {ing.amount}{" "}
+                      {unitLabels[normalizeUnit(ing.unit)] || ing.unit || ""}
+                    </Typography>
+                    {lineFlags(ing).map(flag => (
+                      <Typography key={flag} sx={{ color: "#B3261E", fontSize: 13, fontWeight: 600 }}>
+                        ⚠ {flag}
+                      </Typography>
+                    ))}
+                  </Box>
                   <IconButton
                     onClick={() => handleStartEdit(idx)}
                     sx={{ color: "#5D4037" }}

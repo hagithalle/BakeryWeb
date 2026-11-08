@@ -17,7 +17,8 @@ import RecipeDetailsPanel from "../Components/Recipes/RecipeDetailsPanel";
 import RecipeStartDialog from "../Components/Recipes/RecipeStartDialog";
 import ImportRecipeDialog from "../Components/Recipes/Import/ImportRecipeDialog.jsx";
 import { useLanguage } from "../context/LanguageContext";
-import { units as UNIT_OPTIONS } from "../constants/units";
+import { unitLabels } from "../constants/units";
+import { buildIngredientLines, buildBaseRecipeLines, isSuspiciousQuantity } from "../utils/recipeIngredientLines";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 import mapServerRecipeToForm, { mapImportedRecipeToForm } from "../utils/recipeMappers.js";
 
@@ -162,91 +163,62 @@ const handleBackToImport = () => {
       console.log("▶️ עיבוד רכיבים:");
       console.log("   מתכון קיבל", recipe.ingredients.length, "רכיבים:");
 
-      const ensuredIngredients = [];
-
-      for (const ing of recipe.ingredients || []) {
-        console.log(`\n   🔍 מעבד רכיב: "${ing.name}"`);
-        console.log(
-          `     קלט: {id: ${ing.ingredientId}, name: "${ing.name}", amount: ${ing.amount}, unit: ${ing.unit}}`
+      // Every row is sent exactly as entered, or the save stops with the full list of problems:
+      // no row is skipped and no quantity/unit is replaced by a default (see utils/recipeIngredientLines.js).
+      let currentIngredients = ingredientsList || [];
+      let built = buildIngredientLines(recipe.ingredients, currentIngredients);
+      if (built.problems.length > 0) {
+        alert("לא ניתן לשמור את המתכון – יש לתקן את השורות הבאות:\n\n• " + built.problems.join("\n• "));
+        return;
+      }
+      if (built.unknownNames.length > 0) {
+        const create = window.confirm(
+          "חומרי הגלם הבאים לא נמצאים ברשימה שלך:\n\n• " + built.unknownNames.join("\n• ") +
+          "\n\nליצור אותם כחומרי גלם חדשים? הם ייווצרו ללא מחיר (מחיר לפי ק\"ג) – עלות המתכון תסומן כחסומה עד שיוזן להם מחיר."
         );
-
-        let found;
-
-        // חיפוש לפי ID
-        if (ing.ingredientId) {
-          found = (ingredientsList || []).find(
-            (i) => i.id === ing.ingredientId
-          );
-          if (found) {
-            console.log(`     ✅ נמצא ב-DB לפי ID: ${found.id}`);
-          }
+        if (!create) return;
+        const created = [];
+        for (const name of built.unknownNames) {
+          created.push(await addIngredient({ name, unit: 1, category: 7, pricePerKg: 0, stockQuantity: 0, stockUnit: 1 }));
         }
-
-        // אם לא נמצא – חיפוש לפי שם / יצירה
-        if (!found) {
-          found = (ingredientsList || []).find(
-            (i) => i.name === ing.name || i.ingredientName === ing.name
-          );
-
-          if (!found) {
-            console.log(`     ⚠️ רכיב לא נמצא ב-DB, מוסיף חדש...`);
-            found = await addIngredient({
-              name: ing.name,
-              unit: 1,
-              category: 7,
-              pricePerKg: 0,
-              stockQuantity: 0,
-              stockUnit: 1,
-            });
-            await queryClient.invalidateQueries(["ingredients"]);
-            console.log(`     ✅ נוסף ב-DB עם ID: ${found.id}`);
-          } else {
-            console.log(`     ✅ נמצא ב-DB לפי שם עם ID: ${found.id}`);
-          }
-        }
-
-        // ולידציה לכמות
-        if (
-          !ing.amount ||
-          isNaN(Number(ing.amount)) ||
-          Number(ing.amount) <= 0
-        ) {
-          console.warn(`     ❌ כמות לא תקינה: "${ing.amount}"`);
-          alert(`חומר הגלם "${ing.name}" חייב כמות מספרית גדולה מ-0!`);
-          continue;
-        }
-
-        // יחידת מידה: לא משכתבים בשקט ערך לא חוקי (למשל 0 ישן) לגרם
-        const rawUnit = ing.unit;
-        const numericUnit = Number(rawUnit);
-        let unit;
-        if (rawUnit === undefined || rawUnit === null || rawUnit === "") {
-          unit = 2; // שורה חדשה בלי יחידה: ברירת מחדל גרם
-        } else if (UNIT_OPTIONS.some((u) => u.value === numericUnit)) {
-          unit = numericUnit;
-        } else if (!isNaN(numericUnit)) {
-          // ערך מספרי לא חוקי (בד"כ 0 ממתכון ישן) - עוצרים את השמירה ומבקשים לבחור יחידה
-          alert(`לחומר הגלם "${ing.name}" אין יחידת מידה תקינה. יש לבחור יחידת מידה לפני השמירה.`);
+        await queryClient.invalidateQueries(["ingredients"]);
+        currentIngredients = [...currentIngredients, ...created];
+        built = buildIngredientLines(recipe.ingredients, currentIngredients);
+        if (built.problems.length > 0 || built.unknownNames.length > 0) {
+          alert("לא ניתן לשמור את המתכון – חלק מחומרי הגלם לא נוצרו.");
           return;
-        } else {
-          unit = 2; // יחידה טקסטואלית (ייבוא AI) - התנהגות קיימת, תטופל בענף יחידות המידה
         }
+      }
+      const ensuredIngredients = built.lines.map(({ IngredientId, Quantity, Unit }) => ({ IngredientId, Quantity, Unit }));
 
-        const finalIngredient = {
-          IngredientId: found.id,
-          Quantity: Number(ing.amount),
-          Unit: unit,
-        };
-        ensuredIngredients.push(finalIngredient);
-        console.log(
-          `     ➡️ שלח לשרת: {IngredientId: ${finalIngredient.IngredientId}, Quantity: ${finalIngredient.Quantity}, Unit: ${finalIngredient.Unit}}`
-        );
+      const baseBuilt = buildBaseRecipeLines(recipe.baseRecipes);
+      if (baseBuilt.problems.length > 0) {
+        alert("לא ניתן לשמור את המתכון – יש לתקן את מתכוני הבסיס:\n\n• " + baseBuilt.problems.join("\n• "));
+        return;
       }
 
-      console.log(
-        `\n   📦 סה"כ רכיבים שישלחו: ${ensuredIngredients.length}`
-      );
-      console.log("   ", JSON.stringify(ensuredIngredients, null, 4));
+      // Suspicious quantities (e.g. 500 ליטר) are never corrected automatically: the user confirms explicitly.
+      const confirmations = {};
+      const suspicious = built.lines.filter((l) => isSuspiciousQuantity(l.Quantity, l.Unit));
+      if (suspicious.length > 0) {
+        const ok = window.confirm(
+          "יש כמויות חריגות במתכון:\n\n• " +
+          suspicious.map((l) => `${l.name}: ${l.Quantity} ${unitLabels[l.Unit] ?? ""}`).join("\n• ") +
+          "\n\nייתכן שנבחרה יחידה שגויה (למשל ליטר במקום מ\"ל). הכמויות לא ישתנו אוטומטית." +
+          "\nלשמור בדיוק כפי שהוזן? (העלות של שורות אלו תסומן לבדיקה ולא יחושב ממנה מחיר אוטומטי)"
+        );
+        if (!ok) return;
+        confirmations.confirmSuspiciousQuantities = true;
+      }
+
+      // Removing every ingredient of an existing recipe needs an explicit confirmation (server enforces it too).
+      if (editRecipe && (editRecipe.ingredients?.length ?? 0) > 0 && ensuredIngredients.length === 0) {
+        const ok = window.confirm(
+          `השמירה תמחק את כל ${editRecipe.ingredients.length} חומרי הגלם של המתכון. להמשיך?`
+        );
+        if (!ok) return;
+        confirmations.confirmRemoveAllIngredients = true;
+      }
 
       // 3. שלבים
       console.log("\n▶️ עיבוד שלבים:");
@@ -303,7 +275,7 @@ const handleBackToImport = () => {
         recipeType: recipe.recipeType ?? 2,
         ingredients: ensuredIngredients,
         steps: mappedSteps,
-        baseRecipes: recipe.baseRecipes || [],
+        baseRecipes: baseBuilt.lines,
       };
 
       console.log("   📤 שלח לשרת:");
@@ -321,7 +293,8 @@ const handleBackToImport = () => {
         await updateRecipeWithImage(
           editRecipe.id,
           recipeToSend,
-          recipe.imageFile
+          recipe.imageFile,
+          confirmations
         );
         console.log("✅ שמור בהצלחה!");
 
@@ -333,7 +306,7 @@ const handleBackToImport = () => {
         alert("✅ המתכון עודכן בהצלחה!");
       } else {
         console.log("   מצב: יצירת מתכון חדש");
-        await createRecipeWithImage(recipeToSend, recipe.imageFile);
+        await createRecipeWithImage(recipeToSend, recipe.imageFile, confirmations);
         console.log("✅ שמור בהצלחה!");
 
         await queryClient.invalidateQueries(["recipes"]);
@@ -358,10 +331,12 @@ const handleBackToImport = () => {
       console.error("   message:", err?.message);
       console.error("=============== END ERROR ===============\n");
 
-      const errorMsg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "שגיאה לא ידועה";
+      // The server explains every rejected line (invalid lines, suspicious quantities, ingredients that would be
+      // removed); nothing was saved in that case.
+      const data = err?.response?.data;
+      const details = [...(data?.errors || []), ...(data?.lines || []).map((l) => l.text)];
+      const errorMsg = (data?.message || err?.message || "שגיאה לא ידועה") +
+        (details.length ? "\n\n• " + details.join("\n• ") : "");
       alert("שגיאה בשמירת מתכון: " + errorMsg);
     }
   };

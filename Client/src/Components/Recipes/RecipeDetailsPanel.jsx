@@ -37,7 +37,7 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
       const ing = ri.ingredient || ri.Ingredient;
       return {
         name: ing?.name || ing?.Name || "לא ידוע",
-        unit: getUnitDisplayName(ri?.unit ?? ri?.Unit ?? 2), // היחידה לקוחה מה-RecipeIngredient, לא מה-Ingredient
+        unit: getUnitDisplayName(ri?.unit ?? ri?.Unit), // ללא ברירת מחדל: יחידה חסרה מוצגת כ"לא מוגדרת" -- היחידה לקוחה מה-RecipeIngredient, לא מה-Ingredient
         amount: ri.quantity || ri.Quantity,
         sum: ing?.cost || ing?.Cost || 0
       };
@@ -64,6 +64,7 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
       ingredients: (recipe.ingredients || recipe.Ingredients || []).map((ri) => {
         const ing = ri.ingredient || ri.Ingredient;
         return {
+          lineId: ri.id ?? ri.Id ?? null,
           name: ing?.name || ing?.Name || "לא ידוע",
           amount: ri.quantity ?? ri.Quantity,
           unit: getUnitDisplayName(ri.unit ?? ri.Unit), // היחידה של שורת המתכון
@@ -71,10 +72,13 @@ export default function RecipeDetailsPanel({ recipe, onEdit, onDelete, tab, onTa
         };
       }),
       subRecipes: (recipe.baseRecipes || recipe.BaseRecipes || []).map((br) => ({
+        lineId: br.id ?? br.Id ?? null,
         name: br.baseRecipe?.name || br.BaseRecipe?.Name || "מתכון בסיס",
         amount: br.quantity ?? br.Quantity,
         cost: num(br.totalCost ?? br.TotalCost),
       })),
+      recipeId: recipe.id ?? recipe.Id,
+      costStatus: recipe.costStatus ?? recipe.CostStatus,
       baseRecipesCost: num(recipe.baseRecipesCost ?? recipe.BaseRecipesCost),
       laborCost: num(recipe.laborCost ?? recipe.LaborCost),
       overheadCost: num(recipe.overheadCost ?? recipe.OverheadCost),

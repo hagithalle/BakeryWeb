@@ -32,7 +32,8 @@ namespace Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromForm] Recipe recipe, [FromForm] IFormFile? imageFile)
+        public async Task<IActionResult> Create([FromForm] Recipe recipe, [FromForm] IFormFile? imageFile,
+            [FromForm] bool confirmSuspiciousQuantities = false)
         {
             Console.WriteLine("\n========== CREATE START ==========");
             Console.WriteLine($"recipe={recipe}");
@@ -47,6 +48,8 @@ namespace Server.Controllers
             var unitErrors = RecipeUnitValidator.Validate(recipe);
             if (unitErrors.Count > 0)
                 return InvalidUnits(unitErrors);
+            if (LineProblems(recipe, confirmSuspiciousQuantities) is { } lineProblem)
+                return lineProblem;
 
             Console.WriteLine($"Name: {recipe.Name}");
             Console.WriteLine($"Ingredients: {recipe.Ingredients?.Count ?? 0}");
@@ -80,7 +83,8 @@ namespace Server.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromForm] Recipe recipe, [FromForm] IFormFile? imageFile)
+        public async Task<IActionResult> Update(int id, [FromForm] Recipe recipe, [FromForm] IFormFile? imageFile,
+            [FromForm] bool confirmSuspiciousQuantities = false, [FromForm] bool confirmRemoveAllIngredients = false)
         {
             Console.WriteLine("\n╔════════════════════════════════════════════════════╗");
             Console.WriteLine($"║   RecipeController.Update - ID: {id,-40}║");
@@ -101,6 +105,22 @@ namespace Server.Controllers
             var unitErrors = RecipeUnitValidator.Validate(recipe);
             if (unitErrors.Count > 0)
                 return InvalidUnits(unitErrors);
+            if (LineProblems(recipe, confirmSuspiciousQuantities) is { } lineProblem)
+                return lineProblem;
+
+            // An update replaces all ingredient lines. A request with none, for a recipe that has some, is almost
+            // always a client that failed to load them (the edit-form bug that deleted recipe lines), so it needs an
+            // explicit confirmation. (Unknown or another user's recipe: UpdateAsync answers NotFound as before.)
+            if ((recipe.Ingredients?.Count ?? 0) == 0 && !confirmRemoveAllIngredients
+                && await _service.GetByIdAsync(id) is { Ingredients.Count: > 0 } existing)
+            {
+                return BadRequest(new
+                {
+                    code = "IngredientsWouldBeRemoved",
+                    message = $"השמירה תמחק את כל {existing.Ingredients.Count} חומרי הגלם של המתכון. השמירה בוטלה – אם זו הכוונה, יש לאשר במפורש.",
+                    existingIngredientLines = existing.Ingredients.Count,
+                });
+            }
 
             // [2] עדכון זמנים ונתונים
             Console.WriteLine("\n[2] 📦 Updated Fields:");
@@ -215,5 +235,26 @@ namespace Server.Controllers
             message = "יש לבחור יחידת מידה תקינה לכל רכיב במתכון",
             errors,
         });
+
+        /// <summary>
+        /// Invalid lines (no ingredient / quantity not above 0) always reject the save. Suspicious quantities (e.g.
+        /// 500 L) reject it until the user explicitly confirms them; they are never corrected automatically.
+        /// </summary>
+        private BadRequestObjectResult? LineProblems(Recipe recipe, bool confirmSuspiciousQuantities)
+        {
+            var invalid = RecipeLineValidator.InvalidLines(recipe);
+            if (invalid.Count > 0)
+                return BadRequest(new { code = "InvalidLines", message = "יש שורות לא תקינות במתכון – השמירה בוטלה", errors = invalid });
+
+            var suspicious = RecipeLineValidator.SuspiciousLines(recipe);
+            if (suspicious.Count > 0 && !confirmSuspiciousQuantities)
+                return BadRequest(new
+                {
+                    code = "SuspiciousQuantities",
+                    message = "יש כמויות חריגות במתכון (ייתכן שנבחרה יחידה שגויה, למשל ליטר במקום מ\"ל). השמירה בוטלה עד לאישור מפורש.",
+                    lines = suspicious,
+                });
+            return null;
+        }
     }
 }

@@ -42,6 +42,7 @@ import {
 } from "../utils/productForm";
 import { resolveImageUrl } from "../utils/imageUrl";
 import { PREDEFINED_PRODUCT_CATEGORIES, categoryFormState, categoryFromForm } from "../utils/productCategory";
+import { blockingWarnings, costText, isCostBlocked } from "../utils/costStatus";
 import {
   PricingMode,
   initialPricingState,
@@ -433,6 +434,8 @@ export default function AddProductDialog({
       hasItems, // אם יש פריטים לחישוב או לא
       ready,
       warnings: ready ? costPreview.warnings || [] : [],
+      // the server marked part of this cost as unreliable: no cost figures (and no automatic price/profit)
+      blocked: ready && blockingWarnings(costPreview.warnings).length > 0,
       // מחיר, מע"מ ורווח – מחושבים בשרת בלבד
       pricing: ready ? costPreview.pricing || null : null,
     };
@@ -955,9 +958,10 @@ export default function AddProductDialog({
                             const recipeOutputUnits = recipe.OutputUnits ?? recipe.outputUnits ?? 1;
                             const costPerUnit = recipeTotalCost / recipeOutputUnits;
                             const itemCost = costPerUnit * (item.quantity || 1);
+                            const blocked = isCostBlocked(recipe);
                             return (
                               <Typography sx={{ flex: 1, color: '#5D4037' }}>
-                                {item.name} - {item.quantity} יחידות (₪{itemCost.toFixed(2)})
+                                {item.name} - {item.quantity} יחידות ({costText(itemCost, blocked)}{blocked ? " – עלות לא אמינה" : ""})
                               </Typography>
                             );
                           }
@@ -1372,7 +1376,7 @@ export default function AddProductDialog({
                     📦 עלות בסיסית (מוצר + אריזה חומרים):
                   </Typography>
                   <Typography variant="body2">
-                    ₪{calculatedPrices.baseCost?.toFixed(2) || '0.00'}
+                    {costText(calculatedPrices.baseCost, calculatedPrices.blocked)}
                   </Typography>
                 </Box>
 
@@ -1383,17 +1387,25 @@ export default function AddProductDialog({
                       ⏱️ עלות זמן אריזה/עבודה ({packagingTimeMinutes} דקות):
                     </Typography>
                     <Typography variant="body2" sx={{ pl: 1 }}>
-                      עבודה: ₪{calculatedPrices.packagingLaborCost?.toFixed(2) || '0.00'}
+                      עבודה: {costText(calculatedPrices.packagingLaborCost, calculatedPrices.blocked)}
                     </Typography>
                     <Typography variant="body2" sx={{ pl: 1 }}>
-                      תקורה: ₪{calculatedPrices.packagingOverheadCost?.toFixed(2) || '0.00'}
+                      תקורה: {costText(calculatedPrices.packagingOverheadCost, calculatedPrices.blocked)}
                     </Typography>
                   </Box>
                 )}
 
                 {/* אזהרות על נתונים שעלולים להפוך את העלות לשגויה */}
                 {calculatedPrices.warnings.length > 0 && (
-                  <Box sx={{ bgcolor: '#FFF8E1', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #F9A825' }}>
+                  <Box sx={{
+                    bgcolor: calculatedPrices.blocked ? '#FDECEA' : '#FFF8E1', p: 1.5, borderRadius: 1.5,
+                    borderLeft: `4px solid ${calculatedPrices.blocked ? '#B3261E' : '#F9A825'}`,
+                  }}>
+                    {calculatedPrices.blocked && (
+                      <Typography variant="body2" sx={{ color: '#7A1C16', fontWeight: 800, mb: 0.5 }}>
+                        לא ניתן לחשב עלות אמינה – לא מוצגים עלות, רווח ומחיר אוטומטי (מחיר ידני נשמר כפי שהוא):
+                      </Typography>
+                    )}
                     {[...new Set(calculatedPrices.warnings.map(w => w.message))].map(message => (
                       <Typography key={message} variant="body2" sx={{ color: '#6D4C41' }}>⚠️ {message}</Typography>
                     ))}
@@ -1403,7 +1415,7 @@ export default function AddProductDialog({
                 {/* סה"כ עלות */}
                 <Box sx={{ bgcolor: '#E8D4C4', p: 1.5, borderRadius: 1.5, borderLeft: '4px solid #8B4513' }}>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: '#5D4037' }}>
-                    🔢 סה"כ עלות מוצר: ₪{calculatedPrices.totalCost.toFixed(2)}
+                    🔢 סה"כ עלות מוצר: {costText(calculatedPrices.totalCost, calculatedPrices.blocked)}
                   </Typography>
                 </Box>
               </Box>

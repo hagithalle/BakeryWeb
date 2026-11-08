@@ -11,7 +11,13 @@ export async function deleteRecipe(id) {
 
 // יצירת מתכון חדש עם קובץ תמונה
 
-export async function createRecipeWithImage(recipe, imageFile) {
+// Explicit user confirmations the server requires before it saves (never sent unless confirmed).
+const appendConfirmations = (formData, options = {}) => {
+  if (options.confirmSuspiciousQuantities) formData.append('ConfirmSuspiciousQuantities', 'true');
+  if (options.confirmRemoveAllIngredients) formData.append('ConfirmRemoveAllIngredients', 'true');
+};
+
+export async function createRecipeWithImage(recipe, imageFile, options = {}) {
   logManager.log('\n>>> createRecipeWithImage START');
   logManager.log('📥 קיבל מ-Component:' + JSON.stringify(recipe, null, 2));
   
@@ -175,6 +181,7 @@ export async function createRecipeWithImage(recipe, imageFile) {
     logManager.log('\n📤 שליחה ל-SERVER: POST /api/recipe\n');
   
   try {
+    appendConfirmations(formData, options);
     const response = await api.post('/api/recipe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -209,7 +216,7 @@ export async function getAllRecipes() {
 }
 
 // עדכון מתכון קיים (כולל אפשרות לעדכן תמונה)
-export async function updateRecipeWithImage(id, recipe, imageFile) {
+export async function updateRecipeWithImage(id, recipe, imageFile, options = {}) {
   logManager.log(`\n>>> updateRecipeWithImage START (ID: ${id})`);
   logManager.log('📥 קיבל מ-Component:' + JSON.stringify(recipe, null, 2));
   
@@ -320,6 +327,7 @@ export async function updateRecipeWithImage(id, recipe, imageFile) {
   console.log('\n📤 שליחה ל-SERVER: PUT /api/recipe/' + id);
     logManager.log('\n📤 שליחה ל-SERVER: PUT /api/recipe/' + id);
   
+  appendConfirmations(formData, options);
   const response = await api.put(`/api/recipe/${id}`, formData);
   logManager.log('✅ תשובה מהשרת: ' + JSON.stringify(response.data));
   logManager.log('>>> updateRecipeWithImage END\n');

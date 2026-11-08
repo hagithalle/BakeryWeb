@@ -8,9 +8,6 @@ namespace Server.Services.Pricing
     /// <summary>Prices products for the current user: their settings, today's VAT rate and the product's cost.</summary>
     public sealed class PricingService
     {
-        // Cost warnings that mean part of the cost could not be calculated at all.
-        private static readonly string[] IncompleteCostCodes =
-            { "MissingIngredient", "MissingSubRecipe", "Cycle", "MissingRecipe", "MissingPackaging" };
 
         private readonly BusinessSettingsService _settings;
         private readonly VatRateTable _rates;
@@ -37,7 +34,9 @@ namespace Server.Services.Pricing
                 VatStatus: _settings.VatStatus,
                 VatRate: TodaysVatRate(),
                 ProductionCost: cost.TotalCost,
-                CostComplete: !cost.Warnings.Any(w => IncompleteCostCodes.Contains(w.Code)),
+                // Any blocking warning (unknown/unsupported units, missing price or reference, suspicious quantity)
+                // means the cost is unreliable: no profit and no automatic price are calculated from it.
+                CostComplete: !cost.Warnings.Any(w => w.Blocking),
                 LegacyVatRate: _legacyVatRate,
                 UnverifiedPurchases: cost.Warnings
                     .Where(w => w.Code is "PurchaseVatUnknown" or "InputVatDeductibilityUnknown")
@@ -51,10 +50,20 @@ namespace Server.Services.Pricing
 
             if (pricing.IsLegacy)
             {
-                // Exactly the values the API returned before A2.
+                // Exactly the values the API returned before A2 - except that nothing is derived from an unreliable
+                // cost: the stored price is still returned unchanged, but no profit, and no cost-based price.
                 var hasStored = product.ManualSellingPrice is decimal s && s > 0;
-                product.ProfitAmount = hasStored ? product.ManualSellingPrice!.Value - product.TotalCost : product.TotalCost * product.ProfitMarginPercent;
-                product.SellingPriceBeforeVAT = hasStored ? product.ManualSellingPrice!.Value : product.TotalCost + product.ProfitAmount;
+                var costValid = pricing.CostStatus == "Complete";
+                if (costValid)
+                {
+                    product.ProfitAmount = hasStored ? product.ManualSellingPrice!.Value - product.TotalCost : product.TotalCost * product.ProfitMarginPercent;
+                    product.SellingPriceBeforeVAT = hasStored ? product.ManualSellingPrice!.Value : product.TotalCost + product.ProfitAmount;
+                }
+                else
+                {
+                    product.ProfitAmount = null;
+                    product.SellingPriceBeforeVAT = hasStored ? product.ManualSellingPrice!.Value : null;
+                }
                 product.SellingPriceWithVAT = product.SellingPriceBeforeVAT * (1 + _legacyVatRate);
             }
             else

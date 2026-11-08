@@ -1,68 +1,42 @@
+import { normalizeUnit } from "./recipeIngredientLines";
+
+// Maps a recipe from the server to the edit form.
+// Every stored line is kept exactly (including the same ingredient twice); quantity and unit are shown as
+// stored, never replaced by a default. A missing/invalid unit stays empty (null) so the user must choose one.
 export default function mapServerRecipeToForm(recipe, ingredientsList = []) {
   if (!recipe) return null;
 
   const yieldAmount = recipe.outputUnits || recipe.OutputUnits || 1;
   const outputUnitType = recipe.outputUnitType ?? recipe.OutputUnitType ?? 0;
 
-  // מיפוי מתכונים בסיסיים
-  const baseRecipes = (recipe.baseRecipes || recipe.BaseRecipes || []).map(
-    (br) => ({
-      baseRecipeId: br.baseRecipeId || br.BaseRecipeId,
-      name: br.baseRecipe?.name || br.BaseRecipe?.name || "",
-      quantity: br.quantity || br.Quantity || 1,
-      unit: br.unit ?? br.Unit ?? 5,
-    })
-  );
+  // מתכוני בסיס
+  const baseRecipes = (recipe.baseRecipes || recipe.BaseRecipes || []).map((br) => ({
+    baseRecipeId: br.baseRecipeId ?? br.BaseRecipeId,
+    name: br.baseRecipe?.name || br.BaseRecipe?.name || br.BaseRecipe?.Name || "",
+    quantity: br.quantity ?? br.Quantity ?? null,
+    unit: normalizeUnit(br.unit ?? br.Unit),
+  }));
 
-  // מיפוי רכיבים
-  const ingredients =
-    recipe.ingredients || recipe.Ingredients || []
-      // מניעת כפילויות
-      .filter((ri, idx, arr) => {
-        const currentId =
-          ri.ingredient?.id ||
-          ri.Ingredient?.id ||
-          ri.ingredientId ||
-          ri.IngredientId;
-        const firstIndex = arr.findIndex((x) => {
-          const xId =
-            x.ingredient?.id ||
-            x.Ingredient?.id ||
-            x.ingredientId ||
-            x.IngredientId;
-          return xId === currentId;
-        });
-        return firstIndex === idx;
-      })
-      .map((ri) => {
-        const ingId =
-          ri.ingredient?.id ||
-          ri.Ingredient?.id ||
-          ri.ingredientId ||
-          ri.IngredientId;
-        const fullIngredient =
-          ingredientsList.find((i) => i.id === ingId) || {};
+  // רכיבים: (before the fix, operator precedence applied this mapping only to the empty fallback, so the form
+  // received raw server rows without name/amount and saving dropped them)
+  const rawIngredients = recipe.ingredients || recipe.Ingredients || [];
+  const ingredients = rawIngredients.map((ri) => {
+    const nested = ri.ingredient || ri.Ingredient;
+    const ingId = ri.ingredientId ?? ri.IngredientId ?? nested?.id ?? nested?.Id;
+    const fullIngredient = ingredientsList.find((i) => String(i.id) === String(ingId));
+    return {
+      lineId: ri.id ?? ri.Id ?? null,
+      ingredientId: ingId,
+      name: fullIngredient?.name || fullIngredient?.ingredientName || nested?.name || nested?.Name || "",
+      amount: ri.quantity ?? ri.Quantity ?? "",
+      unit: normalizeUnit(ri.unit ?? ri.Unit),
+    };
+  });
 
-        return {
-          ingredientId: ingId,
-          name:
-            fullIngredient.name ||
-            fullIngredient.ingredientName ||
-            ri.ingredient?.name ||
-            ri.Ingredient?.name ||
-            "",
-          amount: ri.quantity || ri.Quantity || 0,
-          unit: ri.unit ?? ri.Unit ?? 2,
-        };
-      });
-
-  // מיפוי שלבים
-  const steps =
-    (recipe.steps || recipe.Steps || [])
-      .sort(
-        (a, b) => (a.order || a.Order || 0) - (b.order || b.Order || 0)
-      )
-      .map((s) => s.description || s.Description || "");
+  // שלבים
+  const steps = [...(recipe.steps || recipe.Steps || [])]
+    .sort((a, b) => (a.order || a.Order || 0) - (b.order || b.Order || 0))
+    .map((s) => s.description || s.Description || "");
 
   return {
     // מידע בסיסי

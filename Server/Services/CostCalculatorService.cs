@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.Models;
+using Server.Services.Costing;
 using Server.Services.Pricing;
 
 namespace Server.Services
@@ -133,35 +134,26 @@ namespace Server.Services
 
         public decimal GetHourlyOverheadCost() => Data.HourlyOverhead;
 
-        // המרת כל יחידה לקילו (או ליטר עבור נוזלים)
+        // Quantity in the base unit of its kind (kg, L, units). The price is per base unit of the ingredient's kind.
+        // Only same-kind results are reliable; RecipeUnits.Check marks every other combination as blocking, so the
+        // values for those (and for cups) are never used for a price.
         private static decimal ConvertToKilogram(decimal quantity, UnitOfMeasure unit)
         {
             return unit switch
             {
                 UnitOfMeasure.Kilogram => quantity,
                 UnitOfMeasure.Gram => quantity / 1000,
-                UnitOfMeasure.Liter => quantity,  // נוזלים - נשמור בליטר
+                UnitOfMeasure.Liter => quantity,
                 UnitOfMeasure.Milliliter => quantity / 1000,
-                UnitOfMeasure.Unit => quantity,  // יחידות - נשמור כמות
-                UnitOfMeasure.Dozen => quantity * 12,  // תריסר לגרם (הנחה: ביצה = 50 גרם)
-                UnitOfMeasure.Package => quantity,  // חבילה - יחידה
-                UnitOfMeasure.Teaspoon => quantity * 0.005m,  // כפית ≈ 5 גרם
-                UnitOfMeasure.Tablespoon => quantity * 0.015m,  // כף ≈ 15 גרם
-                UnitOfMeasure.Cup => quantity * 0.240m,  // כוס ≈ 240 מ"ל (ליטר)
+                UnitOfMeasure.Unit => quantity,
+                UnitOfMeasure.Dozen => quantity * 12,          // 12 units
+                UnitOfMeasure.Package => quantity,             // per package (only against a price per package)
+                UnitOfMeasure.Teaspoon => quantity * 0.005m,   // metric teaspoon = 5 ml (volume only)
+                UnitOfMeasure.Tablespoon => quantity * 0.015m, // metric tablespoon = 15 ml (volume only)
+                UnitOfMeasure.Cup => quantity * 0.240m,        // cup size undefined -> always blocking
                 _ => quantity
             };
         }
-
-        private enum UnitKind { Unknown, Mass, Volume, Count }
-
-        private static UnitKind KindOf(UnitOfMeasure unit) => unit switch
-        {
-            UnitOfMeasure.Kilogram or UnitOfMeasure.Gram => UnitKind.Mass,
-            UnitOfMeasure.Liter or UnitOfMeasure.Milliliter or UnitOfMeasure.Teaspoon
-                or UnitOfMeasure.Tablespoon or UnitOfMeasure.Cup => UnitKind.Volume,
-            UnitOfMeasure.Unit or UnitOfMeasure.Dozen or UnitOfMeasure.Package => UnitKind.Count,
-            _ => UnitKind.Unknown
-        };
 
         // ------------------------------------------------------------------ ingredient lines
 
@@ -178,19 +170,28 @@ namespace Server.Services
             }
 
             var unit = (UnitOfMeasure)line.Unit;
-            if (!Enum.IsDefined(unit))
-                warnings.Add(CostWarning.UnknownLineUnit(recipeId, line.Id, ingredient.Name));
-            else if (!Enum.IsDefined(ingredient.Unit))
-                warnings.Add(CostWarning.UnknownIngredientUnit(recipeId, line.Id, ingredient.Name));
-            else
+            // Only exact conversions are trusted (see RecipeUnits). The arithmetic below is unchanged, but any line
+            // that needs a guessed factor is reported as BLOCKING, so no price is built on it.
+            switch (RecipeUnits.Check(line.Unit, ingredient.Unit))
             {
-                var lineKind = KindOf(unit);
-                var priceKind = KindOf(ingredient.Unit);
-                if (lineKind == UnitKind.Count && priceKind != UnitKind.Count || lineKind != UnitKind.Count && priceKind == UnitKind.Count)
-                    warnings.Add(CostWarning.UnitMismatch(recipeId, line.Id, ingredient.Name));
-                else if (lineKind != priceKind)
-                    warnings.Add(CostWarning.ApproximateConversion(recipeId, line.Id, ingredient.Name));
+                case RecipeUnits.Conversion.UnknownLineUnit:
+                    warnings.Add(CostWarning.UnknownLineUnit(recipeId, line.Id, ingredient.Name)); break;
+                case RecipeUnits.Conversion.UnknownPriceUnit:
+                    warnings.Add(CostWarning.UnknownIngredientUnit(recipeId, line.Id, ingredient.Name)); break;
+                case RecipeUnits.Conversion.CountVersusMeasure:
+                    warnings.Add(CostWarning.UnitMismatch(recipeId, line.Id, ingredient.Name)); break;
+                case RecipeUnits.Conversion.WeightVersusVolume:
+                    warnings.Add(CostWarning.ApproximateConversion(recipeId, line.Id, ingredient.Name)); break;
+                case RecipeUnits.Conversion.CupSizeUndefined:
+                    warnings.Add(CostWarning.UnsupportedUnit(recipeId, line.Id, ingredient.Name, "גודל כוס אינו מוגדר (240/250 מ\"ל)")); break;
+                case RecipeUnits.Conversion.PackageSizeUndefined:
+                    warnings.Add(CostWarning.UnsupportedUnit(recipeId, line.Id, ingredient.Name, "גודל החבילה אינו מוגדר")); break;
             }
+
+            if (line.Quantity <= 0)
+                warnings.Add(CostWarning.InvalidQuantity(recipeId, line.Id, ingredient.Name));
+            else if (RecipeUnits.IsSuspicious(line.Quantity, line.Unit))
+                warnings.Add(CostWarning.SuspiciousQuantity(recipeId, line.Id, ingredient.Name, line.Quantity, line.Unit));
 
             if (ingredient.PricePerKg == 0)
                 warnings.Add(CostWarning.ZeroPrice(recipeId, line.Id, ingredient.Name));
@@ -261,6 +262,8 @@ namespace Server.Services
                 }
                 if (line.Unit != UnitOfMeasure.Unit)
                     warnings.Add(CostWarning.SubRecipeUnitIgnored(recipeId, line.Id, baseRecipe.Name));
+                if (line.Quantity <= 0)
+                    warnings.Add(CostWarning.InvalidQuantity(recipeId, line.Id, baseRecipe.Name));
 
                 var b = RecipeCost(baseRecipe, new HashSet<int>(path));
                 var units = b.OutputUnits;

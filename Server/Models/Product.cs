@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Server.Models
@@ -98,5 +99,9 @@ namespace Server.Models
         // אזהרות על נתונים שעלולים להפוך את העלות לשגויה (הערכים עצמם לא משתנים)
         [NotMapped]
         public IReadOnlyList<CostWarning> CostWarnings { get; set; } = new List<CostWarning>();
+
+        // "Blocked" when any warning makes the production cost unreliable (see CostWarning.Blocking); never stored.
+        [NotMapped]
+        public string CostStatus => CostWarnings.Any(w => w.Blocking) ? "Blocked" : "Complete";
     }
 }

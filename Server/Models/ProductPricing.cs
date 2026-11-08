@@ -67,8 +67,11 @@ namespace Server.Models
     {
         /// <summary>Products.ManualSellingPrice exactly as stored (null when there is none).</summary>
         public decimal? StoredPrice { get; set; }
-        /// <summary>The price the app showed before A2 (stored price + legacy VAT).</summary>
-        public decimal DisplayedPrice { get; set; }
+        /// <summary>
+        /// The price the app showed before A2 (stored price + legacy VAT). Null when there is no stored price and the
+        /// cost is unreliable: then no price is derived from it.
+        /// </summary>
+        public decimal? DisplayedPrice { get; set; }
         public decimal LegacyVatRate { get; set; }
         /// <summary>"The customer pays the stored price" / "the customer pays the displayed price".</summary>
         public decimal? FinalIfStoredIsFinal { get; set; }

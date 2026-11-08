@@ -116,14 +116,14 @@ namespace Server.Tests.Recipes
             await _app.DisposeAsync();
         }
 
-        private static MultipartFormDataContent RecipeForm(string? ingredientUnit = "2", string? baseRecipeUnit = null)
+        private static MultipartFormDataContent RecipeForm(string? ingredientUnit = "2", string? baseRecipeUnit = null, string quantity = "100")
         {
             var form = new MultipartFormDataContent
             {
                 { new StringContent("Test recipe"), "Name" },
                 { new StringContent("1"), "OutputUnits" },
                 { new StringContent("7"), "Ingredients[0].IngredientId" },
-                { new StringContent("100"), "Ingredients[0].Quantity" },
+                { new StringContent(quantity), "Ingredients[0].Quantity" },
             };
             if (ingredientUnit != null) form.Add(new StringContent(ingredientUnit), "Ingredients[0].Unit");
             if (baseRecipeUnit != null)
@@ -183,7 +183,8 @@ namespace Server.Tests.Recipes
         [Fact]
         public async Task Update_WithValidUnits_IsSaved()
         {
-            var response = await _client.PutAsync("/api/recipe/5", RecipeForm(ingredientUnit: "8", baseRecipeUnit: "1"));
+            // 2 teaspoons: 100 teaspoons in one line is now a suspicious quantity that needs explicit confirmation (R2)
+            var response = await _client.PutAsync("/api/recipe/5", RecipeForm(ingredientUnit: "8", baseRecipeUnit: "1", quantity: "2"));
 
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
             var (id, saved) = Assert.Single(_service.Updated);
