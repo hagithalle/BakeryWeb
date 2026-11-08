@@ -13,13 +13,14 @@ const LOGO_HEIGHT = 360;
  * Made from assets/images/Logo_BakearyManger.png: the cream paper background converted to
  * transparency and the empty margins trimmed, so it sits cleanly on any light surface.
  * `height` accepts a number or an MUI responsive value; the width follows the aspect ratio.
+ * Pass alt="" when the name is already written next to the logo.
  */
-export default function BakeryManagerLogo({ height = 140, sx }) {
+export default function BakeryManagerLogo({ height = 140, alt = BAKERY_MANAGER_LOGO_ALT, sx }) {
   return (
     <Box
       component="img"
       src={bakeryManagerLogoUrl}
-      alt={BAKERY_MANAGER_LOGO_ALT}
+      alt={alt}
       width={LOGO_WIDTH}
       height={LOGO_HEIGHT}
       decoding="async"

@@ -1,74 +1,88 @@
 import { useState } from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ChefHat, BookOpen, Wheat, MoreHorizontal } from 'lucide-react';
+import { Ellipsis } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import { brandPalette as p } from '../../constants/brandPalette';
 import MoreDrawer from './MoreDrawer';
+import { MOBILE_TAB_ITEMS, findActiveNavItem, navLabel } from './navigation';
 
 const ICON_SIZE = 22;
-
-const TABS = [
-  { label: 'בית',       path: '/dashboard',   icon: <Home        size={ICON_SIZE} strokeWidth={1.8} /> },
-  { label: 'מוצרים',    path: '/products',    icon: <ChefHat     size={ICON_SIZE} strokeWidth={1.8} /> },
-  { label: 'מתכונים',   path: '/recipes',     icon: <BookOpen    size={ICON_SIZE} strokeWidth={1.8} /> },
-  { label: 'חומרי גלם', path: '/ingredients', icon: <Wheat       size={ICON_SIZE} strokeWidth={1.8} /> },
-  { label: 'עוד',       path: null,           icon: <MoreHorizontal size={ICON_SIZE} strokeWidth={1.8} /> },
-];
+const MORE = 'more';
 
 export default function BottomNavBar() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const { lang } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const current = TABS.findIndex(t => t.path && location.pathname.startsWith(t.path));
+  // A page that lives in the More drawer highlights the "More" tab.
+  const active = findActiveNavItem(pathname);
+  const value = !active ? false : active.mobileTab ? active.id : MORE;
 
-  const handleChange = (_, idx) => {
-    const tab = TABS[idx];
-    if (!tab.path) setDrawerOpen(true);
-    else navigate(tab.path);
+  const handleChange = (_, id) => {
+    if (id === MORE) setDrawerOpen(true);
+    else navigate(MOBILE_TAB_ITEMS.find((i) => i.id === id).path);
   };
 
   return (
     <>
       <Paper
+        component="nav"
+        aria-label={lang === 'he' ? 'ניווט ראשי' : 'Main navigation'}
         elevation={0}
         sx={{
           position: 'fixed',
           bottom: 0, left: 0, right: 0,
           zIndex: 1300,
-          borderTop: '1px solid #F0E4DB',
-          boxShadow: '0 -4px 20px rgba(120,70,45,0.12)',
+          borderTop: `1px solid ${p.border}`,
+          boxShadow: '0 -4px 20px rgba(94, 20, 40, 0.10)',
+          pb: 'env(safe-area-inset-bottom)',
+          bgcolor: p.white,
         }}
       >
         <BottomNavigation
-          value={current === -1 ? false : current}
+          value={value}
           onChange={handleChange}
           showLabels
           sx={{
             height: 64,
             direction: 'rtl',
-            bgcolor: '#FEFEFE',
+            bgcolor: p.white,
             '& .MuiBottomNavigationAction-root': {
-              color: '#C4A88A',
+              color: p.muted,
               minWidth: 0,
-              gap: 0.3,
+              px: 0.5,
+              gap: 0.4,
               '& svg': { color: 'inherit' },
             },
-            '& .MuiBottomNavigationAction-root.Mui-selected': {
-              color: '#9B1F3A',
-            },
+            '& .MuiBottomNavigationAction-root.Mui-selected': { color: p.burgundy },
             '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.65rem !important',
+              fontSize: '12px !important',
               fontWeight: 600,
+              whiteSpace: 'nowrap',
             },
+            '& .Mui-selected .MuiBottomNavigationAction-label': { fontWeight: 800 },
           }}
         >
-          {TABS.map((tab) => (
-            <BottomNavigationAction
-              key={tab.label}
-              label={tab.label}
-              icon={tab.icon}
-            />
-          ))}
+          {MOBILE_TAB_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <BottomNavigationAction
+                key={item.id}
+                value={item.id}
+                label={navLabel(item.shortLabel ?? item.label, lang)}
+                icon={<Icon size={ICON_SIZE} strokeWidth={value === item.id ? 2.2 : 1.8} />}
+                aria-current={value === item.id ? 'page' : undefined}
+              />
+            );
+          })}
+          <BottomNavigationAction
+            value={MORE}
+            label={lang === 'he' ? 'עוד' : 'More'}
+            icon={<Ellipsis size={ICON_SIZE} strokeWidth={value === MORE ? 2.2 : 1.8} />}
+            aria-haspopup="dialog"
+          />
         </BottomNavigation>
       </Paper>
 

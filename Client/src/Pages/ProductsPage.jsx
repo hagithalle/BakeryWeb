@@ -49,6 +49,7 @@ import {
 } from "../utils/productForm";
 import { resolveImageUrl } from "../utils/imageUrl";
 import { formatMoneyOrDash } from "../utils/pricingForm";
+import { resolveProductCategory } from "../utils/productCategory";
 import { useLanguage } from "../context/LanguageContext";
 import useLocaleStrings from "../hooks/useLocaleStrings";
 
@@ -176,12 +177,8 @@ export default function ProductsPage() {
     return (products || [])
       .filter((p) => {
         const name = (getField(p, "name", "Name") || "").toLowerCase();
-        const recipe = getField(p, "recipe", "Recipe");
-        const category =
-          getField(p, "category", "Category") ||
-          recipe?.category ||
-          recipe?.Category ||
-          "";
+        // Shared with the dashboard category chart (utils/productCategory.js).
+        const category = resolveProductCategory(p);
         const productTypeValue = Number(
           getField(p, "productType", "ProductType") ?? 0
         );

@@ -4,7 +4,7 @@ import useLocaleStrings from "../../hooks/useLocaleStrings";
 import TopBar from "./TopBar";
 import Sidebar from "./Sidebar";
 import BottomNavBar from "./BottomNavBar";
-import { Box, useMediaQuery, useTheme } from "@mui/material";
+import { Box, GlobalStyles, useMediaQuery, useTheme } from "@mui/material";
 
 export default function MainLayout({ children }) {
     const { lang } = useLanguage();
@@ -14,6 +14,8 @@ export default function MainLayout({ children }) {
 
     return (
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+            {/* Edge-to-edge app shell: no default 8px body margin. */}
+            <GlobalStyles styles={{ body: { margin: 0 } }} />
             <Box sx={{
                 display: 'flex',
                 flex: 1,

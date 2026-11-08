@@ -2,29 +2,20 @@ import {
   Drawer, Box, Typography, List, ListItemButton,
   ListItemIcon, ListItemText, Divider, IconButton,
 } from '@mui/material';
-import { X, CircleDollarSign, ChartColumnIncreasing, Receipt, Settings, HelpCircle, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { X, LogOut } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { brandPalette as p } from '../../constants/brandPalette';
+import { MORE_DRAWER_GROUPS, isNavItemActive, navLabel } from './navigation';
 
 const ICON_SIZE = 20;
 
-const NAV_ITEMS = [
-  { label: 'הכנסות והוצאות', icon: CircleDollarSign,      path: '/income-expense' },
-  { label: 'ניהול עלויות',   icon: ChartColumnIncreasing,  path: '/costs' },
-  { label: 'הוצאות קבועות',  icon: Receipt,                path: '/fixed-expenses' },
-];
-
-const ACTION_ITEMS = [
-  { label: 'הגדרות',       icon: Settings,    soon: true },
-  { label: 'עזרה ותמיכה',  icon: HelpCircle,  soon: true },
-];
-
-const ICON_SX = { color: '#C98929', display: 'flex', alignItems: 'center' };
-const LOGOUT_SX = { color: '#9B1F3A', display: 'flex', alignItems: 'center' };
-
 export default function MoreDrawer({ open, onClose }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { logout } = useAuth();
+  const { lang } = useLanguage();
 
   const go = (path) => { onClose(); navigate(path); };
   const handleLogout = () => { onClose(); logout(); };
@@ -34,78 +25,81 @@ export default function MoreDrawer({ open, onClose }) {
       anchor="bottom"
       open={open}
       onClose={onClose}
+      // Above the fixed bottom bar (z-index 1300), which otherwise hides the last items (logout).
+      sx={{ zIndex: 1400 }}
       PaperProps={{
         sx: {
           borderRadius: '24px 24px 0 0',
           direction: 'rtl',
-          pb: 3,
-          boxShadow: '0 -8px 40px rgba(120,70,45,0.14)',
+          pb: 'calc(16px + env(safe-area-inset-bottom))',
+          boxShadow: '0 -8px 40px rgba(94, 20, 40, 0.14)',
+          bgcolor: p.white,
         },
       }}
     >
       {/* Drag handle */}
-      <Box sx={{ width: 40, height: 4, bgcolor: '#DDD0C8', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0.5 }} />
+      <Box sx={{ width: 40, height: 4, bgcolor: p.border, borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0.5 }} />
 
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, pt: 1, pb: 1.5 }}>
-        <IconButton size="small" onClick={onClose} sx={{ color: '#9B5A25' }}>
-          <X size={18} />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, pt: 1, pb: 1 }}>
+        <Typography component="h2" sx={{ fontWeight: 800, fontSize: 18, color: p.ink }}>
+          {lang === 'he' ? 'עוד' : 'More'}
+        </Typography>
+        <IconButton onClick={onClose} aria-label={lang === 'he' ? 'סגירה' : 'Close'} sx={{ width: 44, height: 44, color: p.muted }}>
+          <X size={20} />
         </IconButton>
-        <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#3D2B1F' }}>עוד</Typography>
-        <Box sx={{ width: 32 }} />
       </Box>
 
-      <Divider sx={{ borderColor: '#F0E4DB', mx: 2 }} />
+      <Divider sx={{ borderColor: p.border, mx: 2 }} />
 
-      <List sx={{ pt: 1, px: 1 }}>
-        {NAV_ITEMS.map(({ label, icon: Icon, path }) => (
-          <ListItemButton
-            key={label}
-            onClick={() => go(path)}
-            sx={{ borderRadius: '14px', mb: 0.25, py: 1.2 }}
-          >
-            <ListItemIcon sx={{ minWidth: 42, ...ICON_SX }}>
-              <Icon size={ICON_SIZE} strokeWidth={1.8} />
-            </ListItemIcon>
-            <ListItemText
-              primary={label}
-              primaryTypographyProps={{ fontWeight: 600, color: '#3D2B1F', fontSize: 15 }}
-            />
-          </ListItemButton>
+      <Box component="nav" sx={{ px: 1, pt: 1 }}>
+        {MORE_DRAWER_GROUPS.map((group) => (
+          <Box key={group.id} sx={{ mb: 0.5 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: p.muted, px: 2, pt: 1, pb: 0.5 }}>
+              {navLabel(group.label, lang)}
+            </Typography>
+            <List disablePadding>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = isNavItemActive(item, pathname);
+                return (
+                  <ListItemButton
+                    key={item.id}
+                    onClick={() => go(item.path)}
+                    aria-current={active ? 'page' : undefined}
+                    sx={{
+                      minHeight: 48,
+                      borderRadius: '14px',
+                      mb: 0.25,
+                      bgcolor: active ? p.blush : 'transparent',
+                      '&:hover': { bgcolor: active ? p.blush : p.blushSoft },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40, color: active ? p.burgundy : p.muted }}>
+                      <Icon size={ICON_SIZE} strokeWidth={active ? 2.2 : 1.8} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={navLabel(item.label, lang)}
+                      primaryTypographyProps={{ fontWeight: active ? 800 : 600, color: active ? p.burgundy : p.ink, fontSize: 16 }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </Box>
         ))}
 
-        <Divider sx={{ borderColor: '#F0E4DB', my: 1 }} />
+        <Divider sx={{ borderColor: p.border, my: 1 }} />
 
-        {ACTION_ITEMS.map(({ label, icon: Icon, soon }) => (
-          <ListItemButton
-            key={label}
-            disabled={soon}
-            sx={{ borderRadius: '14px', mb: 0.25, py: 1.2 }}
-          >
-            <ListItemIcon sx={{ minWidth: 42, ...ICON_SX }}>
-              <Icon size={ICON_SIZE} strokeWidth={1.8} />
-            </ListItemIcon>
-            <ListItemText
-              primary={label}
-              secondary={soon ? 'בקרוב' : null}
-              primaryTypographyProps={{ fontWeight: 600, color: '#3D2B1F', fontSize: 15 }}
-              secondaryTypographyProps={{ fontSize: 11 }}
-            />
-          </ListItemButton>
-        ))}
-
-        <Divider sx={{ borderColor: '#F0E4DB', my: 1 }} />
-
-        <ListItemButton onClick={handleLogout} sx={{ borderRadius: '14px', py: 1.2 }}>
-          <ListItemIcon sx={{ minWidth: 42, ...LOGOUT_SX }}>
-            <LogOut size={ICON_SIZE} strokeWidth={1.8} />
+        <ListItemButton onClick={handleLogout} sx={{ minHeight: 48, borderRadius: '14px' }}>
+          <ListItemIcon sx={{ minWidth: 40, color: p.burgundy }}>
+            <LogOut size={ICON_SIZE} strokeWidth={1.9} />
           </ListItemIcon>
           <ListItemText
             primary="התנתקות"
-            primaryTypographyProps={{ fontWeight: 700, color: '#9B1F3A', fontSize: 15 }}
+            primaryTypographyProps={{ fontWeight: 700, color: p.burgundy, fontSize: 16 }}
           />
         </ListItemButton>
-      </List>
+      </Box>
     </Drawer>
   );
 }

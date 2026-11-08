@@ -4,14 +4,11 @@ import {
   Avatar, Menu, MenuItem, ListItemIcon, Divider,
   useMediaQuery, useTheme,
 } from "@mui/material";
-import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import React from "react";
 import { useLanguage } from "../../context/LanguageContext";
-import useLocaleStrings from "../../hooks/useLocaleStrings";
 import { useAuth } from "../../context/AuthContext";
-import logoUrl from "../../assets/images/logo.png";
+import BakeryIdentity from "../Branding/BakeryIdentity";
 import "@fontsource/suez-one/400.css";
 
 /* ── Letter-based avatar (falls back to user photo if available) ── */
@@ -37,7 +34,6 @@ function UserAvatar({ user, size = 34 }) {
 export default function TopBar() {
   const { lang, setLang } = useLanguage();
   const nextLang = lang === "he" ? "en" : "he";
-  const strings = useLocaleStrings(lang);
   const { user, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -54,7 +50,7 @@ export default function TopBar() {
   const handleLogout = () => { closeMenu(); logout(); };
 
   /* ── Shared user dropdown ── */
-  const UserDropdown = () => (
+  const userDropdown = (
     <Menu
       anchorEl={menuAnchor}
       open={Boolean(menuAnchor)}
@@ -81,28 +77,12 @@ export default function TopBar() {
             {displayName}
           </Typography>
           {user?.email && (
-            <Typography sx={{ fontSize: 11, color: '#9B5A25', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Typography sx={{ fontSize: 13, color: "#9B5A25", direction: "ltr", textAlign: "right", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user.email}
             </Typography>
           )}
         </Box>
       </Box>
-
-      <Divider sx={{ borderColor: '#F0E4DB' }} />
-
-      <MenuItem onClick={closeMenu} sx={{ gap: 1.5, py: 1.2, color: '#5A3E2B', fontSize: 14 }}>
-        <ListItemIcon sx={{ minWidth: 'auto' }}>
-          <SettingsIcon sx={{ fontSize: 19, color: '#C98929' }} />
-        </ListItemIcon>
-        הגדרות
-      </MenuItem>
-
-      <MenuItem onClick={closeMenu} sx={{ gap: 1.5, py: 1.2, color: '#5A3E2B', fontSize: 14 }}>
-        <ListItemIcon sx={{ minWidth: 'auto' }}>
-          <HelpOutlineIcon sx={{ fontSize: 19, color: '#C98929' }} />
-        </ListItemIcon>
-        עזרה ותמיכה
-      </MenuItem>
 
       <Divider sx={{ borderColor: '#F0E4DB' }} />
 
@@ -120,8 +100,10 @@ export default function TopBar() {
     return (
       <AppBar position="static" elevation={0} sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
         <Toolbar sx={{ minHeight: 60, px: 2, direction: 'rtl', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Right: Logo */}
-          <Box component="img" src={logoUrl} alt="Logo" sx={{ height: 44, objectFit: 'contain' }} />
+          {/* Right: the bakery's own identity (never a shared/global logo) */}
+          <Box sx={{ minWidth: 0, flexShrink: 1 }}>
+            <BakeryIdentity size={38} compact />
+          </Box>
 
           {/* Left: lang + avatar + name */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -134,13 +116,13 @@ export default function TopBar() {
               {lang === "he" ? "EN" : "עב"}
             </Button>
 
-            <Box onClick={openMenu} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, cursor: 'pointer' }}>
-              <Typography sx={{ color: '#971936', fontWeight: 600, fontSize: 14 }}>{displayName}</Typography>
-              <UserAvatar user={user} size={32} />
-            </Box>
+            {/* Avatar only on mobile: the bakery name needs the space; the menu shows the full name. */}
+            <IconButton onClick={openMenu} aria-label={`תפריט משתמש: ${displayName}`} sx={{ p: 0.5 }}>
+              <UserAvatar user={user} size={34} />
+            </IconButton>
           </Box>
         </Toolbar>
-        <UserDropdown />
+        {userDropdown}
       </AppBar>
     );
   }
@@ -180,7 +162,7 @@ export default function TopBar() {
           </Box>
         </Box>
       </Toolbar>
-      <UserDropdown />
+      {userDropdown}
     </AppBar>
   );
 }

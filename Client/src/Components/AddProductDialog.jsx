@@ -41,6 +41,7 @@ import {
   toSavedPackagingItems,
 } from "../utils/productForm";
 import { resolveImageUrl } from "../utils/imageUrl";
+import { PREDEFINED_PRODUCT_CATEGORIES, categoryFormState, categoryFromForm } from "../utils/productCategory";
 import {
   PricingMode,
   initialPricingState,
@@ -144,14 +145,7 @@ export default function AddProductDialog({
   const [isPackagingDialogOpen, setIsPackagingDialogOpen] = useState(false);
 
   // ========== קטגוריות מוגדרות מראש ==========
-  const predefinedCategories = [
-    "מארז יום הולדת",
-    "מארז יום אהבה",
-    "מארז פורים",
-    "מארז חג",
-    "מארז כללי",
-    "אחר"
-  ];
+  const predefinedCategories = PREDEFINED_PRODUCT_CATEGORIES;
 
   // ========== אתחול ערכים ==========
   useEffect(() => {
@@ -162,9 +156,12 @@ export default function AddProductDialog({
       setSelectedRecipeId(initialValues.recipeId || "");
       setRecipeUnits(initialValues.recipeUnits || initialValues.unitConversionRate || 1);
       setPackageItems(initialValues.packageItems || []);
-      setCategory(initialValues.category || "");
-      setCustomCategory(initialValues.customCategory || "");
-      setShowCustomCategory(initialValues.category === "אחר" || false);
+      // A stored custom category (not one of the options) opens as "אחר" + its text, instead of
+      // an empty dropdown that hid the value (see utils/productCategory.js).
+      const categoryState = categoryFormState(initialValues.category);
+      setCategory(categoryState.category);
+      setCustomCategory(categoryState.customCategory);
+      setShowCustomCategory(categoryState.showCustomCategory);
       setAdditionalPackaging(initialValues.additionalPackaging || []);
       setPackagingTimeMinutes(initialValues.packagingTimeMinutes || 0);
       setPricingState(initialPricingState(initialValues));
@@ -483,7 +480,7 @@ export default function AddProductDialog({
   const handleSave = async () => {
     setIsSaving(true);
     
-    const finalCategory = showCustomCategory ? customCategory : category;
+    const finalCategory = categoryFromForm({ category, customCategory, showCustomCategory });
     
     const productData = {
       name: productName,

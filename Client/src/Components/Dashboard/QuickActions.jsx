@@ -1,113 +1,87 @@
 import React from 'react';
-import { Paper, Typography, Box } from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import { useNavigate } from 'react-router-dom';
+import { Box, ButtonBase, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
+import { brandPalette as p } from '../../constants/brandPalette';
+import { QUICK_ACTIONS } from './quickActionsConfig';
 
-import addRecipeIcon  from '../../assets/icons/actions/add-new-recipe.svg';
-import addProductIcon from '../../assets/icons/actions/add-new-product.svg';
-
-const ACTION_CARDS = [
-  {
-    label: 'מתכון חדש',
-    icon: addRecipeIcon,
-    bg: 'linear-gradient(135deg, #F5DEB3 0%, #E8C99A 100%)',
-    iconBg: 'rgba(255,255,255,0.55)',
-    labelColor: '#9B5A25',
-    border: '#E8D5C4',
-    path: '/recipes',
-  },
-  {
-    label: 'מוצר חדש',
-    icon: addProductIcon,
-    bg: 'linear-gradient(135deg, #FFCDD2 0%, #FFAAB0 100%)',
-    iconBg: 'rgba(255,255,255,0.55)',
-    labelColor: '#A63D40',
-    border: '#F5D0D0',
-    path: '/products',
-  },
-];
-
-const QuickActions = ({ strings }) => {
-  const navigate = useNavigate();
-
+function ActionCard({ action }) {
+  const Icon = action.icon;
+  const primary = Boolean(action.primary);
   return (
-    <Paper
-      elevation={0}
+    <ButtonBase
+      component={RouterLink}
+      to={action.path}
       sx={{
-        p: 2.5,
-        borderRadius: '20px',
-        border: '1px solid #F5EDE8',
-        boxShadow: '0 4px 20px rgba(166,61,64,0.07)',
-        height: '100%',
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        gap: 1.5,
+        minHeight: 84,
+        p: 2,
+        width: '100%',
+        boxSizing: 'border-box',
+        textAlign: 'right',
+        borderRadius: '18px',
+        border: `1px solid ${primary ? p.burgundy : p.border}`,
+        background: primary ? `linear-gradient(135deg, ${p.burgundy} 0%, ${p.burgundyDark} 100%)` : p.white,
+        color: primary ? p.white : p.ink,
+        boxShadow: primary ? '0 10px 24px rgba(94, 20, 40, 0.22)' : '0 4px 16px rgba(94, 20, 40, 0.06)',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          borderColor: p.burgundy,
+          boxShadow: primary ? '0 14px 28px rgba(94, 20, 40, 0.28)' : '0 10px 24px rgba(94, 20, 40, 0.10)',
+        },
+        '&.Mui-focusVisible': { outline: `3px solid ${primary ? p.blushDeep : p.burgundy}`, outlineOffset: 2 },
+        '@media (prefers-reduced-motion: reduce)': { transition: 'none', '&:hover': { transform: 'none' } },
       }}
     >
-      {/* Title */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, mb: 2.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#A63D40' }}>
-          {strings.dashboard?.quickActions || 'פעולות מהירות'}
+      <Box
+        aria-hidden
+        sx={{
+          width: 48,
+          height: 48,
+          flexShrink: 0,
+          borderRadius: '14px',
+          display: 'grid',
+          placeItems: 'center',
+          bgcolor: primary ? 'rgba(255, 255, 255, 0.16)' : p.blushSoft,
+          color: primary ? p.white : p.burgundy,
+        }}
+      >
+        <Icon size={24} strokeWidth={1.9} />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: 16, lineHeight: 1.3, color: 'inherit' }}>{action.title}</Typography>
+        <Typography sx={{ fontSize: 14, lineHeight: 1.4, mt: 0.25, color: primary ? 'rgba(255, 255, 255, 0.9)' : p.muted }}>
+          {action.hint}
         </Typography>
-        <FavoriteIcon sx={{ fontSize: 18, color: '#E891B0' }} />
       </Box>
-
-      {/* Action cards */}
-      <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
-        {ACTION_CARDS.map((card) => (
-          <Box
-            key={card.label}
-            onClick={() => navigate(card.path)}
-            sx={{
-              flex: 1,
-              borderRadius: '16px',
-              background: card.bg,
-              border: `1px solid ${card.border}`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1.5,
-              py: 3,
-              px: 2,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-              },
-            }}
-          >
-            {/* Icon circle */}
-            <Box
-              sx={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                bgcolor: card.iconBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              }}
-            >
-              <Box
-                component="img"
-                src={card.icon}
-                alt={card.label}
-                sx={{ width: 44, height: 44, objectFit: 'contain' }}
-              />
-            </Box>
-            <Typography
-              variant="body1"
-              sx={{ fontWeight: 700, color: card.labelColor, textAlign: 'center' }}
-            >
-              {card.label}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    </Paper>
+      <ChevronLeft size={20} aria-hidden style={{ flexShrink: 0, opacity: 0.7 }} />
+    </ButtonBase>
   );
-};
+}
 
-export default QuickActions;
+export default function QuickActions() {
+  return (
+    <Box
+      component="ul"
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        display: 'grid',
+        gap: { xs: 1.25, md: 2 },
+        // 2×2 keeps each hint on one line; four across only when cards stay ~320px+ wide.
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' },
+      }}
+    >
+      {QUICK_ACTIONS.map((action) => (
+        <Box component="li" key={action.id} sx={{ display: 'flex' }}>
+          <ActionCard action={action} />
+        </Box>
+      ))}
+    </Box>
+  );
+}
